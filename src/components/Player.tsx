@@ -22,16 +22,14 @@ export default function Player() {
     audioRef.current = audio
 
     const streamUrl = getStreamUrl(serverUrl, currentTrack.id, api.accessToken)
-    console.log('[JellyAmp] Stream URL:', streamUrl)
     audio.src = streamUrl
     audio.volume = muted ? 0 : volume
 
     const onError = (e: Event) => {
       const a = e.target as HTMLAudioElement
-      console.error('[JellyAmp] Audio error:', a.error?.code, a.error?.message, 'src:', a.src)
+      console.error('[JellyAmp] Audio error:', a.error?.code, a.error?.message)
     }
     const onCanPlay = () => {
-      console.log('[JellyAmp] Audio can play, starting...')
       audio.play().then(() => play()).catch((err) => console.error('[JellyAmp] Play failed:', err))
     }
     audio.addEventListener('error', onError)
@@ -76,14 +74,12 @@ export default function Player() {
     }
   }, [currentTrack?.id])
 
-  // Sync play/pause
   useEffect(() => {
     if (!audioRef.current) return
     if (isPlaying) audioRef.current.play().catch(() => {})
     else audioRef.current.pause()
   }, [isPlaying])
 
-  // Sync volume
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = muted ? 0 : volume
   }, [volume, muted])
@@ -118,7 +114,6 @@ export default function Player() {
     if (!audioRef.current || !duration) return
     seekingRef.current = true
     const rect = e.currentTarget.getBoundingClientRect()
-
     const onMove = (me: MouseEvent) => {
       const pct = Math.max(0, Math.min(1, (me.clientX - rect.left) / rect.width))
       setCurrentTime(pct * duration)
@@ -153,7 +148,8 @@ export default function Player() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/5 backdrop-blur-xl"
+          className="fixed z-50 left-0 right-0 border-t border-white/5 backdrop-blur-xl
+            bottom-[56px] md:bottom-0"
           style={{ background: 'linear-gradient(180deg, rgba(10,10,16,0.95) 0%, rgba(5,5,8,0.98) 100%)' }}
         >
           {/* Progress bar */}
@@ -164,12 +160,32 @@ export default function Player() {
           >
             <div className="h-full bg-gradient-primary transition-none shadow-[0_0_8px_rgba(0,255,221,0.3)]" style={{ width: `${progress}%` }} />
             <div
-              className="absolute top-1/2 w-3 h-3 rounded-full bg-neon-cyan opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_6px_rgba(0,255,221,0.5)]"
+              className="absolute top-1/2 w-3 h-3 rounded-full bg-neon-cyan opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_6px_rgba(0,255,221,0.5)] hidden md:block"
               style={{ left: `${progress}%`, transform: 'translate(-50%, -50%)' }}
             />
           </div>
 
-          <div className="flex items-center gap-4 px-4 py-2.5">
+          {/* Mobile: simplified player bar */}
+          <div className="flex md:hidden items-center gap-3 px-4 py-2.5 min-h-[64px]"
+            onClick={() => setShowNowPlaying(true)}
+          >
+            {currentTrack.imageUrl && (
+              <img src={currentTrack.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover shadow-lg" />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold truncate">{currentTrack.name}</p>
+              <p className="text-xs text-text-muted truncate">{currentTrack.artistName}</p>
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); toggle() }}
+              className="w-11 h-11 rounded-full bg-gradient-primary flex items-center justify-center text-deep-black shrink-0"
+            >
+              {isPlaying ? <PauseIcon /> : <PlayIcon />}
+            </button>
+          </div>
+
+          {/* Desktop: full player bar */}
+          <div className="hidden md:flex items-center gap-4 px-4 lg:px-6 py-3 min-h-[72px]">
             {/* Track info */}
             <div
               className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
@@ -182,12 +198,12 @@ export default function Player() {
                   animate={{ scale: 1, opacity: 1 }}
                   src={currentTrack.imageUrl}
                   alt=""
-                  className="w-11 h-11 rounded-lg object-cover shadow-lg"
+                  className="w-14 h-14 rounded-lg object-cover shadow-lg"
                 />
               )}
               <div className="min-w-0">
-                <p className="text-sm font-semibold truncate hover:text-neon-cyan transition-colors">{currentTrack.name}</p>
-                <p className="text-xs text-text-muted truncate">{currentTrack.artistName}</p>
+                <p className="text-[15px] font-semibold truncate hover:text-neon-cyan transition-colors">{currentTrack.name}</p>
+                <p className="text-[13px] text-text-muted truncate">{currentTrack.artistName}</p>
               </div>
             </div>
 
@@ -202,7 +218,7 @@ export default function Player() {
               <motion.button
                 onClick={toggle}
                 whileTap={{ scale: 0.9 }}
-                className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-deep-black mx-1 hover:shadow-[0_0_20px_rgba(0,255,221,0.3)] transition-shadow"
+                className="w-11 h-11 rounded-full bg-gradient-primary flex items-center justify-center text-deep-black mx-1 hover:shadow-[0_0_20px_rgba(0,255,221,0.3)] transition-shadow"
               >
                 {isPlaying ? <PauseIcon /> : <PlayIcon />}
               </motion.button>
@@ -216,10 +232,10 @@ export default function Player() {
 
             {/* Time + Volume + Queue */}
             <div className="flex items-center gap-3 flex-1 justify-end">
-              <span className="text-xs text-text-muted hidden md:inline" style={{ fontFamily: 'var(--font-mono)' }}>
+              <span className="text-[13px] text-text-muted font-mono">
                 {formatTime(currentTime)} / {formatTime(duration)}
               </span>
-              <div className="hidden sm:flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <button onClick={toggleMute} className="text-text-muted hover:text-text-primary transition-colors">
                   <VolumeIcon muted={muted || volume === 0} />
                 </button>
@@ -228,7 +244,7 @@ export default function Player() {
                   min="0" max="1" step="0.01"
                   value={muted ? 0 : volume}
                   onChange={(e) => setVolume(parseFloat(e.target.value))}
-                  className="w-20 accent-neon-cyan h-1"
+                  className="w-24 accent-neon-cyan h-1"
                 />
               </div>
               <button
@@ -236,7 +252,7 @@ export default function Player() {
                 className={`p-2 rounded transition-colors ${showQueue ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
                 title="Queue"
               >
-                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
                   <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
                 </svg>
               </button>
@@ -255,14 +271,13 @@ function ControlButton({ onClick, active, title, children }: {
     <button
       onClick={onClick}
       title={title}
-      className={`p-2 rounded-full transition-colors ${active ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
+      className={`p-2.5 rounded-full transition-colors ${active ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
     >
       {children}
     </button>
   )
 }
 
-// Icons
 const PlayIcon = () => (
   <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
 )

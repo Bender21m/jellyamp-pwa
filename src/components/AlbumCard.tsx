@@ -13,7 +13,7 @@ export default function AlbumCard({ id, name, artistName, imageUrl, year }: Albu
   return (
     <Link to={`/album/${id}`}>
       <motion.div
-        whileHover={{ y: -4 }}
+        whileHover={{ y: -2 }}
         transition={{ duration: 0.2 }}
         className="group cursor-pointer"
       >
@@ -21,30 +21,30 @@ export default function AlbumCard({ id, name, artistName, imageUrl, year }: Albu
           <img
             src={imageUrl}
             alt={name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover transition-transform duration-500"
+            style={{ transform: 'scale(1)' }}
             loading="lazy"
+            onMouseOver={(e) => { if (window.matchMedia('(hover: hover)').matches) (e.target as HTMLElement).style.transform = 'scale(1.05)' }}
+            onMouseOut={(e) => { (e.target as HTMLElement).style.transform = 'scale(1)' }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-deep-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <motion.div
-            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"
-          >
-            <motion.div
-              initial={{ scale: 0.8 }}
-              whileHover={{ scale: 1.1 }}
-              className="w-12 h-12 rounded-full bg-neon-cyan flex items-center justify-center shadow-[0_0_24px_rgba(0,255,221,0.5)]"
-            >
+          <div className="absolute inset-0 bg-gradient-to-t from-deep-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none hidden md:block" />
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none hidden md:flex">
+            <div className="w-12 h-12 rounded-full bg-neon-cyan flex items-center justify-center shadow-[0_0_24px_rgba(0,255,221,0.5)]">
               <svg viewBox="0 0 24 24" className="w-6 h-6 text-deep-black ml-0.5" fill="currentColor">
                 <path d="M8 5v14l11-7z" />
               </svg>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
-        <h3 className="text-sm font-semibold truncate group-hover:text-neon-cyan transition-colors tracking-[-0.01em]">
+        <h3 className="text-[14px] font-semibold truncate group-hover:text-neon-cyan transition-colors tracking-[-0.01em]">
           {name}
         </h3>
-        <p className="text-xs text-text-muted truncate">
-          {artistName}{year ? ` · ${year}` : ''}
+        <p className="text-[13px] text-text-secondary truncate mt-0.5">
+          {artistName}
         </p>
+        {year && (
+          <p className="text-[12px] text-text-muted font-mono mt-0.5">{year}</p>
+        )}
       </motion.div>
     </Link>
   )

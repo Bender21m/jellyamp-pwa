@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { fetchFavorites, getImageUrl, BaseItemKind } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
@@ -29,21 +28,29 @@ export default function Favorites() {
   }
 
   const imgUrl = (item: BaseItemDto) =>
-    serverUrl ? getImageUrl(serverUrl, item.Id!, item.ImageTags?.Primary) : ''
+    serverUrl ? getImageUrl(serverUrl, item.Id!, item.ImageTags?.Primary, 400) : ''
 
   const artists = items.filter(i => i.Type === BaseItemKind.MusicArtist)
   const albums = items.filter(i => i.Type === BaseItemKind.MusicAlbum)
 
+  const gridCols = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 md:gap-6 lg:gap-7'
+
   return (
     <div className="h-full flex flex-col">
-      <div className="px-6 pt-6 pb-4 shrink-0">
-        <h1 className="text-2xl font-bold">Favorites</h1>
+      <div className="px-4 md:px-8 pt-5 md:pt-8 pb-4 shrink-0">
+        <h1 className="text-2xl md:text-3xl font-extrabold tracking-[-0.03em]">Favorites</h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 pb-24">
+      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-40 md:pb-28">
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <motion.div className="w-8 h-8 border-2 border-neon-cyan/30 border-t-neon-cyan rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }} />
+          <div className={gridCols}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i}>
+                <div className="aspect-square skeleton rounded-xl mb-3" />
+                <div className="h-4 skeleton rounded w-3/4 mb-2" />
+                <div className="h-3.5 skeleton rounded w-1/2" />
+              </div>
+            ))}
           </div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-text-muted">
@@ -51,14 +58,14 @@ export default function Favorites() {
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
             </svg>
             <p className="text-sm">No favorites yet</p>
-            <p className="text-xs mt-1">Tap the heart on albums and artists to add them</p>
+            <p className="text-xs mt-1 text-text-muted/60">Tap the heart on albums and artists to add them</p>
           </div>
         ) : (
           <div className="space-y-8">
             {artists.length > 0 && (
               <section>
-                <h2 className="text-lg font-bold mb-3">Favorite Artists</h2>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+                <h2 className="text-lg font-bold mb-4">Favorite Artists</h2>
+                <div className={gridCols}>
                   {artists.map(a => (
                     <ArtistCard key={a.Id} id={a.Id!} name={a.Name ?? ''} imageUrl={a.ImageTags?.Primary ? imgUrl(a) : undefined} />
                   ))}
@@ -67,8 +74,8 @@ export default function Favorites() {
             )}
             {albums.length > 0 && (
               <section>
-                <h2 className="text-lg font-bold mb-3">Favorite Albums</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+                <h2 className="text-lg font-bold mb-4">Favorite Albums</h2>
+                <div className={gridCols}>
                   {albums.map(a => (
                     <AlbumCard key={a.Id} id={a.Id!} name={a.Name ?? ''} artistName={a.AlbumArtist ?? ''} imageUrl={imgUrl(a)} year={a.ProductionYear ?? undefined} />
                   ))}

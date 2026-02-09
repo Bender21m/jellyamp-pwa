@@ -66,82 +66,90 @@ export default function Library() {
 
   useEffect(() => { loadData() }, [loadData])
 
-  // Debounced search
   useEffect(() => {
     const t = setTimeout(() => loadData(), 300)
     return () => clearTimeout(t)
   }, [search])
 
-  const imgUrl = (item: BaseItemDto, size = 300) =>
+  const imgUrl = (item: BaseItemDto, size = 400) =>
     serverUrl ? getImageUrl(serverUrl, item.Id!, item.ImageTags?.Primary, size) : ''
 
-  const gridCols = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-5'
+  // Responsive grid: larger minimum card sizes
+  const gridCols = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 md:gap-6 lg:gap-7'
 
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="px-6 pt-6 pb-4 space-y-4 shrink-0">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-extrabold tracking-[-0.02em]">Library</h1>
-          <div className="flex items-center gap-2">
-            {/* Search */}
-            <div className="relative">
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search library..."
-                className="pl-9 pr-4 py-2 bg-surface border border-white/5 rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-neon-cyan/30 focus:ring-1 focus:ring-neon-cyan/10 w-48 transition-all focus:w-64"
-              />
-              <svg viewBox="0 0 24 24" className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" fill="currentColor">
-                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-              </svg>
-            </div>
+      <div className="px-4 md:px-8 pt-5 md:pt-8 pb-4 md:pb-5 space-y-4 shrink-0">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-[-0.03em]">Library</h1>
+            {!loading && (
+              <p className="text-sm text-text-secondary mt-1 font-mono">
+                {artists.length.toLocaleString()} artists · {albums.length.toLocaleString()} albums
+              </p>
+            )}
+          </div>
+          {/* Search - hidden on mobile (use search tab) */}
+          <div className="relative hidden md:block">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search library..."
+              className="pl-9 pr-4 py-2.5 bg-surface border border-white/5 rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-neon-cyan/30 focus:ring-1 focus:ring-neon-cyan/10 w-48 transition-all focus:w-64"
+            />
+            <svg viewBox="0 0 24 24" className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" fill="currentColor">
+              <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+            </svg>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-3 overflow-x-auto pb-1">
+        {/* Filters + Sort + View toggle */}
+        <div className="flex items-center gap-2 md:gap-3 overflow-x-auto pb-1 -mx-1 px-1">
           {filters.map((f) => (
             <FilterPill key={f} label={f} active={libraryFilter === f} onClick={() => setLibraryFilter(f)} />
           ))}
           <div className="flex-1" />
           {/* Sort */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               onClick={() => setShowSort(!showSort)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-white/5 text-xs text-text-secondary hover:text-text-primary transition-colors font-mono"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-white/5 text-xs text-text-secondary hover:text-text-primary transition-colors font-mono"
             >
               <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor">
                 <path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z" />
               </svg>
-              {sortLabels[sortOption]}
+              <span className="hidden sm:inline">{sortLabels[sortOption]}</span>
             </button>
             {showSort && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="absolute right-0 top-full mt-1 bg-card border border-white/10 rounded-lg shadow-2xl py-1 z-30 min-w-[160px]"
-              >
-                {sortOptions.map((opt) => (
-                  <button
-                    key={opt}
-                    onClick={() => { setSortOption(opt); setShowSort(false) }}
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                      sortOption === opt ? 'text-neon-cyan bg-neon-cyan/5' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
-                    }`}
-                  >
-                    {sortLabels[opt]}
-                  </button>
-                ))}
-              </motion.div>
+              <>
+                <div className="fixed inset-0 z-20" onClick={() => setShowSort(false)} />
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="absolute right-0 top-full mt-1 bg-card border border-white/10 rounded-lg shadow-2xl py-1 z-30 min-w-[160px]"
+                >
+                  {sortOptions.map((opt) => (
+                    <button
+                      key={opt}
+                      onClick={() => { setSortOption(opt); setShowSort(false) }}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                        sortOption === opt ? 'text-neon-cyan bg-neon-cyan/5' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+                      }`}
+                    >
+                      {sortLabels[opt]}
+                    </button>
+                  ))}
+                </motion.div>
+              </>
             )}
           </div>
           {/* View toggle */}
-          <div className="flex rounded-lg overflow-hidden border border-white/5">
+          <div className="flex rounded-lg overflow-hidden border border-white/5 shrink-0">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-neon-cyan text-deep-black' : 'bg-surface text-text-muted hover:text-text-primary'}`}
+              className={`p-2 transition-colors ${viewMode === 'grid' ? 'bg-neon-cyan text-deep-black' : 'bg-surface text-text-muted hover:text-text-primary'}`}
             >
               <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
                 <path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z" />
@@ -149,7 +157,7 @@ export default function Library() {
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-1.5 transition-colors ${viewMode === 'list' ? 'bg-neon-cyan text-deep-black' : 'bg-surface text-text-muted hover:text-text-primary'}`}
+              className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-neon-cyan text-deep-black' : 'bg-surface text-text-muted hover:text-text-primary'}`}
             >
               <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
                 <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
@@ -159,8 +167,8 @@ export default function Library() {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 pb-24">
+      {/* Content - extra bottom padding for player + mobile nav */}
+      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-40 md:pb-28">
         {loading ? (
           <SkeletonGrid viewMode={viewMode} type={libraryFilter === 'Artists' ? 'artist' : 'album'} />
         ) : libraryFilter === 'Albums' || libraryFilter === 'Recent' ? (
@@ -169,13 +177,14 @@ export default function Library() {
           ) : viewMode === 'list' ? (
             <div className="space-y-0.5">
               {albums.map((a, i) => (
-                <motion.div key={a.Id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.01 }}>
+                <motion.div key={a.Id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(i * 0.01, 0.3) }}>
                   <AlbumListRow
                     id={a.Id!}
                     name={a.Name ?? 'Unknown'}
                     artistName={a.AlbumArtist ?? 'Unknown Artist'}
-                    imageUrl={imgUrl(a, 100)}
+                    imageUrl={imgUrl(a, 120)}
                     year={a.ProductionYear ?? undefined}
+                    trackCount={a.ChildCount ?? undefined}
                   />
                 </motion.div>
               ))}
@@ -183,7 +192,7 @@ export default function Library() {
           ) : (
             <div className={gridCols}>
               {albums.map((a, i) => (
-                <motion.div key={a.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.015 }}>
+                <motion.div key={a.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.015, 0.3) }}>
                   <AlbumCard
                     id={a.Id!}
                     name={a.Name ?? 'Unknown'}
@@ -201,11 +210,11 @@ export default function Library() {
           ) : viewMode === 'list' ? (
             <div className="space-y-0.5">
               {artists.map((a, i) => (
-                <motion.div key={a.Id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.01 }}>
+                <motion.div key={a.Id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(i * 0.01, 0.3) }}>
                   <ArtistListRow
                     id={a.Id!}
                     name={a.Name ?? 'Unknown'}
-                    imageUrl={a.ImageTags?.Primary ? imgUrl(a, 100) : undefined}
+                    imageUrl={a.ImageTags?.Primary ? imgUrl(a, 120) : undefined}
                     albumCount={(a as any).AlbumCount ?? undefined}
                   />
                 </motion.div>
@@ -214,7 +223,7 @@ export default function Library() {
           ) : (
             <div className={gridCols}>
               {artists.map((a, i) => (
-                <motion.div key={a.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.015 }}>
+                <motion.div key={a.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.015, 0.3) }}>
                   <ArtistCard
                     id={a.Id!}
                     name={a.Name ?? 'Unknown'}
@@ -230,7 +239,7 @@ export default function Library() {
           ) : (
             <div className={gridCols}>
               {playlists.map((p, i) => (
-                <motion.div key={p.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.015 }}>
+                <motion.div key={p.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.015, 0.3) }}>
                   <PlaylistCard
                     id={p.Id!}
                     name={p.Name ?? 'Untitled'}
@@ -251,8 +260,8 @@ export default function Library() {
 
 function ArtistListRow({ id, name, imageUrl, albumCount }: { id: string; name: string; imageUrl?: string; albumCount?: number }) {
   return (
-    <Link to={`/artist/${id}`} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface transition-colors group cursor-pointer">
-      <div className="w-10 h-10 rounded-full overflow-hidden bg-card shrink-0 ring-1 ring-white/5 group-hover:ring-neon-cyan/30 transition-all">
+    <Link to={`/artist/${id}`} className="flex items-center gap-4 px-3 md:px-4 py-2.5 min-h-[56px] rounded-lg hover:bg-surface transition-colors group cursor-pointer">
+      <div className="w-12 h-12 rounded-xl overflow-hidden bg-card shrink-0 ring-1 ring-white/5 group-hover:ring-neon-cyan/30 transition-all">
         {imageUrl ? (
           <img src={imageUrl} alt={name} className="w-full h-full object-cover" loading="lazy" />
         ) : (
@@ -264,30 +273,33 @@ function ArtistListRow({ id, name, imageUrl, albumCount }: { id: string; name: s
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold truncate group-hover:text-neon-cyan transition-colors">{name}</p>
+        <p className="text-[15px] font-semibold truncate group-hover:text-neon-cyan transition-colors">{name}</p>
       </div>
       {albumCount !== undefined && (
-        <span className="text-xs text-text-muted font-mono shrink-0">{albumCount} album{albumCount !== 1 ? 's' : ''}</span>
+        <span className="text-[13px] text-text-muted font-mono shrink-0">{albumCount} album{albumCount !== 1 ? 's' : ''}</span>
       )}
-      <svg viewBox="0 0 24 24" className="w-4 h-4 text-text-muted/30 group-hover:text-text-muted shrink-0 transition-colors" fill="currentColor">
+      <svg viewBox="0 0 24 24" className="w-4 h-4 text-text-muted/30 group-hover:text-text-muted shrink-0 transition-colors hidden md:block" fill="currentColor">
         <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
       </svg>
     </Link>
   )
 }
 
-function AlbumListRow({ id, name, artistName, imageUrl, year }: { id: string; name: string; artistName: string; imageUrl: string; year?: number }) {
+function AlbumListRow({ id, name, artistName, imageUrl, year, trackCount }: { id: string; name: string; artistName: string; imageUrl: string; year?: number; trackCount?: number }) {
   return (
-    <Link to={`/album/${id}`} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface transition-colors group cursor-pointer">
-      <div className="w-12 h-12 rounded-lg overflow-hidden bg-card shrink-0 ring-1 ring-white/5 group-hover:ring-neon-cyan/30 transition-all">
+    <Link to={`/album/${id}`} className="flex items-center gap-4 px-3 md:px-4 py-2.5 min-h-[64px] rounded-lg hover:bg-surface transition-colors group cursor-pointer">
+      <div className="w-14 h-14 rounded-xl overflow-hidden bg-card shrink-0 ring-1 ring-white/5 group-hover:ring-neon-cyan/30 transition-all">
         <img src={imageUrl} alt={name} className="w-full h-full object-cover" loading="lazy" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold truncate group-hover:text-neon-cyan transition-colors">{name}</p>
-        <p className="text-xs text-text-muted truncate">{artistName}</p>
+        <p className="text-[15px] font-semibold truncate group-hover:text-neon-cyan transition-colors">{name}</p>
+        <p className="text-[13px] text-text-secondary truncate">{artistName}</p>
       </div>
-      {year && <span className="text-xs text-text-muted font-mono shrink-0">{year}</span>}
-      <svg viewBox="0 0 24 24" className="w-4 h-4 text-text-muted/30 group-hover:text-text-muted shrink-0 transition-colors" fill="currentColor">
+      {year && <span className="text-[13px] text-text-muted font-mono shrink-0 hidden sm:inline">{year}</span>}
+      {trackCount !== undefined && (
+        <span className="text-[13px] text-text-muted font-mono shrink-0 hidden md:inline">{trackCount} tracks</span>
+      )}
+      <svg viewBox="0 0 24 24" className="w-4 h-4 text-text-muted/30 group-hover:text-text-muted shrink-0 transition-colors hidden md:block" fill="currentColor">
         <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
       </svg>
     </Link>
@@ -301,11 +313,11 @@ function SkeletonGrid({ viewMode, type }: { viewMode: string; type: string }) {
     return (
       <div className="space-y-1">
         {Array.from({ length: 12 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 px-3 py-2 animate-pulse">
-            <div className={`${type === 'artist' ? 'w-10 h-10 rounded-full' : 'w-12 h-12 rounded-lg'} bg-surface`} />
-            <div className="flex-1 space-y-1.5">
-              <div className="h-3.5 bg-surface rounded w-1/3" />
-              {type !== 'artist' && <div className="h-3 bg-surface rounded w-1/5" />}
+          <div key={i} className="flex items-center gap-4 px-3 py-2.5 min-h-[56px]">
+            <div className={`${type === 'artist' ? 'w-12 h-12 rounded-xl' : 'w-14 h-14 rounded-xl'} skeleton`} />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 skeleton rounded w-1/3" />
+              {type !== 'artist' && <div className="h-3.5 skeleton rounded w-1/5" />}
             </div>
           </div>
         ))}
@@ -313,12 +325,12 @@ function SkeletonGrid({ viewMode, type }: { viewMode: string; type: string }) {
     )
   }
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-5">
-      {Array.from({ length: 14 }).map((_, i) => (
-        <div key={i} className="animate-pulse">
-          <div className={`aspect-square ${type === 'artist' ? 'rounded-full' : 'rounded-xl'} bg-surface mb-3`} />
-          <div className="h-3.5 bg-surface rounded w-3/4 mb-1.5" />
-          <div className="h-3 bg-surface rounded w-1/2" />
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 md:gap-6 lg:gap-7">
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div key={i}>
+          <div className="aspect-square rounded-xl skeleton mb-3" />
+          <div className="h-4 skeleton rounded w-3/4 mb-2" />
+          <div className="h-3.5 skeleton rounded w-1/2" />
         </div>
       ))}
     </div>

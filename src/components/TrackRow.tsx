@@ -16,11 +16,8 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
   const isActive = currentTrack?.id === track.id
 
   function handleClick() {
-    if (onPlay) {
-      onPlay()
-    } else {
-      setTrack(track, allTracks, index)
-    }
+    if (onPlay) onPlay()
+    else setTrack(track, allTracks, index)
   }
 
   function formatDuration(seconds: number) {
@@ -33,22 +30,22 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
     <motion.div
       onClick={handleClick}
       onContextMenu={onContextMenu}
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.02, duration: 0.2 }}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer group transition-colors ${
-        isActive ? 'bg-neon-cyan/10' : 'hover:bg-surface'
+      transition={{ delay: Math.min(index * 0.015, 0.3), duration: 0.15 }}
+      className={`flex items-center gap-4 px-3 md:px-4 min-h-[48px] md:min-h-[52px] rounded-lg cursor-pointer group transition-colors ${
+        isActive ? 'bg-neon-cyan/10' : 'hover:bg-surface odd:bg-white/[0.02]'
       }`}
     >
       {showIndex && (
-        <span className={`w-6 text-right text-sm ${
+        <span className={`w-8 text-right text-sm shrink-0 ${
           isActive ? 'text-neon-cyan' : 'text-text-muted group-hover:text-neon-cyan'
         }`} style={{ fontFamily: 'var(--font-mono)' }}>
           {isActive && isPlaying ? (
-            <span className="flex items-center justify-end gap-px">
-              <span className="w-0.5 h-3 bg-neon-cyan rounded-full animate-pulse" />
-              <span className="w-0.5 h-4 bg-neon-cyan rounded-full animate-pulse" style={{ animationDelay: '0.15s' }} />
-              <span className="w-0.5 h-2 bg-neon-cyan rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
+            <span className="flex items-center justify-end gap-[2px]">
+              <span className="w-[3px] bg-neon-cyan rounded-full eq-bar-1" />
+              <span className="w-[3px] bg-neon-cyan rounded-full eq-bar-2" />
+              <span className="w-[3px] bg-neon-cyan rounded-full eq-bar-3" />
             </span>
           ) : (
             track.indexNumber ?? index + 1
@@ -56,17 +53,17 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
         </span>
       )}
       {showArt && track.imageUrl && (
-        <img src={track.imageUrl} alt="" className="w-10 h-10 rounded object-cover" loading="lazy" />
+        <img src={track.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" loading="lazy" />
       )}
       <div className="flex-1 min-w-0">
-        <p className={`text-sm truncate transition-colors ${isActive ? 'text-neon-cyan font-semibold' : 'text-text-primary group-hover:text-neon-cyan'}`}>
+        <p className={`text-sm md:text-[15px] truncate transition-colors ${isActive ? 'text-neon-cyan font-semibold' : 'text-text-primary group-hover:text-neon-cyan'}`}>
           {track.name}
         </p>
         {track.artistName && (
-          <p className="text-xs text-text-muted truncate">{track.artistName}</p>
+          <p className="text-[13px] text-text-muted truncate">{track.artistName}</p>
         )}
       </div>
-      <span className="text-xs text-text-muted shrink-0" style={{ fontFamily: 'var(--font-mono)' }}>
+      <span className="text-[13px] text-text-muted shrink-0 font-mono">
         {formatDuration(track.duration)}
       </span>
     </motion.div>

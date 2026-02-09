@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
@@ -8,6 +8,7 @@ import TrackRow from '../components/TrackRow'
 
 export default function PlaylistDetail() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const { api, userId, serverUrl } = useAuthStore()
   const { setTrack, addToQueue } = usePlayerStore()
   const [playlist, setPlaylist] = useState<{ name: string; imageUrl?: string } | null>(null)
@@ -37,7 +38,7 @@ export default function PlaylistDetail() {
         albumName: t.Album ?? '',
         artistName: t.AlbumArtist ?? t.Artists?.[0] ?? '',
         duration: (t.RunTimeTicks ?? 0) / 10000000,
-        imageUrl: t.AlbumId ? getImageUrl(serverUrl, t.AlbumId, t.AlbumPrimaryImageTag, 100) : undefined,
+        imageUrl: t.AlbumId ? getImageUrl(serverUrl, t.AlbumId, t.AlbumPrimaryImageTag, 120) : undefined,
         playlistItemId: t.PlaylistItemId ?? undefined,
       }))
       setTracks(mapped)
@@ -53,18 +54,39 @@ export default function PlaylistDetail() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <motion.div className="w-8 h-8 border-2 border-neon-cyan/30 border-t-neon-cyan rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }} />
+      <div className="h-full overflow-y-auto pb-40 md:pb-28">
+        <div className="px-4 md:px-8 pt-5 md:pt-8">
+          <div className="h-8 w-16 skeleton rounded mb-6" />
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="w-48 h-48 skeleton rounded-xl shrink-0 mx-auto md:mx-0" />
+            <div className="flex-1 space-y-3">
+              <div className="h-8 skeleton rounded w-1/2" />
+              <div className="h-4 skeleton rounded w-1/4" />
+              <div className="flex gap-3 mt-4">
+                <div className="h-10 w-32 skeleton rounded-full" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="h-full overflow-y-auto pb-24">
+    <div className="h-full overflow-y-auto pb-40 md:pb-28">
+      {/* Back button */}
+      <div className="px-4 md:px-8 pt-4 md:pt-6">
+        <button onClick={() => navigate(-1)} className="text-text-muted hover:text-text-primary transition-colors p-1 -ml-1 mb-2">
+          <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+          </svg>
+        </button>
+      </div>
+
       {/* Hero */}
-      <div className="px-6 pt-6 pb-8">
-        <div className="flex gap-6">
-          <div className="w-48 h-48 rounded-xl overflow-hidden shadow-2xl shrink-0 bg-surface ring-1 ring-white/10">
+      <div className="px-4 md:px-8 pb-6 md:pb-8">
+        <div className="flex flex-col md:flex-row gap-5 md:gap-6">
+          <div className="w-48 h-48 rounded-xl overflow-hidden shadow-2xl shrink-0 bg-surface ring-1 ring-white/10 mx-auto md:mx-0">
             {playlist?.imageUrl ? (
               <img src={playlist.imageUrl} alt="" className="w-full h-full object-cover" />
             ) : (
@@ -77,9 +99,9 @@ export default function PlaylistDetail() {
           </div>
           <div className="flex flex-col justify-end min-w-0">
             <p className="text-xs font-mono uppercase tracking-widest text-text-muted mb-1">Playlist</p>
-            <h1 className="text-3xl font-extrabold mb-2 truncate">{playlist?.name}</h1>
-            <p className="text-xs text-text-muted font-mono">{tracks.length} tracks</p>
-            <div className="flex items-center gap-3 mt-4">
+            <h1 className="text-2xl md:text-3xl font-extrabold mb-2 truncate tracking-[-0.03em]">{playlist?.name}</h1>
+            <p className="text-[13px] text-text-muted font-mono">{tracks.length} tracks</p>
+            <div className="flex items-center gap-3 mt-4 flex-wrap">
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={() => playAll()}
@@ -89,7 +111,7 @@ export default function PlaylistDetail() {
               </motion.button>
               <button
                 onClick={() => addToQueue(tracks)}
-                className="px-4 py-2.5 rounded-full border border-white/10 text-sm text-text-secondary hover:text-text-primary hover:border-white/20 transition-all"
+                className="px-5 py-2.5 rounded-full border border-white/10 text-sm text-text-secondary hover:text-text-primary hover:border-white/20 transition-all"
               >
                 Add to Queue
               </button>
@@ -99,7 +121,7 @@ export default function PlaylistDetail() {
       </div>
 
       {/* Tracks */}
-      <div className="px-6 space-y-0.5">
+      <div className="px-4 md:px-8 space-y-0.5">
         {tracks.map((track, i) => (
           <TrackRow key={`${track.id}-${i}`} track={track} index={i} allTracks={tracks} showIndex showArt />
         ))}

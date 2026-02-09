@@ -45,16 +45,18 @@ export default function Playlists() {
   }
 
   const imgUrl = (item: BaseItemDto) =>
-    serverUrl ? getImageUrl(serverUrl, item.Id!, item.ImageTags?.Primary) : ''
+    serverUrl ? getImageUrl(serverUrl, item.Id!, item.ImageTags?.Primary, 400) : ''
+
+  const gridCols = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 md:gap-6 lg:gap-7'
 
   return (
     <div className="h-full flex flex-col">
-      <div className="px-6 pt-6 pb-4 shrink-0">
+      <div className="px-4 md:px-8 pt-5 md:pt-8 pb-4 shrink-0">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Playlists</h1>
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-[-0.03em]">Playlists</h1>
           <button
             onClick={() => setShowCreate(!showCreate)}
-            className="px-4 py-2 rounded-lg bg-surface border border-white/5 text-sm text-neon-cyan hover:bg-surface-hover transition-colors"
+            className="px-4 py-2.5 rounded-lg bg-surface border border-white/5 text-sm text-neon-cyan hover:bg-surface-hover transition-colors min-h-[44px]"
           >
             + New Playlist
           </button>
@@ -73,12 +75,12 @@ export default function Playlists() {
               placeholder="Playlist name..."
               autoFocus
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-              className="flex-1 px-4 py-2 bg-surface border border-white/5 rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-neon-cyan/30"
+              className="flex-1 px-4 py-2.5 bg-surface border border-white/5 rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-neon-cyan/30 min-h-[44px]"
             />
             <button
               onClick={handleCreate}
               disabled={creating || !newName.trim()}
-              className="px-4 py-2 rounded-lg bg-gradient-primary text-deep-black font-semibold text-sm disabled:opacity-50"
+              className="px-5 py-2.5 rounded-lg bg-gradient-primary text-deep-black font-semibold text-sm disabled:opacity-50 min-h-[44px]"
             >
               {creating ? '...' : 'Create'}
             </button>
@@ -86,10 +88,16 @@ export default function Playlists() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 pb-24">
+      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-40 md:pb-28">
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <motion.div className="w-8 h-8 border-2 border-neon-cyan/30 border-t-neon-cyan rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }} />
+          <div className={gridCols}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i}>
+                <div className="aspect-square skeleton rounded-xl mb-3" />
+                <div className="h-4 skeleton rounded w-3/4 mb-2" />
+                <div className="h-3.5 skeleton rounded w-1/3" />
+              </div>
+            ))}
           </div>
         ) : playlists.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-text-muted">
@@ -99,9 +107,9 @@ export default function Playlists() {
             <p className="text-sm">No playlists yet</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+          <div className={gridCols}>
             {playlists.map((p, i) => (
-              <motion.div key={p.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+              <motion.div key={p.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.3) }}>
                 <PlaylistCard
                   id={p.Id!}
                   name={p.Name ?? 'Untitled'}

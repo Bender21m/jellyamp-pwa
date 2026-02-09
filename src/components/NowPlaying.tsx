@@ -1,5 +1,5 @@
 import { useRef, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useTransform, type PanInfo } from 'framer-motion'
 import { usePlayerStore } from '../stores/player'
 
 export default function NowPlaying() {
@@ -8,6 +8,8 @@ export default function NowPlaying() {
     toggle, next, previous, seek, toggleShuffle, cycleRepeat, setShowNowPlaying, setShowQueue, setCurrentTime,
   } = usePlayerStore()
   const progressRef = useRef<HTMLDivElement>(null)
+  const y = useMotionValue(0)
+  const opacity = useTransform(y, [0, 300], [1, 0])
 
   const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!progressRef.current || !duration) return
@@ -33,6 +35,12 @@ export default function NowPlaying() {
     window.addEventListener('mouseup', onUp)
   }, [duration, seek, setCurrentTime])
 
+  function handlePanEnd(_: any, info: PanInfo) {
+    if (info.offset.y > 100 || info.velocity.y > 300) {
+      setShowNowPlaying(false)
+    }
+  }
+
   function formatTime(s: number) {
     if (!s || !isFinite(s)) return '0:00'
     const m = Math.floor(s / 60)
@@ -48,11 +56,16 @@ export default function NowPlaying() {
     <AnimatePresence>
       {showNowPlaying && (
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: '100%' }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 40 }}
+          exit={{ opacity: 0, y: '100%' }}
           transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-          className="fixed inset-0 z-[60] flex flex-col items-center justify-center overflow-hidden"
+          style={{ y, opacity }}
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={0.2}
+          onDragEnd={handlePanEnd}
+          className="fixed inset-0 z-[60] flex flex-col items-center justify-center overflow-hidden touch-none"
         >
           {/* Background */}
           <div className="absolute inset-0 bg-deep-black">
@@ -60,16 +73,19 @@ export default function NowPlaying() {
               <img
                 src={currentTrack.imageUrl}
                 alt=""
-                className="absolute inset-0 w-full h-full object-cover blur-[80px] opacity-30 scale-110"
+                className="absolute inset-0 w-full h-full object-cover blur-[80px] opacity-25 scale-110"
               />
             )}
             <div className="absolute inset-0 bg-deep-black/70" />
           </div>
 
+          {/* Drag handle - mobile */}
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/20 md:hidden z-10" />
+
           {/* Close button */}
           <button
             onClick={() => setShowNowPlaying(false)}
-            className="absolute top-6 left-6 z-10 text-text-muted hover:text-text-primary transition-colors p-2"
+            className="absolute top-5 left-5 z-10 text-text-muted hover:text-text-primary transition-colors p-2"
           >
             <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
               <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z" />
@@ -79,7 +95,7 @@ export default function NowPlaying() {
           {/* Queue button */}
           <button
             onClick={() => { setShowNowPlaying(false); setShowQueue(true) }}
-            className="absolute top-6 right-6 z-10 text-text-muted hover:text-text-primary transition-colors p-2"
+            className="absolute top-5 right-5 z-10 text-text-muted hover:text-text-primary transition-colors p-2"
           >
             <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
               <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
@@ -87,14 +103,14 @@ export default function NowPlaying() {
           </button>
 
           {/* Content */}
-          <div className="relative z-10 flex flex-col items-center max-w-lg w-full px-8">
+          <div className="relative z-10 flex flex-col items-center max-w-lg w-full px-6 md:px-8">
             {/* Album Art */}
             <motion.div
               key={currentTrack.id}
-              initial={{ scale: 0.8, opacity: 0 }}
+              initial={{ scale: 0.85, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: 'spring', damping: 20 }}
-              className="w-72 h-72 md:w-80 md:h-80 rounded-2xl overflow-hidden shadow-2xl mb-10 ring-1 ring-white/10"
+              className="w-[80vw] h-[80vw] max-w-[380px] max-h-[380px] md:w-80 md:h-80 rounded-2xl overflow-hidden shadow-2xl mb-8 md:mb-10 ring-1 ring-white/10"
               style={{ boxShadow: '0 8px 60px rgba(0, 255, 221, 0.15), 0 0 120px rgba(139, 92, 246, 0.08)' }}
             >
               {currentTrack.imageUrl ? (
@@ -109,16 +125,16 @@ export default function NowPlaying() {
             </motion.div>
 
             {/* Track Info */}
-            <div className="text-center mb-8 w-full">
+            <div className="text-center mb-6 md:mb-8 w-full">
               <motion.h2
                 key={currentTrack.name}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-2xl font-bold truncate"
+                className="text-xl md:text-2xl font-bold truncate"
               >
                 {currentTrack.name}
               </motion.h2>
-              <p className="text-text-secondary mt-1 truncate">{currentTrack.artistName}</p>
+              <p className="text-text-secondary mt-1 truncate text-[15px]">{currentTrack.artistName}</p>
               {currentTrack.albumName && (
                 <p className="text-text-muted text-sm mt-0.5 truncate">{currentTrack.albumName}</p>
               )}
@@ -136,7 +152,7 @@ export default function NowPlaying() {
                   className="h-full bg-gradient-primary rounded-full relative"
                   style={{ width: `${progress}%` }}
                 >
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white shadow-[0_0_8px_rgba(0,255,221,0.5)] opacity-0 group-hover:opacity-100 transition-opacity translate-x-1/2" />
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white shadow-[0_0_8px_rgba(0,255,221,0.5)] opacity-0 group-hover:opacity-100 transition-opacity translate-x-1/2 hidden md:block" />
                 </div>
               </div>
               <div className="flex justify-between mt-2 text-xs text-text-muted font-mono">
@@ -146,16 +162,16 @@ export default function NowPlaying() {
             </div>
 
             {/* Controls */}
-            <div className="flex items-center justify-center gap-6">
+            <div className="flex items-center justify-center gap-5 md:gap-6">
               <button
                 onClick={toggleShuffle}
-                className={`p-2 transition-colors ${shuffle ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
+                className={`p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${shuffle ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
               >
                 <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
                   <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" />
                 </svg>
               </button>
-              <button onClick={previous} className="p-2 text-text-primary hover:text-neon-cyan transition-colors">
+              <button onClick={previous} className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-text-primary hover:text-neon-cyan transition-colors">
                 <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg>
               </button>
               <motion.button
@@ -169,12 +185,12 @@ export default function NowPlaying() {
                   <svg viewBox="0 0 24 24" className="w-8 h-8 ml-1" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                 )}
               </motion.button>
-              <button onClick={next} className="p-2 text-text-primary hover:text-neon-cyan transition-colors">
+              <button onClick={next} className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-text-primary hover:text-neon-cyan transition-colors">
                 <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" /></svg>
               </button>
               <button
                 onClick={cycleRepeat}
-                className={`p-2 transition-colors ${repeat !== 'off' ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
+                className={`p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${repeat !== 'off' ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
               >
                 <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
                   {repeat === 'one'

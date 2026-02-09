@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
@@ -9,6 +9,7 @@ import AlbumCard from '../components/AlbumCard'
 
 export default function ArtistDetail() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const { api, userId, serverUrl } = useAuthStore()
   const { setTrack } = usePlayerStore()
   const [artist, setArtist] = useState<BaseItemDto | null>(null)
@@ -39,7 +40,6 @@ export default function ArtistDetail() {
   async function playAll() {
     if (!api || !userId || !serverUrl || albums.length === 0) return
     try {
-      // Fetch tracks from first album and play
       const firstAlbum = albums[0]
       const tracksRes = await fetchTracks(api, userId, firstAlbum.Id!)
       const mapped: Track[] = (tracksRes.Items ?? []).map((t) => ({
@@ -57,17 +57,29 @@ export default function ArtistDetail() {
     }
   }
 
-  const imgUrl = (item: BaseItemDto, size = 300) =>
+  const imgUrl = (item: BaseItemDto, size = 400) =>
     serverUrl ? getImageUrl(serverUrl, item.Id!, item.ImageTags?.Primary, size) : ''
 
   const artistImage = artist?.ImageTags?.Primary && serverUrl
-    ? getImageUrl(serverUrl, artist.Id!, artist.ImageTags.Primary, 600)
+    ? getImageUrl(serverUrl, artist.Id!, artist.ImageTags.Primary, 800)
     : null
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <motion.div className="w-8 h-8 border-2 border-neon-cyan/30 border-t-neon-cyan rounded-full" animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }} />
+      <div className="h-full overflow-y-auto pb-40 md:pb-28">
+        <div className="h-48 md:h-72 skeleton" />
+        <div className="px-4 md:px-8 pt-6 space-y-4">
+          <div className="h-8 skeleton rounded w-1/3" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 md:gap-6 lg:gap-7 mt-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i}>
+                <div className="aspect-square skeleton rounded-xl mb-3" />
+                <div className="h-4 skeleton rounded w-3/4 mb-2" />
+                <div className="h-3.5 skeleton rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
@@ -75,9 +87,9 @@ export default function ArtistDetail() {
   if (!artist) return <div className="p-6 text-text-muted">Artist not found</div>
 
   return (
-    <div className="h-full overflow-y-auto pb-24">
-      {/* Hero */}
-      <div className="relative h-72 overflow-hidden">
+    <div className="h-full overflow-y-auto pb-40 md:pb-28">
+      {/* Hero banner */}
+      <div className="relative h-48 md:h-72 overflow-hidden">
         {artistImage ? (
           <>
             <img src={artistImage} alt="" className="w-full h-full object-cover scale-105" />
@@ -87,9 +99,17 @@ export default function ArtistDetail() {
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-neon-cyan/10 via-purple/15 to-neon-pink/10" />
         )}
-        <div className="absolute bottom-0 left-0 right-0 px-6 pb-6">
+
+        {/* Back button */}
+        <button onClick={() => navigate(-1)} className="absolute top-4 left-4 z-10 text-white/70 hover:text-white transition-colors p-2 rounded-full bg-black/30 backdrop-blur-sm">
+          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+          </svg>
+        </button>
+
+        <div className="absolute bottom-0 left-0 right-0 px-4 md:px-8 pb-5 md:pb-6">
           <p className="text-xs font-mono uppercase tracking-widest text-text-muted mb-1">Artist</p>
-          <h1 className="text-4xl font-extrabold mb-2 tracking-[-0.02em]">{artist.Name}</h1>
+          <h1 className="text-3xl md:text-[40px] font-black mb-3 tracking-[-0.03em] leading-tight">{artist.Name}</h1>
           <div className="flex items-center gap-3">
             <motion.button
               whileTap={{ scale: 0.95 }}
@@ -98,17 +118,17 @@ export default function ArtistDetail() {
             >
               ▶ Play All
             </motion.button>
-            <span className="text-xs text-text-muted font-mono">{albums.length} album{albums.length !== 1 ? 's' : ''}</span>
+            <span className="text-[13px] text-text-muted font-mono">{albums.length} album{albums.length !== 1 ? 's' : ''}</span>
           </div>
         </div>
       </div>
 
       {/* Albums */}
-      <div className="px-6 pt-6">
-        <h2 className="text-lg font-bold mb-4">Discography</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+      <div className="px-4 md:px-8 pt-6 md:pt-8">
+        <h2 className="text-lg md:text-xl font-bold mb-4 md:mb-6">Discography</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 md:gap-6 lg:gap-7">
           {albums.map((a, i) => (
-            <motion.div key={a.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+            <motion.div key={a.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.3) }}>
               <AlbumCard
                 id={a.Id!}
                 name={a.Name ?? 'Unknown'}
