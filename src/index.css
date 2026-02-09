@@ -90,3 +90,42 @@ html, body, #root {
   pointer-events: none;
   z-index: 1;
 }
+
+/* Range slider styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-text-muted);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  background: #00FFDD;
+  margin-top: -5px;
+  box-shadow: 0 0 8px rgba(0, 255, 221, 0.4);
+}
+
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-text-muted);
+}
+
+input[type="range"]::-moz-range-thumb {
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  background: #00FFDD;
+  border: none;
+  box-shadow: 0 0 8px rgba(0, 255, 221, 0.4);
+}

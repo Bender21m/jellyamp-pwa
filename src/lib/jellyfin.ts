@@ -154,12 +154,36 @@ export async function removeFromPlaylist(api: Api, playlistId: string, entryIds:
 }
 
 export async function fetchArtistById(api: Api, userId: string, artistId: string): Promise<BaseItemDto | null> {
+  // Try multiple approaches — Jellyfin artist items are tricky
   try {
+    // First: try direct item lookup
     const { data } = await api.axiosInstance.get(`${api.basePath}/Users/${userId}/Items/${artistId}`)
-    return data as BaseItemDto
-  } catch {
-    return null
-  }
+    if (data?.Id) return data as BaseItemDto
+  } catch { /* fall through */ }
+
+  try {
+    // Second: try Items endpoint with specific ID filter
+    const itemsApi = getItemsApi(api)
+    const { data } = await itemsApi.getItems({
+      userId,
+      ids: [artistId],
+      fields: [ItemFields.PrimaryImageAspectRatio, ItemFields.Overview],
+    })
+    if (data.Items && data.Items.length > 0) return data.Items[0]
+  } catch { /* fall through */ }
+
+  try {
+    // Third: try the Artists endpoint with search
+    const artistsApi = getArtistsApi(api)
+    const { data } = await artistsApi.getArtists({
+      userId,
+      fields: [ItemFields.PrimaryImageAspectRatio, ItemFields.Overview],
+    })
+    const match = data.Items?.find(a => a.Id === artistId)
+    if (match) return match
+  } catch { /* fall through */ }
+
+  return null
 }
 
 export { jellyfin, getItemsApi, getArtistsApi, getImageApi, BaseItemKind, SortOrder, ItemSortBy, ItemFields }
