@@ -22,9 +22,21 @@ export default function Player() {
     audioRef.current = audio
 
     const streamUrl = getStreamUrl(serverUrl, currentTrack.id, api.accessToken)
+    console.log('[JellyAmp] Stream URL:', streamUrl)
     audio.src = streamUrl
     audio.volume = muted ? 0 : volume
-    audio.play().then(() => play()).catch(() => {})
+
+    const onError = (e: Event) => {
+      const a = e.target as HTMLAudioElement
+      console.error('[JellyAmp] Audio error:', a.error?.code, a.error?.message, 'src:', a.src)
+    }
+    const onCanPlay = () => {
+      console.log('[JellyAmp] Audio can play, starting...')
+      audio.play().then(() => play()).catch((err) => console.error('[JellyAmp] Play failed:', err))
+    }
+    audio.addEventListener('error', onError)
+    audio.addEventListener('canplay', onCanPlay, { once: true })
+    audio.load()
 
     const onTimeUpdate = () => { if (!seekingRef.current) setCurrentTime(audio.currentTime) }
     const onDuration = () => { if (audio.duration && isFinite(audio.duration)) setDuration(audio.duration) }
@@ -60,6 +72,7 @@ export default function Player() {
       audio.removeEventListener('timeupdate', onTimeUpdate)
       audio.removeEventListener('durationchange', onDuration)
       audio.removeEventListener('ended', onEnded)
+      audio.removeEventListener('error', onError)
     }
   }, [currentTrack?.id])
 

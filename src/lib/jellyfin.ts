@@ -34,7 +34,18 @@ export function getImageUrl(serverUrl: string, itemId: string, tag?: string | nu
 }
 
 export function getStreamUrl(serverUrl: string, itemId: string, token: string): string {
-  return `${serverUrl}/Audio/${itemId}/universal?api_key=${token}&audioCodec=aac&container=mp3&maxStreamingBitrate=320000`
+  // Use /stream endpoint (same as iOS app) — more reliable than /universal for web
+  const params = new URLSearchParams({
+    static: 'true',
+    mediaSourceId: itemId,
+    api_key: token,
+    MaxStreamingBitrate: '320000',
+    AudioCodec: 'mp3',
+    Container: 'mp3,aac',
+    TranscodingContainer: 'mp3',
+    TranscodingProtocol: 'http',
+  })
+  return `${serverUrl}/Audio/${itemId}/stream?${params}`
 }
 
 export async function fetchAlbums(api: Api, userId: string, opts?: {
