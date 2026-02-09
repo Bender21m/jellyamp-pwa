@@ -56,8 +56,18 @@ export const useAuthStore = create<AuthState>()(
         try {
           const auth = await api.authenticateUserByName(username, password)
           if (auth.data?.AccessToken && auth.data?.User?.Id) {
+            const token = auth.data.AccessToken
+            // Add auth interceptor for raw axios calls
+            api.axiosInstance.interceptors.request.use((config) => {
+              const deviceId = localStorage.getItem('jellyamp-device-id') ?? 'unknown'
+              config.headers.set(
+                'Authorization',
+                `MediaBrowser Client="JellyAmp PWA", Device="Browser", DeviceId="${deviceId}", Version="0.1.0", Token="${token}"`
+              )
+              return config
+            })
             set({
-              accessToken: auth.data.AccessToken,
+              accessToken: token,
               userId: auth.data.User.Id,
               username: auth.data.User.Name ?? username,
               isConnecting: false,
@@ -84,6 +94,15 @@ export const useAuthStore = create<AuthState>()(
         if (serverUrl && accessToken) {
           const api = createApi(serverUrl)
           api.accessToken = accessToken
+          // Add auth header interceptor for raw axios calls
+          api.axiosInstance.interceptors.request.use((config) => {
+            const deviceId = localStorage.getItem('jellyamp-device-id') ?? 'unknown'
+            config.headers.set(
+              'Authorization',
+              `MediaBrowser Client="JellyAmp PWA", Device="Browser", DeviceId="${deviceId}", Version="0.1.0", Token="${accessToken}"`
+            )
+            return config
+          })
           set({ api })
         }
       },
