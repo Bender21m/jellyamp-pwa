@@ -132,7 +132,7 @@ export default function AlbumDetail() {
           >
             <img src={imageUrl} alt={album.Name ?? ''} className="w-full h-full object-cover" />
           </motion.div>
-          <div className="flex flex-col justify-end min-w-0">
+          <div className="flex flex-col items-center text-center md:items-start md:text-left justify-end min-w-0">
             <p className="text-xs font-mono uppercase tracking-widest text-text-muted mb-1">Album</p>
             <h1 className="text-2xl md:text-[32px] font-extrabold mb-1 tracking-[-0.03em] leading-tight">{album.Name}</h1>
             {album.AlbumArtist && (
@@ -150,7 +150,7 @@ export default function AlbumDetail() {
               <span>·</span>
               <span>{totalMin} min</span>
             </div>
-            <div className="flex items-center gap-3 mt-5 flex-wrap">
+            <div className="flex items-center gap-3 mt-5 flex-wrap justify-center md:justify-start">
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={() => playAll()}

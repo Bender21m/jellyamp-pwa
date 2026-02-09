@@ -7,6 +7,26 @@ import { fetchAlbums, fetchTracks, getImageUrl, fetchArtistById } from '../lib/j
 import type { BaseItemDto } from '../lib/jellyfin'
 import AlbumCard from '../components/AlbumCard'
 
+type DiscographySort = 'year-newest' | 'year-oldest' | 'name-asc' | 'name-desc'
+
+const sortLabels: Record<DiscographySort, string> = {
+  'year-newest': 'Newest First',
+  'year-oldest': 'Oldest First',
+  'name-asc': 'Name A→Z',
+  'name-desc': 'Name Z→A',
+}
+
+function sortAlbums(albums: BaseItemDto[], sort: DiscographySort): BaseItemDto[] {
+  return [...albums].sort((a, b) => {
+    switch (sort) {
+      case 'year-newest': return (b.ProductionYear ?? 0) - (a.ProductionYear ?? 0)
+      case 'year-oldest': return (a.ProductionYear ?? 0) - (b.ProductionYear ?? 0)
+      case 'name-asc': return (a.Name ?? '').localeCompare(b.Name ?? '')
+      case 'name-desc': return (b.Name ?? '').localeCompare(a.Name ?? '')
+    }
+  })
+}
+
 export default function ArtistDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -15,6 +35,8 @@ export default function ArtistDetail() {
   const [artist, setArtist] = useState<BaseItemDto | null>(null)
   const [albums, setAlbums] = useState<BaseItemDto[]>([])
   const [loading, setLoading] = useState(true)
+  const [discSort, setDiscSort] = useState<DiscographySort>('year-newest')
+  const [showSort, setShowSort] = useState(false)
 
   useEffect(() => {
     if (!api || !userId || !id) return
@@ -27,7 +49,7 @@ export default function ArtistDetail() {
     try {
       const [artistData, albumsRes] = await Promise.all([
         fetchArtistById(api, userId, id),
-        fetchAlbums(api, userId, { artistIds: [id], limit: 100 }),
+        fetchAlbums(api, userId, { artistIds: [id], limit: 200 }),
       ])
       setArtist(artistData)
       setAlbums(albumsRes.Items ?? [])
@@ -37,12 +59,11 @@ export default function ArtistDetail() {
     setLoading(false)
   }
 
-  async function playAll() {
+  async function playAll(shuffle = false) {
     if (!api || !userId || !serverUrl || albums.length === 0) return
     try {
-      // Gather tracks from all albums
       const allTracks: Track[] = []
-      for (const album of albums) {
+      for (const album of sortedAlbums) {
         const tracksRes = await fetchTracks(api, userId, album.Id!)
         const mapped = (tracksRes.Items ?? []).map((t) => ({
           id: t.Id!,
@@ -55,7 +76,14 @@ export default function ArtistDetail() {
         }))
         allTracks.push(...mapped)
       }
-      if (allTracks.length > 0) setTrack(allTracks[0], allTracks, 0)
+      if (allTracks.length > 0) {
+        if (shuffle) {
+          const shuffled = [...allTracks].sort(() => Math.random() - 0.5)
+          setTrack(shuffled[0], shuffled, 0)
+        } else {
+          setTrack(allTracks[0], allTracks, 0)
+        }
+      }
     } catch (e) {
       console.error('Play all failed', e)
     }
@@ -68,25 +96,29 @@ export default function ArtistDetail() {
     ? getImageUrl(serverUrl, artist.Id!, artist.ImageTags.Primary, 400)
     : null
 
-  // Use first album art as fallback backdrop
   const backdropUrl = albums.length > 0 && serverUrl
     ? getImageUrl(serverUrl, albums[0].Id!, albums[0].ImageTags?.Primary, 600)
     : null
 
+  const sortedAlbums = sortAlbums(albums, discSort)
+
   if (loading) {
     return (
       <div className="h-full overflow-y-auto pb-40 md:pb-28 px-4 md:px-8 pt-6">
-        <div className="flex gap-6 mb-8">
-          <div className="w-40 h-40 md:w-52 md:h-52 skeleton rounded-xl shrink-0" />
-          <div className="flex flex-col justify-end gap-3 flex-1">
+        <div className="flex flex-col items-center md:flex-row md:items-start gap-5 md:gap-8 mb-8">
+          <div className="w-44 h-44 md:w-52 md:h-52 skeleton rounded-xl shrink-0" />
+          <div className="flex flex-col items-center md:items-start gap-3 flex-1 w-full">
             <div className="h-4 skeleton rounded w-16" />
             <div className="h-10 skeleton rounded w-2/3" />
             <div className="h-4 skeleton rounded w-24" />
-            <div className="h-10 skeleton rounded-full w-32" />
+            <div className="flex gap-3 mt-1">
+              <div className="h-10 skeleton rounded-full w-32" />
+              <div className="h-10 skeleton rounded-full w-28" />
+            </div>
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 md:gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: 8 }).map((_, i) => (
             <div key={i}>
               <div className="aspect-square skeleton rounded-xl mb-3" />
               <div className="h-4 skeleton rounded w-3/4 mb-2" />
@@ -100,14 +132,10 @@ export default function ArtistDetail() {
 
   if (!artist) return <div className="p-6 text-text-muted">Artist not found</div>
 
-  const totalAlbums = albums.length
-  const trackCountText = `${totalAlbums} album${totalAlbums !== 1 ? 's' : ''}`
-
   return (
     <div className="h-full overflow-y-auto pb-40 md:pb-28">
-      {/* Artist header — clean card-style layout, not hero blowup */}
+      {/* Artist header */}
       <div className="relative overflow-hidden">
-        {/* Subtle blurred backdrop from album art */}
         {backdropUrl && (
           <div className="absolute inset-0 overflow-hidden">
             <img src={backdropUrl} alt="" className="w-full h-full object-cover scale-150 blur-[80px] opacity-15" />
@@ -115,7 +143,7 @@ export default function ArtistDetail() {
           </div>
         )}
 
-        <div className="relative px-4 md:px-8 pt-6 md:pt-10 pb-6 md:pb-8">
+        <div className="relative px-4 md:px-8 pt-5 md:pt-8 pb-6 md:pb-8">
           {/* Back button */}
           <button
             onClick={() => navigate(-1)}
@@ -127,12 +155,13 @@ export default function ArtistDetail() {
             Back
           </button>
 
-          <div className="flex gap-5 md:gap-8 items-start">
-            {/* Artist image or gradient placeholder */}
+          {/* Mobile: centered layout. Desktop: side by side */}
+          <div className="flex flex-col items-center text-center md:flex-row md:items-start md:text-left gap-5 md:gap-8">
+            {/* Artist image */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="w-36 h-36 md:w-52 md:h-52 rounded-xl overflow-hidden shadow-2xl shrink-0 ring-1 ring-white/10"
+              className="w-44 h-44 md:w-52 md:h-52 rounded-xl overflow-hidden shadow-2xl shrink-0 ring-1 ring-white/10"
             >
               {artistImage ? (
                 <img src={artistImage} alt={artist.Name ?? ''} className="w-full h-full object-cover" />
@@ -146,29 +175,30 @@ export default function ArtistDetail() {
             </motion.div>
 
             {/* Info */}
-            <div className="flex flex-col justify-end min-w-0 py-1">
+            <div className="flex flex-col min-w-0 py-1">
               <p className="text-xs font-mono uppercase tracking-widest text-neon-cyan/70 mb-1.5">Artist</p>
               <h1 className="text-2xl md:text-4xl lg:text-[42px] font-black tracking-[-0.03em] leading-tight mb-2">
                 {artist.Name}
               </h1>
-              <p className="text-sm text-text-muted font-mono mb-4">{trackCountText}</p>
-              <div className="flex items-center gap-3">
+              <p className="text-sm text-text-muted font-mono mb-5">
+                {albums.length} album{albums.length !== 1 ? 's' : ''}
+              </p>
+              <div className="flex items-center gap-3 justify-center md:justify-start flex-wrap">
                 <motion.button
                   whileTap={{ scale: 0.95 }}
-                  onClick={playAll}
-                  className="px-7 py-2.5 rounded-full bg-gradient-primary text-deep-black font-semibold text-sm hover:shadow-[0_0_24px_rgba(0,255,221,0.3)] transition-shadow"
+                  onClick={() => playAll(false)}
+                  className="inline-flex items-center gap-2 px-7 py-2.5 rounded-full bg-gradient-primary text-deep-black font-semibold text-sm whitespace-nowrap hover:shadow-[0_0_24px_rgba(0,255,221,0.3)] transition-shadow"
                 >
-                  ▶ Play All
+                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                  Play All
                 </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    playAll()
-                    // TODO: shuffle mode
-                  }}
-                  className="px-5 py-2.5 rounded-full border border-white/10 text-sm text-text-secondary hover:text-text-primary hover:border-white/20 transition-all"
+                  onClick={() => playAll(true)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-white/10 text-sm text-text-secondary whitespace-nowrap hover:text-text-primary hover:border-white/20 transition-all"
                 >
-                  ⟳ Shuffle
+                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" /></svg>
+                  Shuffle
                 </motion.button>
               </div>
             </div>
@@ -180,10 +210,45 @@ export default function ArtistDetail() {
       <div className="px-4 md:px-8 pt-4 md:pt-6">
         <div className="flex items-center justify-between mb-4 md:mb-6">
           <h2 className="text-lg md:text-xl font-bold tracking-[-0.02em]">Discography</h2>
-          <span className="text-xs text-text-muted font-mono">{totalAlbums} release{totalAlbums !== 1 ? 's' : ''}</span>
+
+          {/* Sort dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowSort(!showSort)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-white/5 text-xs text-text-secondary hover:text-text-primary transition-colors"
+            >
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor">
+                <path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z" />
+              </svg>
+              {sortLabels[discSort]}
+            </button>
+            {showSort && (
+              <>
+                <div className="fixed inset-0 z-20" onClick={() => setShowSort(false)} />
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="absolute right-0 top-full mt-1 bg-card border border-white/10 rounded-lg shadow-2xl py-1 z-30 min-w-[160px]"
+                >
+                  {(Object.keys(sortLabels) as DiscographySort[]).map((opt) => (
+                    <button
+                      key={opt}
+                      onClick={() => { setDiscSort(opt); setShowSort(false) }}
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                        discSort === opt ? 'text-neon-cyan bg-neon-cyan/5' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+                      }`}
+                    >
+                      {sortLabels[opt]}
+                    </button>
+                  ))}
+                </motion.div>
+              </>
+            )}
+          </div>
         </div>
+
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
-          {albums.map((a, i) => (
+          {sortedAlbums.map((a, i) => (
             <motion.div key={a.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.3) }}>
               <AlbumCard
                 id={a.Id!}
