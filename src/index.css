@@ -81,6 +81,10 @@ html, body, #root {
   background: linear-gradient(135deg, #00FFDD, #8B5CF6, #FF2D78);
 }
 
+/* Hide scrollbar utility */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* Noise texture overlay */
 .noise::before {
   content: '';

@@ -76,33 +76,29 @@ export default function AlbumDetail() {
 
   if (loading) {
     return (
-      <div className="h-full overflow-y-auto pb-40 md:pb-28">
-        <div className="px-4 md:px-8 pt-5 md:pt-8">
-          {/* Back button skeleton */}
-          <div className="h-8 w-16 skeleton rounded mb-6" />
-          <div className="flex flex-col md:flex-row gap-6 md:gap-8">
-            <div className="w-full md:w-[280px] aspect-square skeleton rounded-xl shrink-0 mx-auto md:mx-0 max-w-[280px]" />
-            <div className="flex-1 space-y-3">
-              <div className="h-8 skeleton rounded w-2/3" />
-              <div className="h-5 skeleton rounded w-1/3" />
-              <div className="h-4 skeleton rounded w-1/4" />
-              <div className="flex gap-3 mt-4">
-                <div className="h-10 w-32 skeleton rounded-full" />
-                <div className="h-10 w-28 skeleton rounded-full" />
-              </div>
+      <div className="h-full overflow-y-auto pb-40 md:pb-28 px-5 md:px-8 pt-6">
+        <div className="h-6 w-12 skeleton rounded mb-4" />
+        <div className="flex flex-col items-center md:flex-row md:items-end gap-6 md:gap-8 mb-10">
+          <div className="w-[220px] md:w-[260px] aspect-square skeleton rounded-2xl shrink-0" />
+          <div className="flex flex-col items-center md:items-start gap-3 flex-1 w-full">
+            <div className="h-8 skeleton rounded w-2/3" />
+            <div className="h-5 skeleton rounded w-1/3" />
+            <div className="h-4 skeleton rounded w-1/4" />
+            <div className="flex gap-3 mt-2">
+              <div className="h-11 skeleton rounded-full w-28" />
+              <div className="h-11 skeleton rounded-full w-24" />
+              <div className="h-11 w-11 skeleton rounded-full" />
             </div>
           </div>
-          <div className="mt-8 space-y-1">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-3 py-3 min-h-[52px]">
-                <div className="w-8 h-4 skeleton rounded" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 skeleton rounded w-2/5" />
-                </div>
-                <div className="w-12 h-4 skeleton rounded" />
-              </div>
-            ))}
-          </div>
+        </div>
+        <div className="space-y-1">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-3 py-3 min-h-[52px]">
+              <div className="w-6 h-4 skeleton rounded" />
+              <div className="flex-1"><div className="h-4 skeleton rounded w-2/5" /></div>
+              <div className="w-10 h-4 skeleton rounded" />
+            </div>
+          ))}
         </div>
       </div>
     )
@@ -110,68 +106,79 @@ export default function AlbumDetail() {
 
   if (!album) return <div className="p-6 text-text-muted">Album not found</div>
 
+  const artistId = album.AlbumArtists?.[0]?.Id
+
   return (
     <div className="h-full overflow-y-auto pb-40 md:pb-28">
-      {/* Back button */}
-      <div className="px-4 md:px-8 pt-4 md:pt-6">
-        <button onClick={() => navigate(-1)} className="text-text-muted hover:text-text-primary transition-colors p-1 -ml-1 mb-2">
-          <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+      <div className="px-5 md:px-8 pt-5 md:pt-6">
+        {/* Back */}
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 text-sm text-text-muted hover:text-text-primary transition-colors mb-5"
+        >
+          <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
             <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
           </svg>
+          Back
         </button>
-      </div>
 
-      {/* Hero - stacks on mobile, side by side on desktop */}
-      <div className="px-4 md:px-8 pb-6 md:pb-8">
-        <div className="flex flex-col items-center md:items-start md:flex-row gap-5 md:gap-8">
+        {/* Hero */}
+        <div className="flex flex-col items-center md:flex-row md:items-end gap-6 md:gap-8 mb-8 md:mb-10">
+          {/* Art */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-[240px] md:w-[280px] aspect-square rounded-xl overflow-hidden shadow-2xl shrink-0 ring-1 ring-white/10"
-            style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 60px rgba(0,255,221,0.06)' }}
+            className="w-[220px] md:w-[260px] aspect-square rounded-2xl overflow-hidden shadow-2xl shrink-0 ring-1 ring-white/10"
           >
             <img src={imageUrl} alt={album.Name ?? ''} className="w-full h-full object-cover" />
           </motion.div>
-          <div className="flex flex-col items-center text-center md:items-start md:text-left justify-end min-w-0">
-            <p className="text-xs font-mono uppercase tracking-widest text-text-muted mb-1">Album</p>
-            <h1 className="text-2xl md:text-[32px] font-extrabold mb-1 tracking-[-0.03em] leading-tight">{album.Name}</h1>
+
+          {/* Info */}
+          <div className="flex flex-col items-center text-center md:items-start md:text-left min-w-0 gap-1">
+            <h1 className="text-xl md:text-3xl font-extrabold tracking-[-0.02em] leading-tight">
+              {album.Name}
+            </h1>
+
             {album.AlbumArtist && (
               <Link
-                to={album.AlbumArtists?.[0]?.Id ? `/artist/${album.AlbumArtists[0].Id}` : '#'}
-                className="text-lg text-text-secondary hover:text-neon-cyan transition-colors"
+                to={artistId ? `/artist/${artistId}` : '#'}
+                className="text-[15px] text-text-secondary hover:text-neon-cyan transition-colors mt-0.5"
               >
                 {album.AlbumArtist}
               </Link>
             )}
-            <div className="flex items-center gap-2 mt-1 text-[13px] text-text-muted font-mono">
-              {album.ProductionYear && <span>{album.ProductionYear}</span>}
-              <span>·</span>
-              <span>{tracks.length} tracks</span>
-              <span>·</span>
-              <span>{totalMin} min</span>
-            </div>
-            <div className="flex items-center gap-3 mt-5 flex-wrap justify-center md:justify-start">
+
+            <p className="text-xs text-text-muted font-mono mt-1">
+              {[
+                album.ProductionYear,
+                `${tracks.length} track${tracks.length !== 1 ? 's' : ''}`,
+                `${totalMin} min`,
+              ].filter(Boolean).join(' · ')}
+            </p>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2.5 mt-4 flex-wrap justify-center md:justify-start">
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={() => playAll()}
-                className="inline-flex items-center gap-2 px-7 py-2.5 rounded-full bg-gradient-primary text-deep-black font-semibold text-sm whitespace-nowrap hover:shadow-[0_0_20px_rgba(0,255,221,0.3)] transition-shadow"
+                className="h-10 inline-flex items-center gap-2 px-5 rounded-full bg-gradient-primary text-deep-black font-semibold text-[13px] whitespace-nowrap"
               >
                 <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                Play All
+                Play
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={shufflePlay}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-white/10 text-sm text-text-secondary whitespace-nowrap hover:text-text-primary hover:border-white/20 transition-all"
+                className="h-10 inline-flex items-center gap-2 px-5 rounded-full border border-white/10 text-[13px] text-text-secondary whitespace-nowrap hover:text-text-primary hover:border-white/20 transition-all"
               >
-                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" /></svg>
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" /></svg>
                 Shuffle
               </motion.button>
               <button
                 onClick={handleFavorite}
-                className={`p-2.5 rounded-full border border-white/10 transition-all min-w-[44px] min-h-[44px] flex items-center justify-center ${isFav ? 'text-neon-pink border-neon-pink/30' : 'text-text-muted hover:text-neon-pink'}`}
+                className={`h-10 w-10 rounded-full border border-white/10 transition-all flex items-center justify-center ${isFav ? 'text-neon-pink border-neon-pink/30' : 'text-text-muted hover:text-neon-pink'}`}
               >
-                <svg viewBox="0 0 24 24" className="w-5 h-5" fill={isFav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={isFav ? 0 : 2}>
+                <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill={isFav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={isFav ? 0 : 2}>
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                 </svg>
               </button>
@@ -180,17 +187,13 @@ export default function AlbumDetail() {
         </div>
       </div>
 
-      {/* Track list */}
-      <div className="px-4 md:px-8 space-y-0.5">
-        {tracks.map((track, i) => (
-          <TrackRow
-            key={track.id}
-            track={track}
-            index={i}
-            allTracks={tracks}
-            showIndex
-          />
-        ))}
+      {/* Tracks */}
+      <div className="px-4 md:px-7">
+        <div className="border-t border-white/5 pt-4">
+          {tracks.map((track, i) => (
+            <TrackRow key={track.id} track={track} index={i} allTracks={tracks} showIndex />
+          ))}
+        </div>
       </div>
     </div>
   )

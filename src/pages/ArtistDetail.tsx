@@ -37,6 +37,7 @@ export default function ArtistDetail() {
   const [loading, setLoading] = useState(true)
   const [discSort, setDiscSort] = useState<DiscographySort>('year-newest')
   const [showSort, setShowSort] = useState(false)
+  const [yearFilter, setYearFilter] = useState<number | null>(null)
 
   useEffect(() => {
     if (!api || !userId || !id) return
@@ -100,7 +101,11 @@ export default function ArtistDetail() {
     ? getImageUrl(serverUrl, albums[0].Id!, albums[0].ImageTags?.Primary, 600)
     : null
 
-  const sortedAlbums = sortAlbums(albums, discSort)
+  // Extract unique years for filter
+  const years = [...new Set(albums.map(a => a.ProductionYear).filter((y): y is number => y != null))].sort((a, b) => b - a)
+
+  const filteredAlbums = yearFilter ? albums.filter(a => a.ProductionYear === yearFilter) : albums
+  const sortedAlbums = sortAlbums(filteredAlbums, discSort)
 
   if (loading) {
     return (
@@ -208,7 +213,7 @@ export default function ArtistDetail() {
 
       {/* Discography */}
       <div className="px-4 md:px-8 pt-4 md:pt-6">
-        <div className="flex items-center justify-between mb-4 md:mb-6">
+        <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg md:text-xl font-bold tracking-[-0.02em]">Discography</h2>
 
           {/* Sort dropdown */}
@@ -246,6 +251,38 @@ export default function ArtistDetail() {
             )}
           </div>
         </div>
+
+        {/* Year filter pills */}
+        {years.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto pb-1 mb-5 scrollbar-hide">
+            <button
+              onClick={() => setYearFilter(null)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                yearFilter === null
+                  ? 'bg-neon-cyan text-deep-black'
+                  : 'bg-surface text-text-muted hover:text-text-primary border border-white/5'
+              }`}
+            >
+              All ({albums.length})
+            </button>
+            {years.map((year) => {
+              const count = albums.filter(a => a.ProductionYear === year).length
+              return (
+                <button
+                  key={year}
+                  onClick={() => setYearFilter(yearFilter === year ? null : year)}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-mono font-medium transition-all ${
+                    yearFilter === year
+                      ? 'bg-neon-cyan text-deep-black'
+                      : 'bg-surface text-text-muted hover:text-text-primary border border-white/5'
+                  }`}
+                >
+                  {year} ({count})
+                </button>
+              )
+            })}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
           {sortedAlbums.map((a, i) => (
