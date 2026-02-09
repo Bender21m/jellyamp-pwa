@@ -87,13 +87,14 @@ export default function AlbumDetail() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-56 h-56 rounded-xl overflow-hidden shadow-2xl shrink-0 ring-1 ring-white/10"
+            className="w-64 h-64 rounded-xl overflow-hidden shadow-2xl shrink-0 ring-1 ring-white/10"
+            style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 60px rgba(0,255,221,0.06)' }}
           >
             <img src={imageUrl} alt={album.Name ?? ''} className="w-full h-full object-cover" />
           </motion.div>
           <div className="flex flex-col justify-end min-w-0">
             <p className="text-xs font-mono uppercase tracking-widest text-text-muted mb-1">Album</p>
-            <h1 className="text-3xl font-extrabold mb-1 truncate">{album.Name}</h1>
+            <h1 className="text-3xl font-extrabold mb-1 truncate tracking-[-0.02em]">{album.Name}</h1>
             {album.AlbumArtist && (
               <Link
                 to={album.AlbumArtists?.[0]?.Id ? `/artist/${album.AlbumArtists[0].Id}` : '#'}

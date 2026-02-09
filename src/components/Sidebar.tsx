@@ -23,39 +23,48 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 shrink-0">
-        <div className="w-9 h-9 rounded-lg bg-gradient-primary flex items-center justify-center shrink-0">
-          <svg viewBox="0 0 24 24" className="w-5 h-5 text-deep-black" fill="currentColor">
-            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-          </svg>
+        <div className="w-9 h-9 shrink-0 relative" style={{ filter: 'drop-shadow(0 0 8px rgba(0, 255, 221, 0.3))' }}>
+          <img src="/logo.svg" alt="JellyAmp" className="w-full h-full" />
         </div>
         {!sidebarCollapsed && (
           <motion.span
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-lg font-bold text-gradient tracking-tight"
+            className="text-lg font-extrabold text-gradient tracking-[-0.03em]"
           >
             JellyAmp
           </motion.span>
         )}
       </div>
 
+      {/* Gradient separator */}
+      <div className="mx-3 h-px bg-gradient-to-r from-transparent via-neon-cyan/20 to-transparent" />
+
       {/* Navigation */}
-      <nav className="flex-1 px-2 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-2 pt-2 space-y-1 overflow-y-auto">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
+            title={sidebarCollapsed ? item.label : undefined}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
+              `relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
                 isActive
-                  ? 'bg-neon-cyan/10 text-neon-cyan'
+                  ? 'bg-neon-cyan/10 text-neon-cyan shadow-[inset_0_0_12px_rgba(0,255,221,0.08)]'
                   : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
               }`
             }
           >
             {({ isActive }) => (
               <>
-                <svg viewBox="0 0 24 24" className={`w-5 h-5 shrink-0 ${isActive ? 'text-neon-cyan' : 'text-text-muted group-hover:text-text-secondary'}`} fill="currentColor">
+                {isActive && (
+                  <motion.div
+                    layoutId="sidebar-active"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-neon-cyan shadow-[0_0_8px_rgba(0,255,221,0.5)]"
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  />
+                )}
+                <svg viewBox="0 0 24 24" className={`w-5 h-5 shrink-0 transition-colors ${isActive ? 'text-neon-cyan' : 'text-text-muted group-hover:text-text-secondary'}`} fill="currentColor">
                   <path d={item.icon} />
                 </svg>
                 {!sidebarCollapsed && (
@@ -69,8 +78,11 @@ export default function Sidebar() {
         ))}
       </nav>
 
+      {/* Gradient separator */}
+      <div className="mx-3 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+
       {/* User */}
-      <div className="px-3 py-4 border-t border-white/5 shrink-0">
+      <div className="px-3 py-4 shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple to-neon-pink flex items-center justify-center text-xs font-bold text-white shrink-0">
             {username?.[0]?.toUpperCase() ?? '?'}

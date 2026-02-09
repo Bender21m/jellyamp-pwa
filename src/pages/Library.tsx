@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth'
 import { useUIStore } from '../stores/ui'
 import type { SortOption } from '../stores/ui'
@@ -10,7 +11,7 @@ import AlbumCard from '../components/AlbumCard'
 import ArtistCard from '../components/ArtistCard'
 import PlaylistCard from '../components/PlaylistCard'
 
-const filters = ['Albums', 'Artists', 'Playlists', 'Recent']
+const filters = ['Artists', 'Albums', 'Playlists', 'Recent']
 
 const sortLabels: Record<SortOption, string> = {
   'name-asc': 'Name A→Z',
@@ -19,9 +20,10 @@ const sortLabels: Record<SortOption, string> = {
   'artist-desc': 'Artist Z→A',
   'year-newest': 'Year ↓',
   'year-oldest': 'Year ↑',
+  'date-added': 'Date Added',
 }
 
-const sortOptions: SortOption[] = ['name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'year-newest', 'year-oldest']
+const sortOptions: SortOption[] = ['name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'year-newest', 'year-oldest', 'date-added']
 
 export default function Library() {
   const { api, userId, serverUrl } = useAuthStore()
@@ -44,6 +46,7 @@ export default function Library() {
         'artist-desc': { sortBy: [ItemSortBy.AlbumArtist, ItemSortBy.SortName], sortOrder: [SortOrder.Descending, SortOrder.Ascending] },
         'year-newest': { sortBy: [ItemSortBy.ProductionYear, ItemSortBy.SortName], sortOrder: [SortOrder.Descending, SortOrder.Ascending] },
         'year-oldest': { sortBy: [ItemSortBy.ProductionYear, ItemSortBy.SortName], sortOrder: [SortOrder.Ascending, SortOrder.Ascending] },
+        'date-added': { sortBy: [ItemSortBy.DateCreated, ItemSortBy.SortName], sortOrder: [SortOrder.Descending, SortOrder.Ascending] },
       }
       const sort = sortMap[sortOption]
 
@@ -72,16 +75,14 @@ export default function Library() {
   const imgUrl = (item: BaseItemDto, size = 300) =>
     serverUrl ? getImageUrl(serverUrl, item.Id!, item.ImageTags?.Primary, size) : ''
 
-  const gridCols = viewMode === 'grid'
-    ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-5'
-    : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4'
+  const gridCols = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-5'
 
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="px-6 pt-6 pb-4 space-y-4 shrink-0">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Library</h1>
+          <h1 className="text-2xl font-extrabold tracking-[-0.02em]">Library</h1>
           <div className="flex items-center gap-2">
             {/* Search */}
             <div className="relative">
@@ -109,7 +110,7 @@ export default function Library() {
           <div className="relative">
             <button
               onClick={() => setShowSort(!showSort)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-white/5 text-xs text-text-secondary hover:text-text-primary transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-white/5 text-xs text-text-secondary hover:text-text-primary transition-colors font-mono"
             >
               <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor">
                 <path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z" />
@@ -161,16 +162,24 @@ export default function Library() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-6 pb-24">
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <motion.div
-              className="w-8 h-8 border-2 border-neon-cyan/30 border-t-neon-cyan rounded-full"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
-            />
-          </div>
+          <SkeletonGrid viewMode={viewMode} type={libraryFilter === 'Artists' ? 'artist' : 'album'} />
         ) : libraryFilter === 'Albums' || libraryFilter === 'Recent' ? (
           albums.length === 0 ? (
-            <EmptyState text="No albums found" />
+            <EmptyState text="No albums found" icon="album" />
+          ) : viewMode === 'list' ? (
+            <div className="space-y-0.5">
+              {albums.map((a, i) => (
+                <motion.div key={a.Id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.01 }}>
+                  <AlbumListRow
+                    id={a.Id!}
+                    name={a.Name ?? 'Unknown'}
+                    artistName={a.AlbumArtist ?? 'Unknown Artist'}
+                    imageUrl={imgUrl(a, 100)}
+                    year={a.ProductionYear ?? undefined}
+                  />
+                </motion.div>
+              ))}
+            </div>
           ) : (
             <div className={gridCols}>
               {albums.map((a, i) => (
@@ -188,7 +197,20 @@ export default function Library() {
           )
         ) : libraryFilter === 'Artists' ? (
           artists.length === 0 ? (
-            <EmptyState text="No artists found" />
+            <EmptyState text="No artists found" icon="artist" />
+          ) : viewMode === 'list' ? (
+            <div className="space-y-0.5">
+              {artists.map((a, i) => (
+                <motion.div key={a.Id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.01 }}>
+                  <ArtistListRow
+                    id={a.Id!}
+                    name={a.Name ?? 'Unknown'}
+                    imageUrl={a.ImageTags?.Primary ? imgUrl(a, 100) : undefined}
+                    albumCount={(a as any).AlbumCount ?? undefined}
+                  />
+                </motion.div>
+              ))}
+            </div>
           ) : (
             <div className={gridCols}>
               {artists.map((a, i) => (
@@ -204,7 +226,7 @@ export default function Library() {
           )
         ) : libraryFilter === 'Playlists' ? (
           playlists.length === 0 ? (
-            <EmptyState text="No playlists yet" />
+            <EmptyState text="No playlists yet" icon="playlist" />
           ) : (
             <div className={gridCols}>
               {playlists.map((p, i) => (
@@ -225,13 +247,101 @@ export default function Library() {
   )
 }
 
-function EmptyState({ text }: { text: string }) {
+/* ── List Row Components ── */
+
+function ArtistListRow({ id, name, imageUrl, albumCount }: { id: string; name: string; imageUrl?: string; albumCount?: number }) {
+  return (
+    <Link to={`/artist/${id}`} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface transition-colors group cursor-pointer">
+      <div className="w-10 h-10 rounded-full overflow-hidden bg-card shrink-0 ring-1 ring-white/5 group-hover:ring-neon-cyan/30 transition-all">
+        {imageUrl ? (
+          <img src={imageUrl} alt={name} className="w-full h-full object-cover" loading="lazy" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-surface">
+            <svg viewBox="0 0 24 24" className="w-5 h-5 text-text-muted" fill="currentColor">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+            </svg>
+          </div>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold truncate group-hover:text-neon-cyan transition-colors">{name}</p>
+      </div>
+      {albumCount !== undefined && (
+        <span className="text-xs text-text-muted font-mono shrink-0">{albumCount} album{albumCount !== 1 ? 's' : ''}</span>
+      )}
+      <svg viewBox="0 0 24 24" className="w-4 h-4 text-text-muted/30 group-hover:text-text-muted shrink-0 transition-colors" fill="currentColor">
+        <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+      </svg>
+    </Link>
+  )
+}
+
+function AlbumListRow({ id, name, artistName, imageUrl, year }: { id: string; name: string; artistName: string; imageUrl: string; year?: number }) {
+  return (
+    <Link to={`/album/${id}`} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface transition-colors group cursor-pointer">
+      <div className="w-12 h-12 rounded-lg overflow-hidden bg-card shrink-0 ring-1 ring-white/5 group-hover:ring-neon-cyan/30 transition-all">
+        <img src={imageUrl} alt={name} className="w-full h-full object-cover" loading="lazy" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold truncate group-hover:text-neon-cyan transition-colors">{name}</p>
+        <p className="text-xs text-text-muted truncate">{artistName}</p>
+      </div>
+      {year && <span className="text-xs text-text-muted font-mono shrink-0">{year}</span>}
+      <svg viewBox="0 0 24 24" className="w-4 h-4 text-text-muted/30 group-hover:text-text-muted shrink-0 transition-colors" fill="currentColor">
+        <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+      </svg>
+    </Link>
+  )
+}
+
+/* ── Skeleton Loader ── */
+
+function SkeletonGrid({ viewMode, type }: { viewMode: string; type: string }) {
+  if (viewMode === 'list') {
+    return (
+      <div className="space-y-1">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3 px-3 py-2 animate-pulse">
+            <div className={`${type === 'artist' ? 'w-10 h-10 rounded-full' : 'w-12 h-12 rounded-lg'} bg-surface`} />
+            <div className="flex-1 space-y-1.5">
+              <div className="h-3.5 bg-surface rounded w-1/3" />
+              {type !== 'artist' && <div className="h-3 bg-surface rounded w-1/5" />}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-5">
+      {Array.from({ length: 14 }).map((_, i) => (
+        <div key={i} className="animate-pulse">
+          <div className={`aspect-square ${type === 'artist' ? 'rounded-full' : 'rounded-xl'} bg-surface mb-3`} />
+          <div className="h-3.5 bg-surface rounded w-3/4 mb-1.5" />
+          <div className="h-3 bg-surface rounded w-1/2" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/* ── Empty State ── */
+
+function EmptyState({ text, icon }: { text: string; icon: string }) {
+  const icons: Record<string, string> = {
+    album: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z',
+    artist: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',
+    playlist: 'M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z',
+  }
   return (
     <div className="flex flex-col items-center justify-center h-64 text-text-muted">
-      <svg viewBox="0 0 24 24" className="w-12 h-12 mb-3 opacity-30" fill="currentColor">
-        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-      </svg>
-      <p className="text-sm">{text}</p>
+      <div className="w-20 h-20 rounded-full bg-surface flex items-center justify-center mb-4">
+        <svg viewBox="0 0 24 24" className="w-10 h-10 opacity-30" fill="currentColor">
+          <path d={icons[icon] ?? icons.album} />
+        </svg>
+      </div>
+      <p className="text-sm font-medium">{text}</p>
+      <p className="text-xs text-text-muted/60 mt-1">Try adjusting your search or filters</p>
     </div>
   )
 }

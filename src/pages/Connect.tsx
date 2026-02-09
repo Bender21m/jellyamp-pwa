@@ -46,10 +46,8 @@ export default function Connect() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.1 }}
         >
-          <div className="w-20 h-20 rounded-2xl bg-gradient-primary flex items-center justify-center mb-6 glow-cyan">
-            <svg viewBox="0 0 24 24" className="w-10 h-10 text-deep-black" fill="currentColor">
-              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-            </svg>
+          <div className="w-24 h-24 mb-6" style={{ filter: 'drop-shadow(0 0 20px rgba(0, 255, 221, 0.3))' }}>
+            <img src="/logo-animated.svg" alt="JellyAmp" className="w-full h-full" />
           </div>
           <h1 className="text-4xl font-extrabold tracking-tight font-[var(--font-display)]">
             <span className="text-gradient">JellyAmp</span>

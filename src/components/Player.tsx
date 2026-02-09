@@ -153,7 +153,8 @@ export default function Player() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/5 bg-card/95 backdrop-blur-xl"
+          className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/5 backdrop-blur-xl"
+          style={{ background: 'linear-gradient(180deg, rgba(10,10,16,0.95) 0%, rgba(5,5,8,0.98) 100%)' }}
         >
           {/* Progress bar */}
           <div
@@ -161,7 +162,7 @@ export default function Player() {
             onMouseDown={handleSeekDrag}
             className="h-1 bg-surface cursor-pointer group relative"
           >
-            <div className="h-full bg-gradient-primary transition-none" style={{ width: `${progress}%` }} />
+            <div className="h-full bg-gradient-primary transition-none shadow-[0_0_8px_rgba(0,255,221,0.3)]" style={{ width: `${progress}%` }} />
             <div
               className="absolute top-1/2 w-3 h-3 rounded-full bg-neon-cyan opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_6px_rgba(0,255,221,0.5)]"
               style={{ left: `${progress}%`, transform: 'translate(-50%, -50%)' }}
@@ -215,7 +216,7 @@ export default function Player() {
 
             {/* Time + Volume + Queue */}
             <div className="flex items-center gap-3 flex-1 justify-end">
-              <span className="text-xs text-text-muted font-mono hidden md:inline">
+              <span className="text-xs text-text-muted hidden md:inline" style={{ fontFamily: 'var(--font-mono)' }}>
                 {formatTime(currentTime)} / {formatTime(duration)}
               </span>
               <div className="hidden sm:flex items-center gap-2">

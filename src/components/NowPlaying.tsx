@@ -95,6 +95,7 @@ export default function NowPlaying() {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: 'spring', damping: 20 }}
               className="w-72 h-72 md:w-80 md:h-80 rounded-2xl overflow-hidden shadow-2xl mb-10 ring-1 ring-white/10"
+              style={{ boxShadow: '0 8px 60px rgba(0, 255, 221, 0.15), 0 0 120px rgba(139, 92, 246, 0.08)' }}
             >
               {currentTrack.imageUrl ? (
                 <img src={currentTrack.imageUrl} alt="" className="w-full h-full object-cover" />

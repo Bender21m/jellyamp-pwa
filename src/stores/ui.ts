@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 type ViewMode = 'grid' | 'list'
-type SortOption = 'name-asc' | 'name-desc' | 'artist-asc' | 'artist-desc' | 'year-newest' | 'year-oldest'
+type SortOption = 'name-asc' | 'name-desc' | 'artist-asc' | 'artist-desc' | 'year-newest' | 'year-oldest' | 'date-added'
 
 interface UIState {
   sidebarCollapsed: boolean
@@ -23,7 +23,7 @@ export const useUIStore = create<UIState>()(
       sidebarCollapsed: false,
       viewMode: 'grid',
       sortOption: 'name-asc',
-      libraryFilter: 'Albums',
+      libraryFilter: 'Artists',
 
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),

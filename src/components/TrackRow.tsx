@@ -41,9 +41,9 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
       }`}
     >
       {showIndex && (
-        <span className={`w-6 text-right text-sm font-mono ${
+        <span className={`w-6 text-right text-sm ${
           isActive ? 'text-neon-cyan' : 'text-text-muted group-hover:text-neon-cyan'
-        }`}>
+        }`} style={{ fontFamily: 'var(--font-mono)' }}>
           {isActive && isPlaying ? (
             <span className="flex items-center justify-end gap-px">
               <span className="w-0.5 h-3 bg-neon-cyan rounded-full animate-pulse" />
@@ -66,7 +66,7 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
           <p className="text-xs text-text-muted truncate">{track.artistName}</p>
         )}
       </div>
-      <span className="text-xs text-text-muted font-mono shrink-0">
+      <span className="text-xs text-text-muted shrink-0" style={{ fontFamily: 'var(--font-mono)' }}>
         {formatDuration(track.duration)}
       </span>
     </motion.div>

@@ -77,18 +77,19 @@ export default function ArtistDetail() {
   return (
     <div className="h-full overflow-y-auto pb-24">
       {/* Hero */}
-      <div className="relative h-64 overflow-hidden">
+      <div className="relative h-72 overflow-hidden">
         {artistImage ? (
           <>
-            <img src={artistImage} alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-deep-black via-deep-black/60 to-transparent" />
+            <img src={artistImage} alt="" className="w-full h-full object-cover scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-deep-black via-deep-black/50 to-deep-black/20" />
+            <div className="absolute inset-0 bg-gradient-to-r from-deep-black/40 to-transparent" />
           </>
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-neon-pink/20 to-purple/20" />
+          <div className="w-full h-full bg-gradient-to-br from-neon-cyan/10 via-purple/15 to-neon-pink/10" />
         )}
         <div className="absolute bottom-0 left-0 right-0 px-6 pb-6">
           <p className="text-xs font-mono uppercase tracking-widest text-text-muted mb-1">Artist</p>
-          <h1 className="text-4xl font-extrabold mb-2">{artist.Name}</h1>
+          <h1 className="text-4xl font-extrabold mb-2 tracking-[-0.02em]">{artist.Name}</h1>
           <div className="flex items-center gap-3">
             <motion.button
               whileTap={{ scale: 0.95 }}
