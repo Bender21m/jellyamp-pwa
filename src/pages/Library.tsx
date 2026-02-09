@@ -1,129 +1,165 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
-import { usePlayerStore, type Track } from '../stores/player'
-import { getItemsApi } from '../lib/jellyfin'
-import { BaseItemKind } from '@jellyfin/sdk/lib/generated-client/models'
+import { useUIStore } from '../stores/ui'
+import type { SortOption } from '../stores/ui'
+import { fetchAlbums, fetchArtists, fetchPlaylists, getImageUrl, SortOrder, ItemSortBy } from '../lib/jellyfin'
+import type { BaseItemDto } from '../lib/jellyfin'
+import FilterPill from '../components/FilterPill'
+import AlbumCard from '../components/AlbumCard'
+import ArtistCard from '../components/ArtistCard'
+import PlaylistCard from '../components/PlaylistCard'
 
-interface Album {
-  id: string
-  name: string
-  artistName: string
-  imageUrl: string
-  year?: number
+const filters = ['Albums', 'Artists', 'Playlists', 'Recent']
+
+const sortLabels: Record<SortOption, string> = {
+  'name-asc': 'Name A→Z',
+  'name-desc': 'Name Z→A',
+  'artist-asc': 'Artist A→Z',
+  'artist-desc': 'Artist Z→A',
+  'year-newest': 'Year ↓',
+  'year-oldest': 'Year ↑',
 }
 
+const sortOptions: SortOption[] = ['name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'year-newest', 'year-oldest']
+
 export default function Library() {
-  const { api, userId, username, logout, serverUrl } = useAuthStore()
-  const { setTrack } = usePlayerStore()
-  const [albums, setAlbums] = useState<Album[]>([])
+  const { api, userId, serverUrl } = useAuthStore()
+  const { viewMode, setViewMode, sortOption, setSortOption, libraryFilter, setLibraryFilter } = useUIStore()
+  const [albums, setAlbums] = useState<BaseItemDto[]>([])
+  const [artists, setArtists] = useState<BaseItemDto[]>([])
+  const [playlists, setPlaylists] = useState<BaseItemDto[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null)
-  const [tracks, setTracks] = useState<Track[]>([])
+  const [search, setSearch] = useState('')
+  const [showSort, setShowSort] = useState(false)
 
-  useEffect(() => {
-    if (!api || !userId) return
-    fetchAlbums()
-  }, [api, userId])
-
-  async function fetchAlbums() {
+  const loadData = useCallback(async () => {
     if (!api || !userId) return
     setLoading(true)
     try {
-      const itemsApi = getItemsApi(api)
-      const { data } = await itemsApi.getItems({
-        userId,
-        includeItemTypes: [BaseItemKind.MusicAlbum],
-        recursive: true,
-        sortBy: ['DateCreated'],
-        sortOrder: ['Descending'],
-        limit: 100,
-        fields: ['PrimaryImageAspectRatio'],
-      })
+      const sortMap: Record<SortOption, { sortBy: ItemSortBy[], sortOrder: SortOrder[] }> = {
+        'name-asc': { sortBy: [ItemSortBy.SortName], sortOrder: [SortOrder.Ascending] },
+        'name-desc': { sortBy: [ItemSortBy.SortName], sortOrder: [SortOrder.Descending] },
+        'artist-asc': { sortBy: [ItemSortBy.AlbumArtist, ItemSortBy.SortName], sortOrder: [SortOrder.Ascending, SortOrder.Ascending] },
+        'artist-desc': { sortBy: [ItemSortBy.AlbumArtist, ItemSortBy.SortName], sortOrder: [SortOrder.Descending, SortOrder.Ascending] },
+        'year-newest': { sortBy: [ItemSortBy.ProductionYear, ItemSortBy.SortName], sortOrder: [SortOrder.Descending, SortOrder.Ascending] },
+        'year-oldest': { sortBy: [ItemSortBy.ProductionYear, ItemSortBy.SortName], sortOrder: [SortOrder.Ascending, SortOrder.Ascending] },
+      }
+      const sort = sortMap[sortOption]
 
-      const mapped: Album[] = (data.Items ?? []).map((item) => ({
-        id: item.Id!,
-        name: item.Name ?? 'Unknown Album',
-        artistName: item.AlbumArtist ?? 'Unknown Artist',
-        imageUrl: `${serverUrl}/Items/${item.Id}/Images/Primary?maxWidth=300&quality=90`,
-        year: item.ProductionYear ?? undefined,
-      }))
-      setAlbums(mapped)
+      const [albumsRes, artistsRes, playlistsRes] = await Promise.all([
+        fetchAlbums(api, userId, { limit: 200, ...sort, searchTerm: search || undefined }),
+        fetchArtists(api, userId, { limit: 200, searchTerm: search || undefined }),
+        fetchPlaylists(api, userId),
+      ])
+      setAlbums(albumsRes.Items ?? [])
+      setArtists(artistsRes.Items ?? [])
+      setPlaylists(playlistsRes.Items ?? [])
     } catch (e) {
-      console.error('Failed to fetch albums', e)
+      console.error('Library fetch error', e)
     }
     setLoading(false)
-  }
+  }, [api, userId, sortOption, search])
 
-  async function fetchAlbumTracks(album: Album) {
-    if (!api || !userId) return
-    setSelectedAlbum(album)
-    try {
-      const itemsApi = getItemsApi(api)
-      const { data } = await itemsApi.getItems({
-        userId,
-        parentId: album.id,
-        includeItemTypes: [BaseItemKind.Audio],
-        sortBy: ['SortName'],
-        sortOrder: ['Ascending'],
-      })
+  useEffect(() => { loadData() }, [loadData])
 
-      const mapped: Track[] = (data.Items ?? []).map((item) => ({
-        id: item.Id!,
-        name: item.Name ?? 'Unknown',
-        albumId: album.id,
-        albumName: album.name,
-        artistName: item.AlbumArtist ?? album.artistName,
-        duration: item.RunTimeTicks ?? 0,
-        imageUrl: album.imageUrl,
-      }))
-      setTracks(mapped)
-    } catch (e) {
-      console.error('Failed to fetch tracks', e)
-    }
-  }
+  // Debounced search
+  useEffect(() => {
+    const t = setTimeout(() => loadData(), 300)
+    return () => clearTimeout(t)
+  }, [search])
 
-  function playTrack(track: Track, index: number) {
-    setTrack(track, tracks, index)
-  }
+  const imgUrl = (item: BaseItemDto, size = 300) =>
+    serverUrl ? getImageUrl(serverUrl, item.Id!, item.ImageTags?.Primary, size) : ''
 
-  function formatDuration(ticks: number) {
-    const seconds = Math.floor(ticks / 10000000)
-    const m = Math.floor(seconds / 60)
-    const s = seconds % 60
-    return `${m}:${s.toString().padStart(2, '0')}`
-  }
+  const gridCols = viewMode === 'grid'
+    ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-5'
+    : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4'
 
   return (
-    <div className="h-full flex flex-col bg-deep-black">
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-text-muted/10">
-        <div className="flex items-center gap-3">
-          {selectedAlbum && (
+      <div className="px-6 pt-6 pb-4 space-y-4 shrink-0">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Library</h1>
+          <div className="flex items-center gap-2">
+            {/* Search */}
+            <div className="relative">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search library..."
+                className="pl-9 pr-4 py-2 bg-surface border border-white/5 rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-neon-cyan/30 focus:ring-1 focus:ring-neon-cyan/10 w-48 transition-all focus:w-64"
+              />
+              <svg viewBox="0 0 24 24" className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" fill="currentColor">
+                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="flex items-center gap-3 overflow-x-auto pb-1">
+          {filters.map((f) => (
+            <FilterPill key={f} label={f} active={libraryFilter === f} onClick={() => setLibraryFilter(f)} />
+          ))}
+          <div className="flex-1" />
+          {/* Sort */}
+          <div className="relative">
             <button
-              onClick={() => setSelectedAlbum(null)}
-              className="text-text-muted hover:text-text-primary transition-colors"
+              onClick={() => setShowSort(!showSort)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-white/5 text-xs text-text-secondary hover:text-text-primary transition-colors"
             >
-              ←
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor">
+                <path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z" />
+              </svg>
+              {sortLabels[sortOption]}
             </button>
-          )}
-          <h1 className="text-xl font-bold text-gradient">
-            {selectedAlbum ? selectedAlbum.name : 'Library'}
-          </h1>
+            {showSort && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="absolute right-0 top-full mt-1 bg-card border border-white/10 rounded-lg shadow-2xl py-1 z-30 min-w-[160px]"
+              >
+                {sortOptions.map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={() => { setSortOption(opt); setShowSort(false) }}
+                    className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                      sortOption === opt ? 'text-neon-cyan bg-neon-cyan/5' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+                    }`}
+                  >
+                    {sortLabels[opt]}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </div>
+          {/* View toggle */}
+          <div className="flex rounded-lg overflow-hidden border border-white/5">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-neon-cyan text-deep-black' : 'bg-surface text-text-muted hover:text-text-primary'}`}
+            >
+              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                <path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 transition-colors ${viewMode === 'list' ? 'bg-neon-cyan text-deep-black' : 'bg-surface text-text-muted hover:text-text-primary'}`}
+            >
+              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-text-muted text-sm font-mono">{username}</span>
-          <button
-            onClick={logout}
-            className="text-text-muted text-xs font-mono uppercase tracking-wider hover:text-neon-pink transition-colors"
-          >
-            Sign Out
-          </button>
-        </div>
-      </header>
+      </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto px-6 pb-24">
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <motion.div
@@ -132,86 +168,70 @@ export default function Library() {
               transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
             />
           </div>
-        ) : selectedAlbum ? (
-          /* Track list */
-          <div>
-            <div className="flex gap-6 mb-8">
-              <img
-                src={selectedAlbum.imageUrl}
-                alt={selectedAlbum.name}
-                className="w-48 h-48 rounded-xl object-cover shadow-2xl"
-              />
-              <div className="flex flex-col justify-end">
-                <p className="text-text-muted text-xs font-mono uppercase tracking-widest mb-1">Album</p>
-                <h2 className="text-3xl font-extrabold mb-1">{selectedAlbum.name}</h2>
-                <p className="text-text-secondary">{selectedAlbum.artistName}</p>
-                {selectedAlbum.year && (
-                  <p className="text-text-muted text-sm mt-1">{selectedAlbum.year}</p>
-                )}
-                <button
-                  onClick={() => tracks.length > 0 && playTrack(tracks[0], 0)}
-                  className="mt-4 px-6 py-2 rounded-full bg-gradient-primary text-deep-black font-semibold text-sm w-fit hover:shadow-[0_0_20px_rgba(0,255,221,0.3)] transition-shadow"
-                >
-                  ▶ Play All
-                </button>
-              </div>
-            </div>
-            <div className="space-y-1">
-              {tracks.map((track, i) => (
-                <motion.div
-                  key={track.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03 }}
-                  onClick={() => playTrack(track, i)}
-                  className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-surface cursor-pointer group transition-colors"
-                >
-                  <span className="text-text-muted text-sm w-6 text-right font-mono group-hover:text-neon-cyan">
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-text-primary truncate group-hover:text-neon-cyan transition-colors">
-                      {track.name}
-                    </p>
-                    <p className="text-text-muted text-sm truncate">{track.artistName}</p>
-                  </div>
-                  <span className="text-text-muted text-sm font-mono">
-                    {formatDuration(track.duration)}
-                  </span>
+        ) : libraryFilter === 'Albums' || libraryFilter === 'Recent' ? (
+          albums.length === 0 ? (
+            <EmptyState text="No albums found" />
+          ) : (
+            <div className={gridCols}>
+              {albums.map((a, i) => (
+                <motion.div key={a.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.015 }}>
+                  <AlbumCard
+                    id={a.Id!}
+                    name={a.Name ?? 'Unknown'}
+                    artistName={a.AlbumArtist ?? 'Unknown Artist'}
+                    imageUrl={imgUrl(a)}
+                    year={a.ProductionYear ?? undefined}
+                  />
                 </motion.div>
               ))}
             </div>
-          </div>
-        ) : (
-          /* Album grid */
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-            {albums.map((album, i) => (
-              <motion.div
-                key={album.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.02, duration: 0.4 }}
-                onClick={() => fetchAlbumTracks(album)}
-                className="group cursor-pointer"
-              >
-                <div className="relative aspect-square rounded-xl overflow-hidden mb-3 bg-card">
-                  <img
-                    src={album.imageUrl}
-                    alt={album.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
+          )
+        ) : libraryFilter === 'Artists' ? (
+          artists.length === 0 ? (
+            <EmptyState text="No artists found" />
+          ) : (
+            <div className={gridCols}>
+              {artists.map((a, i) => (
+                <motion.div key={a.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.015 }}>
+                  <ArtistCard
+                    id={a.Id!}
+                    name={a.Name ?? 'Unknown'}
+                    imageUrl={a.ImageTags?.Primary ? imgUrl(a) : undefined}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-deep-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                <h3 className="text-sm font-semibold truncate group-hover:text-neon-cyan transition-colors">
-                  {album.name}
-                </h3>
-                <p className="text-xs text-text-muted truncate">{album.artistName}</p>
-              </motion.div>
-            ))}
-          </div>
-        )}
+                </motion.div>
+              ))}
+            </div>
+          )
+        ) : libraryFilter === 'Playlists' ? (
+          playlists.length === 0 ? (
+            <EmptyState text="No playlists yet" />
+          ) : (
+            <div className={gridCols}>
+              {playlists.map((p, i) => (
+                <motion.div key={p.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.015 }}>
+                  <PlaylistCard
+                    id={p.Id!}
+                    name={p.Name ?? 'Untitled'}
+                    imageUrl={p.ImageTags?.Primary ? imgUrl(p) : undefined}
+                    trackCount={p.ChildCount ?? undefined}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          )
+        ) : null}
       </div>
+    </div>
+  )
+}
+
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-64 text-text-muted">
+      <svg viewBox="0 0 24 24" className="w-12 h-12 mb-3 opacity-30" fill="currentColor">
+        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+      </svg>
+      <p className="text-sm">{text}</p>
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { Api } from '@jellyfin/sdk'
+import type { Api } from '@jellyfin/sdk'
 import { createApi } from '../lib/jellyfin'
 
 interface AuthState {
@@ -8,6 +8,7 @@ interface AuthState {
   userId: string | null
   username: string | null
   accessToken: string | null
+  serverName: string | null
   api: Api | null
   isConnecting: boolean
   error: string | null
@@ -25,6 +26,7 @@ export const useAuthStore = create<AuthState>()(
       userId: null,
       username: null,
       accessToken: null,
+      serverName: null,
       api: null,
       isConnecting: false,
       error: null,
@@ -34,10 +36,9 @@ export const useAuthStore = create<AuthState>()(
         try {
           const url = serverUrl.replace(/\/+$/, '')
           const api = createApi(url)
-          // Test connection
           const { data } = await api.axiosInstance.get(`${url}/System/Info/Public`)
           if (data?.ServerName) {
-            set({ serverUrl: url, api, isConnecting: false })
+            set({ serverUrl: url, serverName: data.ServerName, api, isConnecting: false })
             return true
           }
           set({ error: 'Invalid Jellyfin server', isConnecting: false })
@@ -49,9 +50,8 @@ export const useAuthStore = create<AuthState>()(
       },
 
       login: async (username: string, password: string) => {
-        const { api, serverUrl } = get()
-        if (!api || !serverUrl) return false
-
+        const { api } = get()
+        if (!api) return false
         set({ isConnecting: true, error: null })
         try {
           const auth = await api.authenticateUserByName(username, password)
@@ -74,12 +74,8 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         set({
-          serverUrl: null,
-          userId: null,
-          username: null,
-          accessToken: null,
-          api: null,
-          error: null,
+          serverUrl: null, userId: null, username: null, accessToken: null,
+          serverName: null, api: null, error: null,
         })
       },
 
@@ -99,6 +95,7 @@ export const useAuthStore = create<AuthState>()(
         userId: state.userId,
         username: state.username,
         accessToken: state.accessToken,
+        serverName: state.serverName,
       }),
     }
   )
