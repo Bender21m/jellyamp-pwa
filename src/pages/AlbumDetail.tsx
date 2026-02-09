@@ -123,11 +123,11 @@ export default function AlbumDetail() {
 
       {/* Hero - stacks on mobile, side by side on desktop */}
       <div className="px-4 md:px-8 pb-6 md:pb-8">
-        <div className="flex flex-col md:flex-row gap-5 md:gap-8">
+        <div className="flex flex-col items-center md:items-start md:flex-row gap-5 md:gap-8">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-[280px] mx-auto md:mx-0 md:w-[280px] aspect-square rounded-xl overflow-hidden shadow-2xl shrink-0 ring-1 ring-white/10"
+            className="w-[240px] md:w-[280px] aspect-square rounded-xl overflow-hidden shadow-2xl shrink-0 ring-1 ring-white/10"
             style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 60px rgba(0,255,221,0.06)' }}
           >
             <img src={imageUrl} alt={album.Name ?? ''} className="w-full h-full object-cover" />
@@ -154,16 +154,18 @@ export default function AlbumDetail() {
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={() => playAll()}
-                className="px-6 py-2.5 rounded-full bg-gradient-primary text-deep-black font-semibold text-sm hover:shadow-[0_0_20px_rgba(0,255,221,0.3)] transition-shadow"
+                className="inline-flex items-center gap-2 px-7 py-2.5 rounded-full bg-gradient-primary text-deep-black font-semibold text-sm whitespace-nowrap hover:shadow-[0_0_20px_rgba(0,255,221,0.3)] transition-shadow"
               >
-                ▶ Play All
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                Play All
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={shufflePlay}
-                className="px-5 py-2.5 rounded-full border border-white/10 text-sm text-text-secondary hover:text-text-primary hover:border-white/20 transition-all"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-white/10 text-sm text-text-secondary whitespace-nowrap hover:text-text-primary hover:border-white/20 transition-all"
               >
-                ⤮ Shuffle
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" /></svg>
+                Shuffle
               </motion.button>
               <button
                 onClick={handleFavorite}

@@ -260,7 +260,7 @@ export default function Library() {
 
 function ArtistListRow({ id, name, imageUrl, albumCount }: { id: string; name: string; imageUrl?: string; albumCount?: number }) {
   return (
-    <Link to={`/artist/${id}`} className="flex items-center gap-4 px-3 md:px-4 py-2.5 min-h-[56px] rounded-lg hover:bg-surface transition-colors group cursor-pointer">
+    <Link to={`/artist/${id}`} className="flex items-center gap-4 px-4 py-2.5 min-h-[56px] rounded-lg hover:bg-surface transition-colors group cursor-pointer">
       <div className="w-12 h-12 rounded-xl overflow-hidden bg-card shrink-0 ring-1 ring-white/5 group-hover:ring-neon-cyan/30 transition-all">
         {imageUrl ? (
           <img src={imageUrl} alt={name} className="w-full h-full object-cover" loading="lazy" />
@@ -287,7 +287,7 @@ function ArtistListRow({ id, name, imageUrl, albumCount }: { id: string; name: s
 
 function AlbumListRow({ id, name, artistName, imageUrl, year, trackCount }: { id: string; name: string; artistName: string; imageUrl: string; year?: number; trackCount?: number }) {
   return (
-    <Link to={`/album/${id}`} className="flex items-center gap-4 px-3 md:px-4 py-2.5 min-h-[64px] rounded-lg hover:bg-surface transition-colors group cursor-pointer">
+    <Link to={`/album/${id}`} className="flex items-center gap-4 px-4 py-2.5 min-h-[64px] rounded-lg hover:bg-surface transition-colors group cursor-pointer">
       <div className="w-14 h-14 rounded-xl overflow-hidden bg-card shrink-0 ring-1 ring-white/5 group-hover:ring-neon-cyan/30 transition-all">
         <img src={imageUrl} alt={name} className="w-full h-full object-cover" loading="lazy" />
       </div>
