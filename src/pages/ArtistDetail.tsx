@@ -40,18 +40,22 @@ export default function ArtistDetail() {
   async function playAll() {
     if (!api || !userId || !serverUrl || albums.length === 0) return
     try {
-      const firstAlbum = albums[0]
-      const tracksRes = await fetchTracks(api, userId, firstAlbum.Id!)
-      const mapped: Track[] = (tracksRes.Items ?? []).map((t) => ({
-        id: t.Id!,
-        name: t.Name ?? 'Unknown',
-        albumId: firstAlbum.Id!,
-        albumName: firstAlbum.Name ?? '',
-        artistName: artist?.Name ?? '',
-        duration: (t.RunTimeTicks ?? 0) / 10000000,
-        imageUrl: getImageUrl(serverUrl, firstAlbum.Id!, firstAlbum.ImageTags?.Primary),
-      }))
-      if (mapped.length > 0) setTrack(mapped[0], mapped, 0)
+      // Gather tracks from all albums
+      const allTracks: Track[] = []
+      for (const album of albums) {
+        const tracksRes = await fetchTracks(api, userId, album.Id!)
+        const mapped = (tracksRes.Items ?? []).map((t) => ({
+          id: t.Id!,
+          name: t.Name ?? 'Unknown',
+          albumId: album.Id!,
+          albumName: album.Name ?? '',
+          artistName: artist?.Name ?? '',
+          duration: (t.RunTimeTicks ?? 0) / 10000000,
+          imageUrl: getImageUrl(serverUrl, album.Id!, album.ImageTags?.Primary),
+        }))
+        allTracks.push(...mapped)
+      }
+      if (allTracks.length > 0) setTrack(allTracks[0], allTracks, 0)
     } catch (e) {
       console.error('Play all failed', e)
     }
@@ -61,24 +65,34 @@ export default function ArtistDetail() {
     serverUrl ? getImageUrl(serverUrl, item.Id!, item.ImageTags?.Primary, size) : ''
 
   const artistImage = artist?.ImageTags?.Primary && serverUrl
-    ? getImageUrl(serverUrl, artist.Id!, artist.ImageTags.Primary, 800)
+    ? getImageUrl(serverUrl, artist.Id!, artist.ImageTags.Primary, 400)
+    : null
+
+  // Use first album art as fallback backdrop
+  const backdropUrl = albums.length > 0 && serverUrl
+    ? getImageUrl(serverUrl, albums[0].Id!, albums[0].ImageTags?.Primary, 600)
     : null
 
   if (loading) {
     return (
-      <div className="h-full overflow-y-auto pb-40 md:pb-28">
-        <div className="h-48 md:h-72 skeleton" />
-        <div className="px-4 md:px-8 pt-6 space-y-4">
-          <div className="h-8 skeleton rounded w-1/3" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 md:gap-6 lg:gap-7 mt-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i}>
-                <div className="aspect-square skeleton rounded-xl mb-3" />
-                <div className="h-4 skeleton rounded w-3/4 mb-2" />
-                <div className="h-3.5 skeleton rounded w-1/2" />
-              </div>
-            ))}
+      <div className="h-full overflow-y-auto pb-40 md:pb-28 px-4 md:px-8 pt-6">
+        <div className="flex gap-6 mb-8">
+          <div className="w-40 h-40 md:w-52 md:h-52 skeleton rounded-xl shrink-0" />
+          <div className="flex flex-col justify-end gap-3 flex-1">
+            <div className="h-4 skeleton rounded w-16" />
+            <div className="h-10 skeleton rounded w-2/3" />
+            <div className="h-4 skeleton rounded w-24" />
+            <div className="h-10 skeleton rounded-full w-32" />
           </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 md:gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i}>
+              <div className="aspect-square skeleton rounded-xl mb-3" />
+              <div className="h-4 skeleton rounded w-3/4 mb-2" />
+              <div className="h-3.5 skeleton rounded w-1/2" />
+            </div>
+          ))}
         </div>
       </div>
     )
@@ -86,47 +100,89 @@ export default function ArtistDetail() {
 
   if (!artist) return <div className="p-6 text-text-muted">Artist not found</div>
 
+  const totalAlbums = albums.length
+  const trackCountText = `${totalAlbums} album${totalAlbums !== 1 ? 's' : ''}`
+
   return (
     <div className="h-full overflow-y-auto pb-40 md:pb-28">
-      {/* Hero banner */}
-      <div className="relative h-48 md:h-72 overflow-hidden">
-        {artistImage ? (
-          <>
-            <img src={artistImage} alt="" className="w-full h-full object-cover scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-deep-black via-deep-black/50 to-deep-black/20" />
-            <div className="absolute inset-0 bg-gradient-to-r from-deep-black/40 to-transparent" />
-          </>
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-neon-cyan/10 via-purple/15 to-neon-pink/10" />
+      {/* Artist header — clean card-style layout, not hero blowup */}
+      <div className="relative overflow-hidden">
+        {/* Subtle blurred backdrop from album art */}
+        {backdropUrl && (
+          <div className="absolute inset-0 overflow-hidden">
+            <img src={backdropUrl} alt="" className="w-full h-full object-cover scale-150 blur-[80px] opacity-15" />
+            <div className="absolute inset-0 bg-gradient-to-b from-deep-black/40 to-deep-black" />
+          </div>
         )}
 
-        {/* Back button */}
-        <button onClick={() => navigate(-1)} className="absolute top-4 left-4 z-10 text-white/70 hover:text-white transition-colors p-2 rounded-full bg-black/30 backdrop-blur-sm">
-          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
-            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-          </svg>
-        </button>
+        <div className="relative px-4 md:px-8 pt-6 md:pt-10 pb-6 md:pb-8">
+          {/* Back button */}
+          <button
+            onClick={() => navigate(-1)}
+            className="mb-4 text-text-muted hover:text-text-primary transition-colors flex items-center gap-1.5 text-sm"
+          >
+            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+            </svg>
+            Back
+          </button>
 
-        <div className="absolute bottom-0 left-0 right-0 px-4 md:px-8 pb-5 md:pb-6">
-          <p className="text-xs font-mono uppercase tracking-widest text-text-muted mb-1">Artist</p>
-          <h1 className="text-3xl md:text-[40px] font-black mb-3 tracking-[-0.03em] leading-tight">{artist.Name}</h1>
-          <div className="flex items-center gap-3">
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={playAll}
-              className="px-6 py-2.5 rounded-full bg-gradient-primary text-deep-black font-semibold text-sm hover:shadow-[0_0_20px_rgba(0,255,221,0.3)] transition-shadow"
+          <div className="flex gap-5 md:gap-8 items-start">
+            {/* Artist image or gradient placeholder */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-36 h-36 md:w-52 md:h-52 rounded-xl overflow-hidden shadow-2xl shrink-0 ring-1 ring-white/10"
             >
-              ▶ Play All
-            </motion.button>
-            <span className="text-[13px] text-text-muted font-mono">{albums.length} album{albums.length !== 1 ? 's' : ''}</span>
+              {artistImage ? (
+                <img src={artistImage} alt={artist.Name ?? ''} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-neon-cyan/20 via-purple/20 to-neon-pink/20 flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" className="w-16 h-16 text-text-muted/30" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                  </svg>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Info */}
+            <div className="flex flex-col justify-end min-w-0 py-1">
+              <p className="text-xs font-mono uppercase tracking-widest text-neon-cyan/70 mb-1.5">Artist</p>
+              <h1 className="text-2xl md:text-4xl lg:text-[42px] font-black tracking-[-0.03em] leading-tight mb-2">
+                {artist.Name}
+              </h1>
+              <p className="text-sm text-text-muted font-mono mb-4">{trackCountText}</p>
+              <div className="flex items-center gap-3">
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={playAll}
+                  className="px-7 py-2.5 rounded-full bg-gradient-primary text-deep-black font-semibold text-sm hover:shadow-[0_0_24px_rgba(0,255,221,0.3)] transition-shadow"
+                >
+                  ▶ Play All
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    playAll()
+                    // TODO: shuffle mode
+                  }}
+                  className="px-5 py-2.5 rounded-full border border-white/10 text-sm text-text-secondary hover:text-text-primary hover:border-white/20 transition-all"
+                >
+                  ⟳ Shuffle
+                </motion.button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Albums */}
-      <div className="px-4 md:px-8 pt-6 md:pt-8">
-        <h2 className="text-lg md:text-xl font-bold mb-4 md:mb-6">Discography</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 md:gap-6 lg:gap-7">
+      {/* Discography */}
+      <div className="px-4 md:px-8 pt-4 md:pt-6">
+        <div className="flex items-center justify-between mb-4 md:mb-6">
+          <h2 className="text-lg md:text-xl font-bold tracking-[-0.02em]">Discography</h2>
+          <span className="text-xs text-text-muted font-mono">{totalAlbums} release{totalAlbums !== 1 ? 's' : ''}</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
           {albums.map((a, i) => (
             <motion.div key={a.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.3) }}>
               <AlbumCard
