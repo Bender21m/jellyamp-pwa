@@ -298,6 +298,25 @@ export default function Settings() {
                 </div>
               </div>
               
+              <div>
+                <label className="block text-xs text-text-muted mb-2">API Secret</label>
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    value={lastfmApiSecret}
+                    onChange={(e) => setLastfmApiSecret(e.target.value)}
+                    placeholder="Enter your Last.fm API secret"
+                    className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm focus:border-neon-cyan/50 focus:outline-none"
+                  />
+                  <button
+                    onClick={handleLastfmApiSecretSubmit}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+              
               {scrobbleSettings.lastfm.apiKey && (
                 <div>
                   <button

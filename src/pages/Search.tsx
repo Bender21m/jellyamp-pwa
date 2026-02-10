@@ -7,6 +7,7 @@ import AlbumCard from '../components/AlbumCard'
 import ArtistCard from '../components/ArtistCard'
 import TrackRow from '../components/TrackRow'
 import TrackContextMenu from '../components/TrackContextMenu'
+import EmptyState from '../components/EmptyState'
 
 export default function Search() {
   const { api, userId, serverUrl } = useAuthStore()
