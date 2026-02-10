@@ -130,16 +130,26 @@ export default function Player() {
     }
     const onCanPlay = () => {
       const targetVolume = muted ? 0 : volume
-      // Always fade in on track change (new track starts)
-      startFadeIn(audio, targetVolume)
+      if (crossfadeMode === 'gapless') {
+        // No fade for gapless — instant volume to avoid dip between segued tracks
+        audio.volume = targetVolume
+      } else {
+        startFadeIn(audio, targetVolume)
+      }
       audio.play().then(() => play()).catch((err) => console.error('[JellyAmp] Play failed:', err))
     }
 
     // If audio is already ready (preloaded), play immediately
+    // For gapless mode with preloaded audio: skip fade-in to avoid volume dip between tracks
+    const isGaplessPreloaded = crossfadeMode === 'gapless' && audio.readyState >= 3
     if (audio.readyState >= 3) {
       const targetVolume = muted ? 0 : volume
-      // Always fade in on track change (new track starts)
-      startFadeIn(audio, targetVolume)
+      if (isGaplessPreloaded) {
+        // Instant start — no fade, no gap
+        audio.volume = targetVolume
+      } else {
+        startFadeIn(audio, targetVolume)
+      }
       audio.play().then(() => play()).catch(() => {})
     } else {
       audio.addEventListener('canplay', onCanPlay, { once: true })
@@ -201,26 +211,26 @@ export default function Player() {
         }
       }
 
-      // Gapless: trigger next track slightly before current ends
-      // This avoids the React render cycle gap between 'ended' event and new audio starting
+      // Gapless: ensure next audio is fully buffered and ready before current ends
+      // We do NOT start it early or overlap — live recordings segue directly
+      // Instead we just make sure it's preloaded so play() is instant on 'ended'
       if (crossfadeMode === 'gapless' && audio.duration && isFinite(audio.duration)) {
         const timeLeft = audio.duration - audio.currentTime
-        if (timeLeft <= 0.15 && timeLeft > 0 && nextAudioRef.current && !nextAudioRef.current.dataset.started) {
-          nextAudioRef.current.dataset.started = 'true'
-          const targetVol = muted ? 0 : volume
-          nextAudioRef.current.volume = targetVol
-          nextAudioRef.current.play().catch(() => {})
-          // Advance to next track in store (audio element swap happens in the effect)
-          next()
+        // Preload aggressively at 15s, then ensure buffered at 3s
+        if (timeLeft <= 15) preloadNext()
+        if (timeLeft <= 3 && nextAudioRef.current) {
+          // Force the browser to buffer by loading
+          if (nextAudioRef.current.readyState < 3) {
+            nextAudioRef.current.load()
+          }
         }
       }
     }
     const onDuration = () => { if (audio.duration && isFinite(audio.duration)) setDuration(audio.duration) }
     const onEnded = () => {
-      // Only call next() if gapless didn't already handle it
-      if (crossfadeMode !== 'gapless' || !nextAudioRef.current?.dataset.started) {
-        next()
-      }
+      // For gapless: the next audio is preloaded, so next() will pick it up
+      // and play() will be near-instant since it's already buffered
+      next()
     }
 
     audio.addEventListener('timeupdate', onTimeUpdate)
