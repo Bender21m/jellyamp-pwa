@@ -24,7 +24,7 @@ function StarRating({ rating }: { rating: number }) {
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((i) => (
-        <svg key={i} viewBox="0 0 24 24" className={`w-3 h-3 ${i <= stars ? 'text-amber-400' : 'text-white/10'}`} fill="currentColor">
+        <svg key={i} viewBox="0 0 24 24" className={`w-3.5 h-3.5 ${i <= stars ? 'text-amber-400' : 'text-white/10'}`} fill="currentColor">
           <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
         </svg>
       ))}
@@ -40,9 +40,9 @@ export default function ArchiveShowCard({ show, recordingCount, hideArtist, onCl
       onClick={onClick}
       className="w-full text-left bg-surface hover:bg-surface-hover rounded-xl p-4 transition-all duration-200 group ring-1 ring-white/5 hover:ring-neon-cyan/20"
     >
-      <div className="flex gap-3">
-        {/* Thumbnail */}
-        <div className="w-14 h-14 rounded-lg overflow-hidden bg-card shrink-0 ring-1 ring-white/5">
+      <div className="flex gap-4">
+        {/* Thumbnail — bigger, rounder */}
+        <div className="w-16 h-16 rounded-xl overflow-hidden bg-card shrink-0 ring-1 ring-white/5 shadow-lg shadow-black/20">
           <img
             src={show.imageUrl}
             alt=""
@@ -52,28 +52,28 @@ export default function ArchiveShowCard({ show, recordingCount, hideArtist, onCl
           />
         </div>
 
-        <div className="flex-1 min-w-0">
-          {/* Artist */}
+        <div className="flex-1 min-w-0 py-0.5">
+          {/* Artist name — prominent */}
           {!hideArtist && show.artist && (
-            <p className="text-xs font-medium text-neon-cyan/80 truncate">{show.artist}</p>
+            <p className="text-[13px] font-semibold text-neon-cyan/90 truncate leading-tight">{show.artist}</p>
           )}
 
-          {/* Date */}
-          <p className="text-sm font-semibold text-text-primary group-hover:text-neon-cyan transition-colors truncate">
+          {/* Date — large, clear */}
+          <p className="text-[15px] font-bold text-text-primary group-hover:text-neon-cyan transition-colors truncate leading-snug mt-0.5">
             {formatDate(show.date)}
           </p>
 
-          {/* Venue */}
+          {/* Venue — readable */}
           {show.venue && (
-            <p className="text-xs text-text-muted truncate mt-0.5">{show.venue}</p>
+            <p className="text-[13px] text-text-secondary truncate mt-0.5 leading-snug">{show.venue}</p>
           )}
 
           {/* Badges row */}
-          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          <div className="flex items-center gap-2.5 mt-2 flex-wrap">
             <ArchiveSourceBadge source={show.source} />
             {show.rating != null && <StarRating rating={show.rating} />}
             {recordingCount != null && recordingCount > 1 && (
-              <span className="text-xs text-text-muted font-mono">{recordingCount} recordings</span>
+              <span className="text-xs text-text-muted font-mono">{recordingCount} rec</span>
             )}
           </div>
         </div>

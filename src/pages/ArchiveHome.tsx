@@ -366,6 +366,29 @@ export default function ArchiveHome() {
               </div>
             )}
 
+            {/* Popular Artists — always visible, horizontal scroll */}
+            <SectionHeader title="🎸 Popular Artists" defaultOpen={pinnedArtists.length === 0}>
+              <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+                {POPULAR_ARTISTS.map((name, i) => (
+                  <motion.button
+                    key={name}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: Math.min(i * 0.02, 0.3) }}
+                    onClick={() => handleSelectArtist(name)}
+                    className="shrink-0 w-28 text-center bg-surface hover:bg-surface-hover rounded-xl p-3 transition-all duration-200 group ring-1 ring-white/5 hover:ring-neon-cyan/20"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-neon-cyan/10 to-neon-cyan/5 flex items-center justify-center mx-auto mb-2 ring-1 ring-neon-cyan/15">
+                      <span className="text-lg font-bold text-neon-cyan/70">{name.charAt(0)}</span>
+                    </div>
+                    <p className="text-xs font-semibold text-text-primary group-hover:text-neon-cyan transition-colors line-clamp-2 leading-tight">
+                      {name}
+                    </p>
+                  </motion.button>
+                ))}
+              </div>
+            </SectionHeader>
+
             {/* Favorite shows */}
             {favShows.length > 0 && (
               <SectionHeader title="Favorite Shows" count={favShows.length}>
@@ -415,35 +438,6 @@ export default function ArchiveHome() {
               </SectionHeader>
             )}
 
-            {/* Popular artists — show when no pinned artists */}
-            {pinnedArtists.length === 0 && (
-              <div className="mb-8">
-                <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted mb-3">Popular Artists</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                  {POPULAR_ARTISTS.map((name, i) => (
-                    <motion.button
-                      key={name}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: Math.min(i * 0.02, 0.3) }}
-                      onClick={() => handleSelectArtist(name)}
-                      className="text-left bg-surface hover:bg-surface-hover rounded-xl p-4 transition-all duration-200 group ring-1 ring-white/5 hover:ring-neon-cyan/20"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-neon-cyan/5 flex items-center justify-center mb-3 ring-1 ring-neon-cyan/10">
-                        <svg viewBox="0 0 24 24" className="w-5 h-5 text-neon-cyan/60" fill="none" stroke="currentColor" strokeWidth={1.5}>
-                          <circle cx="12" cy="12" r="10" />
-                          <circle cx="12" cy="12" r="3" />
-                          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-                        </svg>
-                      </div>
-                      <p className="text-sm font-semibold text-text-primary group-hover:text-neon-cyan transition-colors truncate">
-                        {name}
-                      </p>
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-            )}
           </>
         )}
       </div>
