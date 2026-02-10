@@ -8,11 +8,23 @@ import type { ArchiveShow } from '../lib/archive'
 import ArchiveShowCard from '../components/ArchiveShowCard'
 import EmptyState from '../components/EmptyState'
 
-const POPULAR_ARTISTS = [
-  'Grateful Dead', 'Phish', 'Disco Biscuits', 'Widespread Panic',
-  'String Cheese Incident', 'moe.', "Umphrey's McGee", 'Medeski Martin & Wood',
-  'Trey Anastasio', 'STS9', 'Lotus', 'Galactic', "Gov't Mule",
-  'Dark Star Orchestra', 'Leftover Salmon',
+// Popular artists with a representative show identifier for thumbnails
+const POPULAR_ARTISTS: { name: string; imageId: string }[] = [
+  { name: 'Grateful Dead', imageId: 'gd1977-05-08.shure57.stevenson.29303.flac16' },
+  { name: 'Phish', imageId: 'phish2024-12-31.dsbd.flac24' },
+  { name: 'Disco Biscuits', imageId: 'db2025-12-31.mk4v.cmc1k.r4.flac2496' },
+  { name: 'Widespread Panic', imageId: 'wsp2024-06-28.cmc641.cmc64.sbd.miller.flac24' },
+  { name: 'String Cheese Incident', imageId: 'sci2024-07-19.cmc641.cmc64.sbd.miller.flac24' },
+  { name: 'moe.', imageId: 'moe2024-07-13.AKG414.Nady.sbd.matrix.flac24' },
+  { name: "Umphrey's McGee", imageId: 'um2024-02-03.s.flac16' },
+  { name: 'Medeski Martin & Wood', imageId: 'mmw2006-10-21.flac' },
+  { name: 'Trey Anastasio', imageId: 'tab2024-10-10.DPA4061.flac' },
+  { name: 'STS9', imageId: 'sts92024-10-11.AKG414.flac24' },
+  { name: 'Lotus', imageId: 'lotus2024-12-31.sbd.flac24' },
+  { name: 'Galactic', imageId: 'galactic2005-04-30.flac' },
+  { name: "Gov't Mule", imageId: 'gm2024-12-31.sbd.flac24' },
+  { name: 'Dark Star Orchestra', imageId: 'dso2024-12-31.sbd.flac' },
+  { name: 'Leftover Salmon', imageId: 'los2024-07-21.sbd.flac' },
 ]
 
 function SectionHeader({ title, count, defaultOpen = true, children }: {
@@ -366,23 +378,34 @@ export default function ArchiveHome() {
               </div>
             )}
 
-            {/* Popular Artists — always visible, horizontal scroll */}
+            {/* Popular Artists — always visible, horizontal scroll with real images */}
             <SectionHeader title="🎸 Popular Artists" defaultOpen={pinnedArtists.length === 0}>
               <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
-                {POPULAR_ARTISTS.map((name, i) => (
+                {POPULAR_ARTISTS.map((artist, i) => (
                   <motion.button
-                    key={name}
+                    key={artist.name}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: Math.min(i * 0.02, 0.3) }}
-                    onClick={() => handleSelectArtist(name)}
-                    className="shrink-0 w-28 text-center bg-surface hover:bg-surface-hover rounded-xl p-3 transition-all duration-200 group ring-1 ring-white/5 hover:ring-neon-cyan/20"
+                    onClick={() => handleSelectArtist(artist.name)}
+                    className="shrink-0 w-[120px] text-center bg-surface hover:bg-surface-hover rounded-xl p-3 transition-all duration-200 group ring-1 ring-white/5 hover:ring-neon-cyan/20"
                   >
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-neon-cyan/10 to-neon-cyan/5 flex items-center justify-center mx-auto mb-2 ring-1 ring-neon-cyan/15">
-                      <span className="text-lg font-bold text-neon-cyan/70">{name.charAt(0)}</span>
+                    <div className="w-16 h-16 rounded-full overflow-hidden mx-auto mb-2.5 ring-2 ring-white/10 group-hover:ring-neon-cyan/30 transition-all shadow-lg shadow-black/30">
+                      <img
+                        src={`https://archive.org/services/img/${artist.imageId}`}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={(e) => {
+                          const el = e.target as HTMLImageElement
+                          el.style.display = 'none'
+                          el.parentElement!.classList.add('bg-gradient-to-br', 'from-neon-cyan/10', 'to-neon-cyan/5')
+                          el.parentElement!.innerHTML = `<span class="text-lg font-bold text-neon-cyan/70 flex items-center justify-center w-full h-full">${artist.name.charAt(0)}</span>`
+                        }}
+                      />
                     </div>
-                    <p className="text-xs font-semibold text-text-primary group-hover:text-neon-cyan transition-colors line-clamp-2 leading-tight">
-                      {name}
+                    <p className="text-[13px] font-semibold text-text-primary group-hover:text-neon-cyan transition-colors line-clamp-2 leading-tight">
+                      {artist.name}
                     </p>
                   </motion.button>
                 ))}
