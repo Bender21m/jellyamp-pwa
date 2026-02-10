@@ -5,7 +5,7 @@ import { useAuthStore } from '../stores/auth'
 import { usePlayerStore } from '../stores/player'
 import { fetchPlaylists, fetchFavorites, fetchTracks, createPlaylist, deletePlaylist, addToPlaylist, BaseItemKind } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
-import { getDragData, hasDragData, DRAG_FORMAT } from '../lib/dragdrop'
+import { getDragData, DRAG_FORMAT } from '../lib/dragdrop'
 import logoSvg from '../assets/logo.svg'
 
 const SIDEBAR_ITEM_LIMIT = 8
