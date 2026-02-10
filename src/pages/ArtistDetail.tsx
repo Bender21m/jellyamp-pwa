@@ -445,7 +445,7 @@ export default function ArtistDetail() {
                   className="flex items-center gap-4 px-3 md:px-4 h-[60px] rounded-lg cursor-pointer group transition-colors hover:bg-white/[0.03] odd:bg-white/[0.015]"
                 >
                   {/* Album art */}
-                  <JellyImage src={imgUrl(a, 48)} width={48} height={48} maxWidth={80} alt={a.Name ?? ''} className="rounded-lg shrink-0 ring-1 ring-white/10" />
+                  <JellyImage src={imgUrl(a, 48)} width={48} height={48} maxWidth={80} alt={a.Name ?? ''} className="w-12 h-12 rounded-lg shrink-0 ring-1 ring-white/10" />
                   
                   {/* Album info */}
                   <div className="flex-1 min-w-0">

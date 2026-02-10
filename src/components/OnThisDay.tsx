@@ -92,7 +92,7 @@ export default function OnThisDay() {
                 to={`/album/${album.id}`}
                 className="flex items-center gap-2.5 px-3 py-1.5 rounded-md hover:bg-white/5 transition-colors group"
               >
-                <JellyImage src={album.imageUrl} width={32} height={32} maxWidth={80} className="rounded shrink-0 ring-1 ring-white/10" />
+                <JellyImage src={album.imageUrl} width={32} height={32} maxWidth={80} className="w-8 h-8 rounded shrink-0 ring-1 ring-white/10" />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium truncate text-text-secondary group-hover:text-neon-cyan transition-colors">
                     {album.name}

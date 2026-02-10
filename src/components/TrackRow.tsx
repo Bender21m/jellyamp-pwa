@@ -165,7 +165,7 @@ const TrackRow = React.memo(function TrackRow({ track, index, allTracks, showInd
         </span>
       )}
       {showArt && track.imageUrl && (
-        <JellyImage src={track.imageUrl} width={40} height={40} maxWidth={80} className="rounded-lg shrink-0" />
+        <JellyImage src={track.imageUrl} width={40} height={40} maxWidth={80} className="w-10 h-10 rounded-lg shrink-0" />
       )}
       <div className="flex-1 min-w-0">
         <p className={`text-sm md:text-[15px] truncate transition-colors ${isActive ? 'text-neon-cyan font-semibold' : 'text-text-primary group-hover:text-neon-cyan'}`}>

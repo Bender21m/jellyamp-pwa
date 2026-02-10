@@ -6,8 +6,10 @@ interface JellyImageProps {
   serverUrl?: string
   tag?: string | null
   maxWidth?: number
-  width: number
-  height: number
+  /** Used for the HTML width/height attributes (aspect ratio hint), NOT for CSS sizing */
+  width?: number
+  /** Used for the HTML width/height attributes (aspect ratio hint), NOT for CSS sizing */
+  height?: number
   className?: string
   alt?: string
 }
@@ -22,26 +24,22 @@ export default function JellyImage({ src, itemId, serverUrl, tag, maxWidth, widt
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
 
+  const resolvedMaxWidth = maxWidth ?? width ?? 300
+
   const imgSrc = src ?? (itemId && serverUrl
-    ? `${serverUrl}/Items/${itemId}/Images/Primary?${new URLSearchParams({ maxWidth: (maxWidth ?? width).toString(), quality: '90', ...(tag ? { tag } : {}) })}`
+    ? `${serverUrl}/Items/${itemId}/Images/Primary?${new URLSearchParams({ maxWidth: resolvedMaxWidth.toString(), quality: '90', ...(tag ? { tag } : {}) })}`
     : undefined)
 
   if (!imgSrc || error) {
     return (
-      <div
-        className={`flex items-center justify-center ${className}`}
-        style={{ width, height, backgroundColor: '#12121a' }}
-      >
+      <div className={`flex items-center justify-center bg-[#12121a] ${className}`}>
         {MUSIC_NOTE_ICON}
       </div>
     )
   }
 
   return (
-    <div className={`relative ${className}`} style={{ width, height }}>
-      {!loaded && (
-        <div className="absolute inset-0" style={{ backgroundColor: '#12121a' }} />
-      )}
+    <div className={`relative overflow-hidden bg-[#12121a] ${className}`}>
       <img
         src={imgSrc}
         alt={alt}
@@ -51,8 +49,7 @@ export default function JellyImage({ src, itemId, serverUrl, tag, maxWidth, widt
         decoding="async"
         onLoad={() => setLoaded(true)}
         onError={() => setError(true)}
-        className={`w-full h-full object-cover ${loaded ? '' : 'opacity-0'}`}
-        style={{ transition: 'opacity 0.2s' }}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
       />
     </div>
   )
