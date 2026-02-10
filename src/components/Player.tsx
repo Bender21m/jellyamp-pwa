@@ -219,7 +219,7 @@ export default function Player() {
         case e.code === 'KeyM': toggleMute(); break
         case e.code === 'ArrowUp' && !e.shiftKey: e.preventDefault(); setVolume(Math.min(1, volume + 0.05)); break
         case e.code === 'ArrowDown' && !e.shiftKey: e.preventDefault(); setVolume(Math.max(0, volume - 0.05)); break
-        case e.key === '?' && !e.shiftKey: e.preventDefault(); setShowShortcuts(true); break
+        case e.key === '?': e.preventDefault(); setShowShortcuts(s => !s); break
       }
     }
     window.addEventListener('keydown', handler)
