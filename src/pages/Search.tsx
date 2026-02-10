@@ -14,21 +14,26 @@ export default function Search() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<BaseItemDto[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [contextTrack, setContextTrack] = useState<Track | null>(null)
   const [contextPos, setContextPos] = useState<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     if (!query.trim() || !api || !userId) {
       setResults([])
+      setError(null)
       return
     }
     const t = setTimeout(async () => {
       setLoading(true)
+      setError(null)
       try {
         const res = await searchAll(api, userId, query.trim())
         setResults(res.Items ?? [])
       } catch (e) {
         console.error('Search failed', e)
+        setError('Search failed. Please try again.')
+        setResults([])
       }
       setLoading(false)
     }, 300)
@@ -92,6 +97,33 @@ export default function Search() {
               </div>
             </div>
           </div>
+        ) : error ? (
+          <EmptyState
+            icon={
+              <svg viewBox="0 0 24 24" className="w-16 h-16" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+              </svg>
+            }
+            title="Something went wrong"
+            subtitle={error}
+            action={{
+              label: "Try again",
+              onClick: async () => {
+                if (!api || !userId || !query.trim()) return
+                setLoading(true)
+                setError(null)
+                try {
+                  const res = await searchAll(api, userId, query.trim())
+                  setResults(res.Items ?? [])
+                } catch (e) {
+                  console.error('Search retry failed', e)
+                  setError('Search failed. Please try again.')
+                  setResults([])
+                }
+                setLoading(false)
+              }
+            }}
+          />
         ) : results.length === 0 ? (
           <EmptyState
             icon={

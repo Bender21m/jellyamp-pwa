@@ -12,6 +12,7 @@ export default function Favorites() {
   const navigate = useNavigate()
   const [items, setItems] = useState<BaseItemDto[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!api || !userId) return
@@ -21,11 +22,14 @@ export default function Favorites() {
   async function loadFavorites() {
     if (!api || !userId) return
     setLoading(true)
+    setError(null)
     try {
       const res = await fetchFavorites(api, userId, [BaseItemKind.MusicAlbum, BaseItemKind.MusicArtist])
       setItems(res.Items ?? [])
     } catch (e) {
       console.error('Favorites fetch failed', e)
+      setError('Failed to load favorites. Please try again.')
+      setItems([])
     }
     setLoading(false)
   }
@@ -55,6 +59,20 @@ export default function Favorites() {
               </div>
             ))}
           </div>
+        ) : error ? (
+          <EmptyState
+            icon={
+              <svg viewBox="0 0 24 24" className="w-16 h-16" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+              </svg>
+            }
+            title="Something went wrong"
+            subtitle={error}
+            action={{
+              label: "Try again",
+              onClick: () => loadFavorites()
+            }}
+          />
         ) : items.length === 0 ? (
           <EmptyState
             icon={

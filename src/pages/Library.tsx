@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth'
 import { useUIStore } from '../stores/ui'
 import type { SortOption } from '../stores/ui'
@@ -10,6 +10,7 @@ import FilterPill from '../components/FilterPill'
 import AlbumCard from '../components/AlbumCard'
 import ArtistCard from '../components/ArtistCard'
 import PlaylistCard from '../components/PlaylistCard'
+import EmptyState from '../components/EmptyState'
 
 const filters = ['Artists', 'Albums', 'Playlists', 'Recent']
 
@@ -28,6 +29,7 @@ const sortOptions: SortOption[] = ['name-asc', 'name-desc', 'artist-asc', 'artis
 export default function Library() {
   const { api, userId, serverUrl } = useAuthStore()
   const { viewMode, setViewMode, sortOption, setSortOption, libraryFilter, setLibraryFilter } = useUIStore()
+  const navigate = useNavigate()
   const [albums, setAlbums] = useState<BaseItemDto[]>([])
   const [artists, setArtists] = useState<BaseItemDto[]>([])
   const [playlists, setPlaylists] = useState<BaseItemDto[]>([])
@@ -229,7 +231,15 @@ export default function Library() {
           <SkeletonGrid viewMode={viewMode} type={libraryFilter === 'Artists' ? 'artist' : 'album'} />
         ) : libraryFilter === 'Albums' || libraryFilter === 'Recent' ? (
           albums.length === 0 ? (
-            <EmptyState text="No albums found" icon="album" />
+            <EmptyState
+              icon={
+                <svg viewBox="0 0 24 24" className="w-16 h-16" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z" />
+                </svg>
+              }
+              title="Your library is empty"
+              subtitle="Add some music to your Jellyfin server to get started."
+            />
           ) : viewMode === 'list' ? (
             <div className="space-y-0.5">
               {albums.map((a, i) => (
@@ -262,7 +272,15 @@ export default function Library() {
           )
         ) : libraryFilter === 'Artists' ? (
           artists.length === 0 ? (
-            <EmptyState text="No artists found" icon="artist" />
+            <EmptyState
+              icon={
+                <svg viewBox="0 0 24 24" className="w-16 h-16" fill="currentColor">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+              }
+              title="Your library is empty"
+              subtitle="Add some music to your Jellyfin server to get started."
+            />
           ) : viewMode === 'list' ? (
             <div className="space-y-0.5">
               {artists.map((a, i) => (
@@ -291,7 +309,19 @@ export default function Library() {
           )
         ) : libraryFilter === 'Playlists' ? (
           playlists.length === 0 ? (
-            <EmptyState text="No playlists yet" icon="playlist" />
+            <EmptyState
+              icon={
+                <svg viewBox="0 0 24 24" className="w-16 h-16" fill="currentColor">
+                  <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
+                </svg>
+              }
+              title="No playlists yet"
+              subtitle="Create custom playlists to organize your favorite tracks."
+              action={{
+                label: "Create your first playlist",
+                onClick: () => navigate('/playlists')
+              }}
+            />
           ) : (
             <div className={gridCols}>
               {playlists.map((p, i) => (
