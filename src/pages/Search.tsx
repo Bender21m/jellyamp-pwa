@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuthStore } from '../stores/auth'
 import type { Track } from '../stores/player'
 import { searchAll, getImageUrl, BaseItemKind } from '../lib/jellyfin'

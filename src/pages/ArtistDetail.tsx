@@ -493,7 +493,7 @@ export default function ArtistDetail() {
                     className="flex flex-col items-center gap-2 p-2 hover:bg-white/5 rounded-lg transition-colors min-w-[100px]"
                   >
                     <div className="w-20 h-20 rounded-full overflow-hidden bg-card ring-1 ring-white/5 hover:ring-neon-cyan/40 transition-all">
-                      <JellyImage src={similarImageUrl} width={80} height={80} maxWidth={300} alt={similar.Name ?? ''} className="w-full h-full" />
+                      <JellyImage src={similarImageUrl ?? undefined} width={80} height={80} maxWidth={300} alt={similar.Name ?? ''} className="w-full h-full" />
                     </div>
                     <span className="text-xs text-center font-medium text-text-secondary hover:text-neon-cyan transition-colors max-w-[90px] truncate">
                       {similar.Name ?? 'Unknown Artist'}
