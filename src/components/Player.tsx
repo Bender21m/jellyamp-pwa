@@ -211,18 +211,25 @@ export default function Player() {
         }
       }
 
-      // Gapless: ensure next audio is fully buffered and ready before current ends
-      // We do NOT start it early or overlap — live recordings segue directly
-      // Instead we just make sure it's preloaded so play() is instant on 'ended'
+      // Gapless: preload aggressively, then start next track slightly before current ends
+      // to eliminate the gap caused by event loop delay on 'ended'
       if (crossfadeMode === 'gapless' && audio.duration && isFinite(audio.duration)) {
         const timeLeft = audio.duration - audio.currentTime
-        // Preload aggressively at 15s, then ensure buffered at 3s
+        // Preload aggressively at 15s
         if (timeLeft <= 15) preloadNext()
+        // Force buffer at 3s
         if (timeLeft <= 3 && nextAudioRef.current) {
-          // Force the browser to buffer by loading
           if (nextAudioRef.current.readyState < 3) {
             nextAudioRef.current.load()
           }
+        }
+        // Start next track ~150ms before current ends for seamless transition
+        if (timeLeft <= 0.15 && timeLeft > 0 && nextAudioRef.current && nextAudioRef.current.paused && nextAudioRef.current.readyState >= 3) {
+          const targetVolume = muted ? 0 : volume
+          nextAudioRef.current.volume = targetVolume
+          nextAudioRef.current.play().catch(() => {})
+          // Advance to next track in the store
+          next()
         }
       }
     }

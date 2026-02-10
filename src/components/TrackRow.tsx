@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { usePlayerStore, type Track } from '../stores/player'
 import { useToastStore } from '../stores/toast'
@@ -22,7 +21,6 @@ interface TrackRowProps {
 export default function TrackRow({ track, index, allTracks, showIndex = true, showArt = false, onPlay, onContextMenu, isSelected = false, isFocused = false, onSelectionClick }: TrackRowProps) {
   const { currentTrack, setTrack, isPlaying, addToQueue, playNext } = usePlayerStore()
   const { addToast } = useToastStore()
-  const navigate = useNavigate()
   const isActive = currentTrack?.id === track.id
   const [swipeOffset, setSwipeOffset] = useState(0)
   const [swipeAction, setSwipeAction] = useState<'queue' | 'play-next' | null>(null)
@@ -35,20 +33,6 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
     }
     if (onPlay) onPlay()
     else setTrack(track, allTracks, index)
-  }
-
-  function handleArtistClick(e: React.MouseEvent) {
-    e.stopPropagation()
-    if (track.artistId) {
-      navigate(`/artist/${track.artistId}`)
-    }
-  }
-
-  function handleAlbumClick(e: React.MouseEvent) {
-    e.stopPropagation()
-    if (track.albumId) {
-      navigate(`/album/${track.albumId}`)
-    }
   }
 
   function formatDuration(seconds: number) {
@@ -193,32 +177,11 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
         <p className={`text-sm md:text-[15px] truncate transition-colors ${isActive ? 'text-neon-cyan font-semibold' : 'text-text-primary group-hover:text-neon-cyan'}`}>
           {track.name}
         </p>
-        <div className="text-[13px] text-text-muted truncate flex items-center gap-1">
-          {track.artistName && (
-            <>
-              <span className="hidden md:contents">
-                <button
-                  onClick={handleArtistClick}
-                  className="text-text-muted hover:text-neon-cyan transition-colors cursor-pointer truncate"
-                  title={`Go to ${track.artistName}`}
-                >
-                  {track.artistName}
-                </button>
-                {track.albumName && <span className="text-text-muted/60">•</span>}
-              </span>
-              <span className="md:hidden truncate">{track.artistName}{track.albumName ? ` · ${track.albumName}` : ''}</span>
-            </>
-          )}
-          {track.albumName && (
-            <button
-              onClick={handleAlbumClick}
-              className="text-text-muted hover:text-neon-cyan transition-colors cursor-pointer truncate hidden md:inline"
-              title={`Go to ${track.albumName}`}
-            >
-              {track.albumName}
-            </button>
-          )}
-        </div>
+        {track.artistName && (
+          <p className="text-[13px] text-text-muted truncate">
+            {track.artistName}
+          </p>
+        )}
       </div>
       <span className="text-[13px] text-text-muted shrink-0 font-mono">
         {formatDuration(track.duration)}
