@@ -7,8 +7,11 @@ import { fetchTracks, getImageUrl, toggleFavorite } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import { useAlbumColors } from '../hooks/useAlbumColors'
 import { parseShowDate, formatShowDate } from '../lib/dateParser'
+import { parseVenue } from '../lib/venueParser'
+import { detectSetBreaks } from '../lib/setBreaks'
 import TrackRow from '../components/TrackRow'
 import TrackContextMenu from '../components/TrackContextMenu'
+import SetBreakIndicator from '../components/SetBreakIndicator'
 
 export default function AlbumDetail() {
   const { id } = useParams<{ id: string }>()
@@ -188,6 +191,20 @@ export default function AlbumDetail() {
               ].filter(Boolean).join(' · ')}
             </p>
 
+            {/* Venue - only show if venue data exists */}
+            {(() => {
+              const venue = parseVenue(album);
+              if (!venue) return null;
+              return (
+                <div className="flex items-center gap-1.5 text-xs text-text-muted font-mono mt-2">
+                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 shrink-0" fill="currentColor">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                  </svg>
+                  <span>{venue}</span>
+                </div>
+              );
+            })()}
+
             {/* Actions */}
             <div className="flex items-center gap-3 mt-4 flex-wrap justify-center md:justify-start self-stretch">
               <motion.button
@@ -223,21 +240,39 @@ export default function AlbumDetail() {
       {/* Tracks */}
       <div className="px-4 md:px-8 pr-6 md:pr-8">
         <div className="border-t border-white/5 pt-4">
-          {tracks.map((track, i) => (
-            <div key={track.id} className={i < tracks.length - 1 ? 'border-b border-white/5' : ''}>
-              <TrackRow
-                track={track}
-                index={i}
-                allTracks={tracks}
-                showIndex
-                onContextMenu={(e) => {
-                  e.preventDefault()
-                  setContextTrack(track)
-                  setContextPos({ x: e.clientX, y: e.clientY })
-                }}
-              />
-            </div>
-          ))}
+          {(() => {
+            const setBreaks = detectSetBreaks(tracks)
+            const elements: React.ReactElement[] = []
+            
+            tracks.forEach((track, i) => {
+              // Check if there's a set break before this track
+              const breakBefore = setBreaks.find(b => b.position === i)
+              if (breakBefore) {
+                elements.push(
+                  <SetBreakIndicator key={`break-${i}`} label={breakBefore.label} />
+                )
+              }
+              
+              // Add the track
+              elements.push(
+                <div key={track.id} className={i < tracks.length - 1 ? 'border-b border-white/5' : ''}>
+                  <TrackRow
+                    track={track}
+                    index={i}
+                    allTracks={tracks}
+                    showIndex
+                    onContextMenu={(e) => {
+                      e.preventDefault()
+                      setContextTrack(track)
+                      setContextPos({ x: e.clientX, y: e.clientY })
+                    }}
+                  />
+                </div>
+              )
+            })
+            
+            return elements
+          })()}
         </div>
       </div>
 

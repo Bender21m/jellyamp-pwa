@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
-import { fetchAlbums, fetchTracks, getImageUrl, fetchArtistById, toggleFavorite } from '../lib/jellyfin'
+import { fetchAlbums, fetchTracks, getImageUrl, fetchArtistById, toggleFavorite, fetchSimilarArtists } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import { useAlbumColors } from '../hooks/useAlbumColors'
 import AlbumCard from '../components/AlbumCard'
@@ -35,6 +35,7 @@ export default function ArtistDetail() {
   const { setTrack } = usePlayerStore()
   const [artist, setArtist] = useState<BaseItemDto | null>(null)
   const [albums, setAlbums] = useState<BaseItemDto[]>([])
+  const [similarArtists, setSimilarArtists] = useState<BaseItemDto[]>([])
   const [loading, setLoading] = useState(true)
   const [discSort, setDiscSort] = useState<DiscographySort>('year-newest')
   const [showSort, setShowSort] = useState(false)
@@ -50,13 +51,15 @@ export default function ArtistDetail() {
     if (!api || !userId || !id || !serverUrl) return
     setLoading(true)
     try {
-      const [artistData, albumsRes] = await Promise.all([
+      const [artistData, albumsRes, similarRes] = await Promise.all([
         fetchArtistById(api, userId, id),
         fetchAlbums(api, userId, { artistIds: [id], limit: 200 }),
+        fetchSimilarArtists(api, userId, id),
       ])
       setArtist(artistData)
       setIsFav(artistData?.UserData?.IsFavorite ?? false)
       setAlbums(albumsRes.Items ?? [])
+      setSimilarArtists(similarRes)
     } catch (e) {
       console.error('Failed to load artist', e)
     }
@@ -336,6 +339,54 @@ export default function ArtistDetail() {
           ))}
         </div>
       </div>
+
+      {/* Similar Artists */}
+      {similarArtists.length > 0 && (
+        <div className="px-4 md:px-8 pt-8 md:pt-10 pb-4">
+          <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted mb-4">Similar Artists</h2>
+          <div className="flex overflow-x-auto gap-4 pb-2 scrollbar-hide">
+            {similarArtists.map((similar, i) => {
+              const similarImageUrl = similar.ImageTags?.Primary && serverUrl
+                ? getImageUrl(serverUrl, similar.Id!, similar.ImageTags.Primary, 80)
+                : null
+              
+              return (
+                <motion.div 
+                  key={similar.Id} 
+                  initial={{ opacity: 0, x: 20 }} 
+                  animate={{ opacity: 1, x: 0 }} 
+                  transition={{ delay: Math.min(i * 0.05, 0.3) }}
+                  className="shrink-0"
+                >
+                  <Link
+                    to={`/artist/${similar.Id}`}
+                    className="flex flex-col items-center gap-2 p-2 hover:bg-white/5 rounded-lg transition-colors min-w-[100px]"
+                  >
+                    <div className="w-20 h-20 rounded-full overflow-hidden bg-card ring-1 ring-white/5 hover:ring-neon-cyan/40 transition-all">
+                      {similarImageUrl ? (
+                        <img
+                          src={similarImageUrl}
+                          alt={similar.Name ?? ''}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-neon-cyan/20 via-purple/20 to-neon-pink/20 flex items-center justify-center">
+                          <svg viewBox="0 0 24 24" className="w-8 h-8 text-text-muted/30" fill="currentColor">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs text-center font-medium text-text-secondary hover:text-neon-cyan transition-colors max-w-[90px] truncate">
+                      {similar.Name ?? 'Unknown Artist'}
+                    </span>
+                  </Link>
+                </motion.div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -4,8 +4,10 @@ import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
 import { fetchPlaylistTracks, getImageUrl } from '../lib/jellyfin'
+import { detectSetBreaks } from '../lib/setBreaks'
 import TrackRow from '../components/TrackRow'
 import TrackContextMenu from '../components/TrackContextMenu'
+import SetBreakIndicator from '../components/SetBreakIndicator'
 
 export default function PlaylistDetail() {
   const { id } = useParams<{ id: string }>()
@@ -125,21 +127,39 @@ export default function PlaylistDetail() {
 
       {/* Tracks */}
       <div className="px-4 md:px-8 space-y-0.5">
-        {tracks.map((track, i) => (
-          <TrackRow
-            key={`${track.id}-${i}`}
-            track={track}
-            index={i}
-            allTracks={tracks}
-            showIndex
-            showArt
-            onContextMenu={(e) => {
-              e.preventDefault()
-              setContextTrack(track)
-              setContextPos({ x: e.clientX, y: e.clientY })
-            }}
-          />
-        ))}
+        {(() => {
+          const setBreaks = detectSetBreaks(tracks)
+          const elements: React.ReactElement[] = []
+          
+          tracks.forEach((track, i) => {
+            // Check if there's a set break before this track
+            const breakBefore = setBreaks.find(b => b.position === i)
+            if (breakBefore) {
+              elements.push(
+                <SetBreakIndicator key={`break-${i}`} label={breakBefore.label} />
+              )
+            }
+            
+            // Add the track
+            elements.push(
+              <TrackRow
+                key={`${track.id}-${i}`}
+                track={track}
+                index={i}
+                allTracks={tracks}
+                showIndex
+                showArt
+                onContextMenu={(e) => {
+                  e.preventDefault()
+                  setContextTrack(track)
+                  setContextPos({ x: e.clientX, y: e.clientY })
+                }}
+              />
+            )
+          })
+          
+          return elements
+        })()}
       </div>
 
       <TrackContextMenu

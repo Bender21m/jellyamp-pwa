@@ -263,5 +263,22 @@ export async function fetchArtistById(api: Api, userId: string, artistId: string
   return null
 }
 
+export async function fetchSimilarArtists(api: Api, userId: string, artistId: string): Promise<BaseItemDto[]> {
+  try {
+    const { data } = await api.axiosInstance.get(`${api.basePath}/Artists/${artistId}/Similar`, {
+      params: {
+        UserId: userId,
+        Limit: 8,
+        Fields: 'PrimaryImageAspectRatio'
+      }
+    })
+    return data.Items ?? []
+  } catch (error) {
+    // Similar artists not available (many Jellyfin servers don't have this data)
+    console.debug('Similar artists not available:', error)
+    return []
+  }
+}
+
 export { jellyfin, getItemsApi, getArtistsApi, getImageApi, BaseItemKind, SortOrder, ItemSortBy, ItemFields }
 export type { BaseItemDto }
