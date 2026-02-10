@@ -6,12 +6,15 @@ import type { BaseItemDto } from '../lib/jellyfin'
 import AlbumCard from '../components/AlbumCard'
 import ArtistCard from '../components/ArtistCard'
 import TrackRow from '../components/TrackRow'
+import TrackContextMenu from '../components/TrackContextMenu'
 
 export default function Search() {
   const { api, userId, serverUrl } = useAuthStore()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<BaseItemDto[]>([])
   const [loading, setLoading] = useState(false)
+  const [contextTrack, setContextTrack] = useState<Track | null>(null)
+  const [contextPos, setContextPos] = useState<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     if (!query.trim() || !api || !userId) {
@@ -119,7 +122,19 @@ export default function Search() {
                 <h2 className="text-lg font-bold mb-4">Tracks</h2>
                 <div className="space-y-0.5">
                   {mappedTracks.slice(0, 10).map((track, i) => (
-                    <TrackRow key={track.id} track={track} index={i} allTracks={mappedTracks} showIndex={false} showArt />
+                    <TrackRow
+                      key={track.id}
+                      track={track}
+                      index={i}
+                      allTracks={mappedTracks}
+                      showIndex={false}
+                      showArt
+                      onContextMenu={(e) => {
+                        e.preventDefault()
+                        setContextTrack(track)
+                        setContextPos({ x: e.clientX, y: e.clientY })
+                      }}
+                    />
                   ))}
                 </div>
               </section>
@@ -127,6 +142,12 @@ export default function Search() {
           </div>
         )}
       </div>
+
+      <TrackContextMenu
+        track={contextTrack}
+        position={contextPos}
+        onClose={() => { setContextTrack(null); setContextPos(null) }}
+      />
     </div>
   )
 }

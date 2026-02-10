@@ -6,6 +6,7 @@ import { usePlayerStore, type Track } from '../stores/player'
 import { fetchTracks, getImageUrl, toggleFavorite } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import TrackRow from '../components/TrackRow'
+import TrackContextMenu from '../components/TrackContextMenu'
 
 export default function AlbumDetail() {
   const { id } = useParams<{ id: string }>()
@@ -16,6 +17,8 @@ export default function AlbumDetail() {
   const [tracks, setTracks] = useState<Track[]>([])
   const [loading, setLoading] = useState(true)
   const [isFav, setIsFav] = useState(false)
+  const [contextTrack, setContextTrack] = useState<Track | null>(null)
+  const [contextPos, setContextPos] = useState<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     if (!api || !userId || !id) return
@@ -193,11 +196,27 @@ export default function AlbumDetail() {
         <div className="border-t border-white/5 pt-4">
           {tracks.map((track, i) => (
             <div key={track.id} className={i < tracks.length - 1 ? 'border-b border-white/5' : ''}>
-              <TrackRow track={track} index={i} allTracks={tracks} showIndex />
+              <TrackRow
+                track={track}
+                index={i}
+                allTracks={tracks}
+                showIndex
+                onContextMenu={(e) => {
+                  e.preventDefault()
+                  setContextTrack(track)
+                  setContextPos({ x: e.clientX, y: e.clientY })
+                }}
+              />
             </div>
           ))}
         </div>
       </div>
+
+      <TrackContextMenu
+        track={contextTrack}
+        position={contextPos}
+        onClose={() => { setContextTrack(null); setContextPos(null) }}
+      />
     </div>
   )
 }

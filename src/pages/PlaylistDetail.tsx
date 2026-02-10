@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
 import { fetchTracks, getImageUrl } from '../lib/jellyfin'
 import TrackRow from '../components/TrackRow'
+import TrackContextMenu from '../components/TrackContextMenu'
 
 export default function PlaylistDetail() {
   const { id } = useParams<{ id: string }>()
@@ -14,6 +15,8 @@ export default function PlaylistDetail() {
   const [playlist, setPlaylist] = useState<{ name: string; imageUrl?: string } | null>(null)
   const [tracks, setTracks] = useState<Track[]>([])
   const [loading, setLoading] = useState(true)
+  const [contextTrack, setContextTrack] = useState<Track | null>(null)
+  const [contextPos, setContextPos] = useState<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     if (!api || !userId || !id) return
@@ -123,9 +126,27 @@ export default function PlaylistDetail() {
       {/* Tracks */}
       <div className="px-4 md:px-8 space-y-0.5">
         {tracks.map((track, i) => (
-          <TrackRow key={`${track.id}-${i}`} track={track} index={i} allTracks={tracks} showIndex showArt />
+          <TrackRow
+            key={`${track.id}-${i}`}
+            track={track}
+            index={i}
+            allTracks={tracks}
+            showIndex
+            showArt
+            onContextMenu={(e) => {
+              e.preventDefault()
+              setContextTrack(track)
+              setContextPos({ x: e.clientX, y: e.clientY })
+            }}
+          />
         ))}
       </div>
+
+      <TrackContextMenu
+        track={contextTrack}
+        position={contextPos}
+        onClose={() => { setContextTrack(null); setContextPos(null) }}
+      />
     </div>
   )
 }
