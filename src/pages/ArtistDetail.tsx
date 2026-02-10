@@ -256,7 +256,7 @@ export default function ArtistDetail() {
           <div className="flex gap-2.5 overflow-x-auto pb-5 mb-5 border-b border-white/5 scrollbar-hide">
             <button
               onClick={() => setYearFilter(null)}
-              className={`shrink-0 px-4 py-2 rounded-full text-[13px] font-medium transition-all whitespace-nowrap ${
+              className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                 yearFilter === null
                   ? 'bg-neon-cyan text-deep-black shadow-[0_0_12px_rgba(0,255,221,0.3)]'
                   : 'bg-surface text-text-muted hover:text-text-primary border border-white/5'
@@ -270,7 +270,7 @@ export default function ArtistDetail() {
                 <button
                   key={year}
                   onClick={() => setYearFilter(yearFilter === year ? null : year)}
-                  className={`shrink-0 px-4 py-2 rounded-full text-[13px] font-mono font-medium transition-all whitespace-nowrap ${
+                  className={`shrink-0 px-4 py-2 rounded-full text-sm font-mono font-medium transition-all whitespace-nowrap ${
                     yearFilter === year
                       ? 'bg-neon-cyan text-deep-black shadow-[0_0_12px_rgba(0,255,221,0.3)]'
                       : 'bg-surface text-text-muted hover:text-text-primary border border-white/5'
@@ -283,7 +283,7 @@ export default function ArtistDetail() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 md:gap-6 lg:gap-7">
           {sortedAlbums.map((a, i) => (
             <motion.div key={a.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.3) }}>
               <AlbumCard
