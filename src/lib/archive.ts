@@ -261,6 +261,98 @@ export async function getArtistYears(
   }
 }
 
+/**
+ * "On This Day" — shows performed on this month+day across all years.
+ * Generates OR clauses for each year from startYear to now.
+ */
+export async function getShowsOnThisDay(
+  month: number,
+  day: number,
+  options?: { rows?: number; startYear?: number }
+): Promise<{ shows: ArchiveShow[]; total: number }> {
+  const { rows = 12, startYear = 1965 } = options ?? {}
+  const mm = String(month).padStart(2, '0')
+  const dd = String(day).padStart(2, '0')
+  const currentYear = new Date().getFullYear()
+
+  const dateClauses = []
+  for (let y = startYear; y <= currentYear; y++) {
+    dateClauses.push(`date:${y}-${mm}-${dd}`)
+  }
+
+  const q = `collection:etree AND (${dateClauses.join(' OR ')})`
+  const params = new URLSearchParams({
+    q,
+    'fl[]': 'identifier,title,creator,date,venue,avg_rating,num_reviews,source',
+    'sort[]': 'avg_rating desc',
+    rows: String(rows),
+    output: 'json',
+  })
+
+  try {
+    const res = await fetch(`https://archive.org/advancedsearch.php?${params.toString()}`)
+    if (!res.ok) throw new Error(`Archive on-this-day failed: ${res.status}`)
+    const data = await res.json()
+    const docs: Record<string, unknown>[] = data?.response?.docs ?? []
+    const total: number = data?.response?.numFound ?? 0
+
+    const shows: ArchiveShow[] = docs.map((doc) => ({
+      identifier: String(doc.identifier ?? ''),
+      title: String(doc.title ?? ''),
+      artist: String(doc.creator ?? ''),
+      date: String(doc.date ?? '').slice(0, 10),
+      venue: String(doc.venue ?? ''),
+      source: String(doc.source ?? ''),
+      rating: typeof doc.avg_rating === 'number' ? doc.avg_rating : undefined,
+      reviewCount: typeof doc.num_reviews === 'number' ? doc.num_reviews : undefined,
+      imageUrl: getThumbnailUrl(String(doc.identifier ?? '')),
+    }))
+
+    return { shows, total }
+  } catch (err) {
+    console.error('[Archive] getShowsOnThisDay error:', err)
+    return { shows: [], total: 0 }
+  }
+}
+
+/**
+ * Recently uploaded shows — sorted by addeddate desc.
+ */
+export async function getRecentlyAdded(
+  options?: { rows?: number }
+): Promise<ArchiveShow[]> {
+  const { rows = 12 } = options ?? {}
+  const params = new URLSearchParams({
+    q: 'collection:etree',
+    'fl[]': 'identifier,title,creator,date,venue,avg_rating,num_reviews,source',
+    'sort[]': 'addeddate desc',
+    rows: String(rows),
+    output: 'json',
+  })
+
+  try {
+    const res = await fetch(`https://archive.org/advancedsearch.php?${params.toString()}`)
+    if (!res.ok) throw new Error(`Archive recently-added failed: ${res.status}`)
+    const data = await res.json()
+    const docs: Record<string, unknown>[] = data?.response?.docs ?? []
+
+    return docs.map((doc) => ({
+      identifier: String(doc.identifier ?? ''),
+      title: String(doc.title ?? ''),
+      artist: String(doc.creator ?? ''),
+      date: String(doc.date ?? '').slice(0, 10),
+      venue: String(doc.venue ?? ''),
+      source: String(doc.source ?? ''),
+      rating: typeof doc.avg_rating === 'number' ? doc.avg_rating : undefined,
+      reviewCount: typeof doc.num_reviews === 'number' ? doc.num_reviews : undefined,
+      imageUrl: getThumbnailUrl(String(doc.identifier ?? '')),
+    }))
+  } catch (err) {
+    console.error('[Archive] getRecentlyAdded error:', err)
+    return []
+  }
+}
+
 export function groupShowsByDate(shows: ArchiveShow[]): Map<string, ArchiveShow[]> {
   const map = new Map<string, ArchiveShow[]>()
   for (const show of shows) {
