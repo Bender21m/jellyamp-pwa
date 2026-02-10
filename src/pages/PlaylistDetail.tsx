@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
-import { fetchTracks, getImageUrl } from '../lib/jellyfin'
+import { fetchPlaylistTracks, getImageUrl } from '../lib/jellyfin'
 import TrackRow from '../components/TrackRow'
 import TrackContextMenu from '../components/TrackContextMenu'
 
@@ -33,7 +33,7 @@ export default function PlaylistDetail() {
         imageUrl: plData.ImageTags?.Primary ? getImageUrl(serverUrl, id, plData.ImageTags.Primary, 400) : undefined,
       })
 
-      const tracksRes = await fetchTracks(api, userId, id)
+      const tracksRes = await fetchPlaylistTracks(api, userId, id)
       const mapped: Track[] = (tracksRes.Items ?? []).map((t) => ({
         id: t.Id!,
         name: t.Name ?? 'Unknown',

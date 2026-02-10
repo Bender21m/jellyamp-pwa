@@ -116,6 +116,17 @@ export async function fetchTracks(api: Api, userId: string, parentId: string) {
   return data
 }
 
+// Use the Playlists endpoint — returns PlaylistItemId (needed for remove) and preserves user ordering
+export async function fetchPlaylistTracks(api: Api, userId: string, playlistId: string) {
+  const { data } = await api.axiosInstance.get(`${api.basePath}/Playlists/${playlistId}/Items`, {
+    params: {
+      UserId: userId,
+      Fields: 'MediaSources',
+    },
+  })
+  return data as { Items?: BaseItemDto[]; TotalRecordCount?: number }
+}
+
 export async function fetchArtistTracks(api: Api, userId: string, artistId: string) {
   const itemsApi = getItemsApi(api)
   const { data } = await itemsApi.getItems({
