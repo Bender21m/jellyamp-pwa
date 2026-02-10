@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
@@ -6,6 +6,7 @@ import { usePlayerStore, type Track } from '../stores/player'
 import { fetchAlbums, fetchTracks, getImageUrl, fetchArtistById, toggleFavorite, fetchSimilarArtists } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import { useAlbumColors } from '../hooks/useAlbumColors'
+import { useScrollRestore } from '../hooks/useScrollRestore'
 import AlbumCard from '../components/AlbumCard'
 import EmptyState from '../components/EmptyState'
 
@@ -45,6 +46,10 @@ export default function ArtistDetail() {
   const [yearFilter, setYearFilter] = useState<number | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [isFav, setIsFav] = useState(false)
+
+  // Scroll restoration
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  useScrollRestore(scrollContainerRef)
 
   useEffect(() => {
     if (!api || !userId || !id) return
@@ -190,7 +195,7 @@ export default function ArtistDetail() {
   if (!artist) return <div className="p-6 text-text-muted">Artist not found</div>
 
   return (
-    <div className="h-full overflow-y-auto pb-48 md:pb-28">
+    <div ref={scrollContainerRef} className="h-full overflow-y-auto pb-48 md:pb-28">
       {/* Artist header */}
       <div className="relative overflow-hidden">
         {backdropUrl && (

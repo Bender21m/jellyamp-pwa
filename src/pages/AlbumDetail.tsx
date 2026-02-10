@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
@@ -6,6 +6,7 @@ import { usePlayerStore, type Track } from '../stores/player'
 import { fetchTracks, getImageUrl, toggleFavorite } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import { useAlbumColors } from '../hooks/useAlbumColors'
+import { useScrollRestore } from '../hooks/useScrollRestore'
 import { parseShowDate, formatShowDate } from '../lib/dateParser'
 import { parseVenue } from '../lib/venueParser'
 import { detectSetBreaks } from '../lib/setBreaks'
@@ -30,6 +31,10 @@ export default function AlbumDetail() {
   const [isAlbumCachedState, setIsAlbumCachedState] = useState(false)
   const [cacheProgress, setCacheProgress] = useState<CacheProgress | null>(null)
   const [showCacheProgress, setShowCacheProgress] = useState(false)
+
+  // Scroll restoration
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  useScrollRestore(scrollContainerRef)
 
   useEffect(() => {
     if (!api || !userId || !id) return
@@ -202,7 +207,7 @@ export default function AlbumDetail() {
   const artistId = album.AlbumArtists?.[0]?.Id
 
   return (
-    <div className="h-full overflow-y-auto pb-48 md:pb-28 relative">
+    <div ref={scrollContainerRef} className="h-full overflow-y-auto pb-48 md:pb-28 relative">
       {/* Color gradient overlay */}
       {albumColors && (
         <motion.div

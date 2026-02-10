@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { usePlayerStore } from '../stores/player'
@@ -9,6 +9,12 @@ export default function QueuePanel() {
   const navigate = useNavigate()
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [overIdx, setOverIdx] = useState<number | null>(null)
+  
+  // Mobile bottom sheet drag state
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragY, setDragY] = useState(0)
+  const dragStartY = useRef(0)
+  const isMobile = window.matchMedia('(max-width: 768px)').matches
 
   if (!showQueue || !currentTrack) return null
 
@@ -20,18 +26,87 @@ export default function QueuePanel() {
 
   const upcoming = queue.slice(queueIndex + 1)
 
+  // Mobile bottom sheet drag handlers
+  const handleDragStart = (e: React.TouchEvent | React.MouseEvent) => {
+    if (!isMobile) return
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+    dragStartY.current = clientY
+    setIsDragging(true)
+    setDragY(0)
+  }
+
+  const handleDragMove = (e: React.TouchEvent | React.MouseEvent) => {
+    if (!isMobile || !isDragging) return
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+    const deltaY = clientY - dragStartY.current
+    
+    // Only allow dragging down
+    if (deltaY > 0) {
+      setDragY(deltaY)
+    }
+  }
+
+  const handleDragEnd = () => {
+    if (!isMobile || !isDragging) return
+    
+    // If dragged down more than 100px, close the sheet
+    if (dragY > 100) {
+      setShowQueue(false)
+    }
+    
+    setIsDragging(false)
+    setDragY(0)
+  }
+
   return (
     <AnimatePresence>
+      {/* Mobile backdrop */}
+      {isMobile && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 bg-black/60 z-30"
+          onClick={() => setShowQueue(false)}
+        />
+      )}
+
+      {/* Queue panel */}
       <motion.div
-        initial={{ x: 320, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        exit={{ x: 320, opacity: 0 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="fixed right-0 top-0 z-40 flex flex-col
-          w-full md:w-80
-          bottom-[120px] md:bottom-[73px]
-          bg-card/95 backdrop-blur-xl border-l border-white/5"
+        initial={isMobile ? { y: '100%', opacity: 0 } : { x: 320, opacity: 0 }}
+        animate={{ 
+          y: isMobile ? (isDragging ? dragY : 0) : 0,
+          x: isMobile ? 0 : 0, 
+          opacity: 1 
+        }}
+        exit={isMobile ? { y: '100%', opacity: 0 } : { x: 320, opacity: 0 }}
+        transition={{ 
+          type: 'spring', 
+          damping: isDragging ? 0 : 25, 
+          stiffness: isDragging ? 0 : 300,
+          duration: isDragging ? 0 : undefined
+        }}
+        className={`fixed z-40 flex flex-col bg-card/95 backdrop-blur-xl ${
+          isMobile 
+            ? 'left-0 right-0 bottom-0 top-20 rounded-t-2xl border-t border-white/5'
+            : 'right-0 top-0 w-80 bottom-[73px] border-l border-white/5'
+        }`}
+        onTouchStart={handleDragStart}
+        onTouchMove={handleDragMove}
+        onTouchEnd={handleDragEnd}
+        onMouseDown={handleDragStart}
+        onMouseMove={handleDragMove}
+        onMouseUp={handleDragEnd}
+        onMouseLeave={handleDragEnd}
       >
+        {/* Mobile drag handle */}
+        {isMobile && (
+          <div className="flex justify-center py-3">
+            <div className="w-10 h-1 bg-white/20 rounded-full" />
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-white/5">
           <h2 className="text-sm font-bold uppercase tracking-wider text-text-secondary">Queue</h2>

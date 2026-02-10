@@ -17,6 +17,7 @@ import Player from './components/Player'
 import QueuePanel from './components/QueuePanel'
 import NowPlaying from './components/NowPlaying'
 import MobileNav from './components/MobileNav'
+import ToastContainer from './components/Toast'
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -62,6 +63,7 @@ function AppLayout() {
       <Player />
       <MobileNav />
       <NowPlaying />
+      <ToastContainer />
     </div>
   )
 }

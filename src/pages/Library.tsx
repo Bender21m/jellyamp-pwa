@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth'
@@ -11,6 +11,7 @@ import AlbumCard from '../components/AlbumCard'
 import ArtistCard from '../components/ArtistCard'
 import PlaylistCard from '../components/PlaylistCard'
 import EmptyStateComponent from '../components/EmptyState'
+import { useScrollRestore } from '../hooks/useScrollRestore'
 
 const filters = ['Artists', 'Albums', 'Playlists', 'Recent']
 
@@ -36,6 +37,10 @@ export default function Library() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showSort, setShowSort] = useState(false)
+  
+  // Scroll restoration
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  useScrollRestore(scrollContainerRef)
 
   const loadData = useCallback(async () => {
     if (!api || !userId) return
@@ -78,6 +83,20 @@ export default function Library() {
 
   // Responsive grid: larger minimum card sizes
   const gridCols = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 md:gap-6 lg:gap-7'
+
+  // Pull to refresh setup
+  const isTouchDevice = window.matchMedia('(hover: none)').matches
+  const { 
+    containerRef, 
+    touchHandlers, 
+    isRefreshing: isPullRefreshing, 
+    isPulling, 
+    shouldTrigger, 
+    progress 
+  } = usePullToRefresh({
+    onRefresh: loadData,
+    disabled: !isTouchDevice
+  })
 
   return (
     <div className="h-full flex flex-col">
@@ -226,7 +245,21 @@ export default function Library() {
       </div>
 
       {/* Content - extra bottom padding for player + mobile nav */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28">
+      <div 
+        ref={(el) => {
+          scrollContainerRef.current = el
+          containerRef(el)
+        }}
+        className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28 relative"
+        {...touchHandlers}
+      >
+        {/* Pull to refresh indicator */}
+        <PullToRefreshIndicator
+          isVisible={isPulling}
+          isRefreshing={isPullRefreshing}
+          shouldTrigger={shouldTrigger}
+          progress={progress}
+        />
         {loading ? (
           <SkeletonGrid viewMode={viewMode} type={libraryFilter === 'Artists' ? 'artist' : 'album'} />
         ) : libraryFilter === 'Albums' || libraryFilter === 'Recent' ? (

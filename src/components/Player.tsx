@@ -11,6 +11,7 @@ import Equalizer from './Equalizer'
 import SleepTimer from './SleepTimer'
 import { updateNowPlaying, scrobbleTrack, shouldScrobble } from '../lib/scrobble'
 import { AudioEqualizer, type EQPreset } from '../lib/equalizer'
+import { useSwipeAction } from '../hooks/useSwipeAction'
 
 export default function Player() {
   const {
@@ -461,6 +462,16 @@ export default function Player() {
     }
   }
 
+  // Swipe up to open Now Playing on mobile player bar
+  const { touchHandlers: playerSwipeHandlers } = useSwipeAction({
+    onSwipeMove: (_deltaX, deltaY) => {
+      // Swipe up (negative deltaY)
+      if (deltaY < -30) {
+        setShowNowPlaying(true)
+      }
+    }
+  })
+
   return (
     <AnimatePresence>
       {currentTrack && (
@@ -473,8 +484,16 @@ export default function Player() {
             bottom-[56px] md:bottom-0"
           style={{ background: 'linear-gradient(180deg, rgba(10,10,16,0.95) 0%, rgba(5,5,8,0.98) 100%)' }}
         >
-          {/* Waveform progress */}
-          <div className="h-[2px] hover:h-2 transition-[height] duration-150">
+          {/* Mobile progress line */}
+          <div className="md:hidden h-0.5 w-full bg-white/10">
+            <div 
+              className="h-full bg-gradient-to-r from-neon-cyan to-neon-pink transition-all duration-300 ease-out"
+              style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
+            />
+          </div>
+
+          {/* Desktop waveform progress */}
+          <div className="hidden md:block h-[2px] hover:h-2 transition-[height] duration-150">
             <Waveform
               currentTime={currentTime}
               duration={duration}
@@ -494,8 +513,10 @@ export default function Player() {
           </div>
 
           {/* Mobile: simplified player bar */}
-          <div className="flex md:hidden items-center gap-3 px-4 py-2.5 min-h-[64px]"
+          <div 
+            className="flex md:hidden items-center gap-3 px-4 py-2.5 min-h-[64px] cursor-pointer active:bg-white/5 transition-colors"
             onClick={() => setShowNowPlaying(true)}
+            {...playerSwipeHandlers}
           >
             {currentTrack.imageUrl && (
               <img src={currentTrack.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover" style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.4), 0 0 16px rgba(0,255,221,0.08)' }} />

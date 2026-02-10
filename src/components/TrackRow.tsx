@@ -17,9 +17,12 @@ interface TrackRowProps {
 }
 
 export default function TrackRow({ track, index, allTracks, showIndex = true, showArt = false, onPlay, onContextMenu }: TrackRowProps) {
-  const { currentTrack, setTrack, isPlaying } = usePlayerStore()
+  const { currentTrack, setTrack, isPlaying, addToQueue, playNext } = usePlayerStore()
+  const { addToast } = useToastStore()
   const navigate = useNavigate()
   const isActive = currentTrack?.id === track.id
+  const [swipeOffset, setSwipeOffset] = useState(0)
+  const [swipeAction, setSwipeAction] = useState<'queue' | 'play-next' | null>(null)
 
   function handleClick() {
     if (onPlay) onPlay()
@@ -51,18 +54,105 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
     e.dataTransfer.effectAllowed = 'copy'
   }
 
+  // Swipe actions
+  const { touchHandlers, getDeltaX: _getDeltaX, isTracking: _isTracking } = useSwipeAction({
+    onSwipeLeft: () => {
+      // Swipe left = add to queue
+      addToQueue([track])
+      addToast('Added to queue', 'success')
+      setSwipeAction('queue')
+      setTimeout(() => {
+        setSwipeAction(null)
+        setSwipeOffset(0)
+      }, 500)
+    },
+    onSwipeRight: () => {
+      // Swipe right = play next
+      playNext(track)
+      addToast('Playing next', 'success')
+      setSwipeAction('play-next')
+      setTimeout(() => {
+        setSwipeAction(null)
+        setSwipeOffset(0)
+      }, 500)
+    },
+    onSwipeMove: (deltaX) => {
+      setSwipeOffset(deltaX)
+      
+      // Show action preview
+      if (Math.abs(deltaX) > 40) {
+        if (deltaX < 0) {
+          setSwipeAction('queue')
+        } else {
+          setSwipeAction('play-next')
+        }
+      } else {
+        setSwipeAction(null)
+      }
+    },
+    onSwipeEnd: () => {
+      if (!swipeAction) {
+        setSwipeOffset(0)
+        setSwipeAction(null)
+      }
+    }
+  })
+
+  // Only enable swipe on touch devices
+  const isTouchDevice = window.matchMedia('(hover: none)').matches
+  const swipeProps = isTouchDevice ? touchHandlers : {}
+
   return (
-    <div draggable onDragStart={handleDragStart} className="cursor-grab active:cursor-grabbing">
-    <motion.div
-      onClick={handleClick}
-      onContextMenu={onContextMenu}
-      initial={{ opacity: 0, y: 4 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(index * 0.015, 0.3), duration: 0.15 }}
-      className={`flex items-center gap-4 px-3 md:px-4 h-[52px] rounded-lg cursor-pointer group transition-colors ${
-        isActive ? 'bg-neon-cyan/[0.08] shadow-[inset_0_0_20px_rgba(0,255,221,0.04)]' : 'hover:bg-white/[0.03] odd:bg-white/[0.015]'
-      }`}
-    >
+    <div className="relative overflow-hidden rounded-lg">
+      {/* Background action indicators */}
+      {isTouchDevice && swipeAction && (
+        <div className={`absolute inset-0 flex items-center justify-center text-white font-semibold ${
+          swipeAction === 'queue' ? 'bg-neon-cyan' : 'bg-neon-pink'
+        }`}>
+          <div className="flex items-center gap-2">
+            {swipeAction === 'queue' ? (
+              <>
+                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+                  <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
+                </svg>
+                <span>Queue</span>
+              </>
+            ) : (
+              <>
+                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+                  <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+                </svg>
+                <span>Play Next</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Track row */}
+      <div draggable onDragStart={handleDragStart} className="cursor-grab active:cursor-grabbing">
+        <motion.div
+          onClick={handleClick}
+          onContextMenu={onContextMenu}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ 
+            opacity: 1, 
+            y: 0,
+            x: swipeAction ? (swipeAction === 'queue' ? -10 : 10) : swipeOffset,
+            scale: swipeAction ? 0.98 : 1
+          }}
+          transition={{ 
+            delay: Math.min(index * 0.015, 0.3), 
+            duration: swipeAction ? 0.2 : 0.15,
+            type: swipeAction ? 'spring' : 'tween',
+            damping: 25,
+            stiffness: 300
+          }}
+          className={`flex items-center gap-4 px-3 md:px-4 h-[52px] rounded-lg cursor-pointer group transition-colors relative z-10 ${
+            isActive ? 'bg-neon-cyan/[0.08] shadow-[inset_0_0_20px_rgba(0,255,221,0.04)]' : 'hover:bg-white/[0.03] odd:bg-white/[0.015]'
+          }`}
+          {...swipeProps}
+        >
       {showIndex && (
         <span className={`w-8 text-right text-sm shrink-0 ${
           isActive ? 'text-neon-cyan' : 'text-text-muted group-hover:text-neon-cyan'
@@ -131,7 +221,8 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
           </svg>
         </button>
       )}
-    </motion.div>
+        </motion.div>
+      </div>
     </div>
   )
 }
