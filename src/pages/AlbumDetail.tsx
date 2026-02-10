@@ -157,26 +157,26 @@ export default function AlbumDetail() {
             </p>
 
             {/* Actions */}
-            <div className="flex items-center gap-2.5 mt-4 flex-wrap justify-center md:justify-start">
+            <div className="flex items-center gap-3 mt-4 flex-wrap justify-center md:justify-start">
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={() => playAll()}
-                className="h-10 inline-flex items-center gap-2 px-5 rounded-full bg-gradient-primary text-deep-black font-semibold text-[13px] whitespace-nowrap"
+                className="h-11 inline-flex items-center gap-2.5 px-6 rounded-full bg-gradient-primary text-deep-black font-semibold text-sm whitespace-nowrap shadow-[0_0_20px_rgba(0,255,221,0.2)] hover:shadow-[0_0_30px_rgba(0,255,221,0.35)] transition-shadow"
               >
-                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                Play
+                <svg viewBox="0 0 24 24" className="w-4.5 h-4.5" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                Play All
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={shufflePlay}
-                className="h-10 inline-flex items-center gap-2 px-5 rounded-full border border-white/10 text-[13px] text-text-secondary whitespace-nowrap hover:text-text-primary hover:border-white/20 transition-all"
+                className="h-11 inline-flex items-center gap-2.5 px-6 rounded-full border border-white/10 text-sm text-text-secondary whitespace-nowrap hover:text-text-primary hover:border-white/20 transition-all"
               >
-                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" /></svg>
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" /></svg>
                 Shuffle
               </motion.button>
               <button
                 onClick={handleFavorite}
-                className={`h-10 w-10 rounded-full border border-white/10 transition-all flex items-center justify-center ${isFav ? 'text-neon-pink border-neon-pink/30' : 'text-text-muted hover:text-neon-pink'}`}
+                className={`h-11 w-11 rounded-full border border-white/10 transition-all flex items-center justify-center ${isFav ? 'text-neon-pink border-neon-pink/30' : 'text-text-muted hover:text-neon-pink'}`}
               >
                 <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill={isFav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={isFav ? 0 : 2}>
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />

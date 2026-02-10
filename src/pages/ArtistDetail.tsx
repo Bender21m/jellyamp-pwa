@@ -187,19 +187,19 @@ export default function ArtistDetail() {
               <p className="text-xs text-text-muted font-mono">
                 {albums.length} album{albums.length !== 1 ? 's' : ''}
               </p>
-              <div className="flex items-center gap-2.5 mt-3 flex-wrap justify-center md:justify-start">
+              <div className="flex items-center gap-3 mt-4 flex-wrap justify-center md:justify-start">
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => playAll(false)}
-                  className="h-10 inline-flex items-center gap-2 px-5 rounded-full bg-gradient-primary text-deep-black font-semibold text-[13px] whitespace-nowrap"
+                  className="h-11 inline-flex items-center gap-2.5 px-6 rounded-full bg-gradient-primary text-deep-black font-semibold text-sm whitespace-nowrap shadow-[0_0_20px_rgba(0,255,221,0.2)] hover:shadow-[0_0_30px_rgba(0,255,221,0.35)] transition-shadow"
                 >
-                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                  Play
+                  <svg viewBox="0 0 24 24" className="w-4.5 h-4.5" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                  Play All
                 </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => playAll(true)}
-                  className="h-10 inline-flex items-center gap-2 px-5 rounded-full border border-white/10 text-[13px] text-text-secondary whitespace-nowrap hover:text-text-primary hover:border-white/20 transition-all"
+                  className="h-11 inline-flex items-center gap-2.5 px-6 rounded-full border border-white/10 text-sm text-text-secondary whitespace-nowrap hover:text-text-primary hover:border-white/20 transition-all"
                 >
                   <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" /></svg>
                   Shuffle
@@ -211,8 +211,8 @@ export default function ArtistDetail() {
       </div>
 
       {/* Discography */}
-      <div className="px-4 md:px-8 pt-4 md:pt-6">
-        <div className="flex items-center justify-between mb-3">
+      <div className="px-4 md:px-8 pt-6 md:pt-8">
+        <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg md:text-xl font-bold tracking-[-0.02em]">Discography</h2>
 
           {/* Sort dropdown */}
@@ -253,12 +253,12 @@ export default function ArtistDetail() {
 
         {/* Year filter pills */}
         {years.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-4 mb-4 border-b border-white/5 scrollbar-hide">
+          <div className="flex gap-2.5 overflow-x-auto pb-5 mb-5 border-b border-white/5 scrollbar-hide">
             <button
               onClick={() => setYearFilter(null)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              className={`shrink-0 px-4 py-2 rounded-full text-[13px] font-medium transition-all whitespace-nowrap ${
                 yearFilter === null
-                  ? 'bg-neon-cyan text-deep-black'
+                  ? 'bg-neon-cyan text-deep-black shadow-[0_0_12px_rgba(0,255,221,0.3)]'
                   : 'bg-surface text-text-muted hover:text-text-primary border border-white/5'
               }`}
             >
@@ -270,9 +270,9 @@ export default function ArtistDetail() {
                 <button
                   key={year}
                   onClick={() => setYearFilter(yearFilter === year ? null : year)}
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-mono font-medium transition-all ${
+                  className={`shrink-0 px-4 py-2 rounded-full text-[13px] font-mono font-medium transition-all whitespace-nowrap ${
                     yearFilter === year
-                      ? 'bg-neon-cyan text-deep-black'
+                      ? 'bg-neon-cyan text-deep-black shadow-[0_0_12px_rgba(0,255,221,0.3)]'
                       : 'bg-surface text-text-muted hover:text-text-primary border border-white/5'
                   }`}
                 >

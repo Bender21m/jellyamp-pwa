@@ -33,15 +33,17 @@ export default function AlbumCard({ id, name, artistName, imageUrl, year }: Albu
             </div>
           </div>
         </div>
-        <h3 className="text-[14px] font-semibold truncate group-hover:text-neon-cyan transition-colors tracking-[-0.01em]">
+        <h3 className="text-[14px] font-semibold truncate group-hover:text-neon-cyan transition-colors tracking-[-0.01em] mt-0.5">
           {name}
         </h3>
-        <p className="text-[13px] text-text-secondary truncate mt-0.5">
-          {artistName}
-        </p>
-        {year && (
-          <p className="text-[12px] text-text-muted font-mono mt-0.5">{year}</p>
-        )}
+        <div className="flex items-center gap-2 mt-1 min-w-0">
+          <p className="text-[13px] text-text-secondary truncate">
+            {artistName}
+          </p>
+          {year && (
+            <span className="text-[11px] text-text-muted font-mono shrink-0 px-2 py-0.5 rounded-full bg-surface border border-white/5">{year}</span>
+          )}
+        </div>
       </motion.div>
     </Link>
   )
