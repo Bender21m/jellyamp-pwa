@@ -32,6 +32,7 @@ export default function Settings() {
   const { audioQuality, setAudioQuality, crossfadeMode, setCrossfadeMode, crossfadeDuration, setCrossfadeDuration, playbackSpeed, setPlaybackSpeed, scrobbleSettings, updateScrobbleSettings } = useUIStore()
   
   const [lastfmApiKey, setLastfmApiKey] = useState(scrobbleSettings.lastfm.apiKey)
+  const [lastfmApiSecret, setLastfmApiSecret] = useState(scrobbleSettings.lastfm.apiSecret)
   const [listenbrainzToken, setListenbrainzToken] = useState(scrobbleSettings.listenbrainz.token)
   const [isConnectingLastfm, setIsConnectingLastfm] = useState(false)
   const [lastfmStatus, setLastfmStatus] = useState('')
@@ -74,9 +75,21 @@ export default function Settings() {
     setLastfmStatus('API key saved')
   }
 
+  const handleLastfmApiSecretSubmit = () => {
+    if (!lastfmApiSecret.trim()) return
+    updateScrobbleSettings({
+      lastfm: { ...scrobbleSettings.lastfm, apiSecret: lastfmApiSecret.trim() }
+    })
+    setLastfmStatus('API secret saved')
+  }
+
   const handleLastfmConnect = async () => {
     if (!scrobbleSettings.lastfm.apiKey) {
       setLastfmStatus('Please enter API key first')
+      return
+    }
+    if (!scrobbleSettings.lastfm.apiSecret) {
+      setLastfmStatus('Please enter API secret first')
       return
     }
     

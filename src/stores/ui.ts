@@ -10,6 +10,7 @@ interface ScrobbleSettings {
   enabled: boolean
   lastfm: {
     apiKey: string
+    apiSecret: string
     sessionKey: string
     username: string
   }
@@ -58,6 +59,7 @@ export const useUIStore = create<UIState>()(
         enabled: false,
         lastfm: {
           apiKey: '',
+          apiSecret: '',
           sessionKey: '',
           username: ''
         },

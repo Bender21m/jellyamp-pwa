@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { usePlayerStore, type Track } from '../stores/player'
 import { setDragData } from '../lib/dragdrop'
 
@@ -14,11 +15,26 @@ interface TrackRowProps {
 
 export default function TrackRow({ track, index, allTracks, showIndex = true, showArt = false, onPlay, onContextMenu }: TrackRowProps) {
   const { currentTrack, setTrack, isPlaying } = usePlayerStore()
+  const navigate = useNavigate()
   const isActive = currentTrack?.id === track.id
 
   function handleClick() {
     if (onPlay) onPlay()
     else setTrack(track, allTracks, index)
+  }
+
+  function handleArtistClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (track.artistId) {
+      navigate(`/artist/${track.artistId}`)
+    }
+  }
+
+  function handleAlbumClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (track.albumId) {
+      navigate(`/album/${track.albumId}`)
+    }
   }
 
   function formatDuration(seconds: number) {
@@ -73,9 +89,29 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
         <p className={`text-sm md:text-[15px] truncate transition-colors ${isActive ? 'text-neon-cyan font-semibold' : 'text-text-primary group-hover:text-neon-cyan'}`}>
           {track.name}
         </p>
-        {track.artistName && (
-          <p className="text-[13px] text-text-muted truncate">{track.artistName}</p>
-        )}
+        <div className="text-[13px] text-text-muted truncate flex items-center gap-1">
+          {track.artistName && (
+            <>
+              <button
+                onClick={handleArtistClick}
+                className="text-text-muted hover:text-neon-cyan transition-colors cursor-pointer truncate"
+                title={`Go to ${track.artistName}`}
+              >
+                {track.artistName}
+              </button>
+              {track.albumName && <span className="text-text-muted/60">•</span>}
+            </>
+          )}
+          {track.albumName && (
+            <button
+              onClick={handleAlbumClick}
+              className="text-text-muted hover:text-neon-cyan transition-colors cursor-pointer truncate"
+              title={`Go to ${track.albumName}`}
+            >
+              {track.albumName}
+            </button>
+          )}
+        </div>
       </div>
       <span className="text-[13px] text-text-muted shrink-0 font-mono">
         {formatDuration(track.duration)}

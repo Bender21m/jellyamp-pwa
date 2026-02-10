@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { usePlayerStore } from '../stores/player'
 import { useAuthStore } from '../stores/auth'
 import { getStreamUrl } from '../lib/jellyfin'
@@ -19,6 +20,7 @@ export default function Player() {
   } = usePlayerStore()
   const { serverUrl, api } = useAuthStore()
   const { audioQuality, crossfadeMode, crossfadeDuration, scrobbleSettings, eqGains, eqEnabled, setEQGains, setEQEnabled } = useUIStore()
+  const navigate = useNavigate()
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const nextAudioRef = useRef<HTMLAudioElement | null>(null)
   const seekingRef = useRef(false)
@@ -245,6 +247,20 @@ export default function Player() {
     return `${m}:${sec.toString().padStart(2, '0')}`
   }
 
+  function handleArtistClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (currentTrack?.artistId) {
+      navigate(`/artist/${currentTrack.artistId}`)
+    }
+  }
+
+  function handleAlbumClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (currentTrack?.albumId) {
+      navigate(`/album/${currentTrack.albumId}`)
+    }
+  }
+
   // Initialize the equalizer
   async function initializeEqualizer(audioElement: HTMLAudioElement) {
     try {
@@ -332,7 +348,13 @@ export default function Player() {
             )}
             <div className="min-w-0 flex-1">
               <p className="text-[14px] font-semibold truncate">{currentTrack.name}</p>
-              <p className="text-[13px] text-text-secondary truncate">{currentTrack.artistName}</p>
+              <button
+                onClick={handleArtistClick}
+                className="text-[13px] text-text-secondary hover:text-neon-cyan transition-colors cursor-pointer truncate block"
+                title={`Go to ${currentTrack.artistName}`}
+              >
+                {currentTrack.artistName}
+              </button>
             </div>
             <button
               onClick={(e) => { e.stopPropagation(); toggle() }}
@@ -362,7 +384,29 @@ export default function Player() {
               )}
               <div className="min-w-0">
                 <p className="text-[14px] font-semibold truncate hover:text-neon-cyan transition-colors">{currentTrack.name}</p>
-                <p className="text-[13px] text-text-secondary truncate">{currentTrack.artistName}</p>
+                <div className="text-[13px] text-text-secondary truncate flex items-center gap-1">
+                  {currentTrack.artistName && (
+                    <>
+                      <button
+                        onClick={handleArtistClick}
+                        className="text-text-secondary hover:text-neon-cyan transition-colors cursor-pointer truncate"
+                        title={`Go to ${currentTrack.artistName}`}
+                      >
+                        {currentTrack.artistName}
+                      </button>
+                      {currentTrack.albumName && <span className="text-text-secondary/60">•</span>}
+                    </>
+                  )}
+                  {currentTrack.albumName && (
+                    <button
+                      onClick={handleAlbumClick}
+                      className="text-text-secondary hover:text-neon-cyan transition-colors cursor-pointer truncate"
+                      title={`Go to ${currentTrack.albumName}`}
+                    >
+                      {currentTrack.albumName}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 

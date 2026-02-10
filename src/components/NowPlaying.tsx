@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform, type PanInfo } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { usePlayerStore } from '../stores/player'
 import { useAuthStore } from '../stores/auth'
 import { useAlbumColors } from '../hooks/useAlbumColors'
@@ -14,6 +15,7 @@ export default function NowPlaying() {
     toggle, next, previous, seek, toggleShuffle, cycleRepeat, setShowNowPlaying, setShowQueue,
   } = usePlayerStore()
   const { api, userId } = useAuthStore()
+  const navigate = useNavigate()
   // progressRef removed - using Waveform component
   const [isFav, setIsFav] = useState(false)
   // Drag state moved to Waveform component
@@ -100,6 +102,20 @@ export default function NowPlaying() {
     const m = Math.floor(s / 60)
     const sec = Math.floor(s % 60)
     return `${m}:${sec.toString().padStart(2, '0')}`
+  }
+
+  function handleArtistClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (currentTrack?.artistId) {
+      navigate(`/artist/${currentTrack.artistId}`)
+    }
+  }
+
+  function handleAlbumClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (currentTrack?.albumId) {
+      navigate(`/album/${currentTrack.albumId}`)
+    }
   }
 
   if (!currentTrack) return null
@@ -217,9 +233,23 @@ export default function NowPlaying() {
                 >
                   {currentTrack.name}
                 </motion.h2>
-                <p className="text-white/60 mt-1.5 truncate text-[15px]">{currentTrack.artistName}</p>
+                {currentTrack.artistName && (
+                  <button
+                    onClick={handleArtistClick}
+                    className="text-white/60 hover:text-neon-cyan mt-1.5 truncate text-[15px] transition-colors cursor-pointer block"
+                    title={`Go to ${currentTrack.artistName}`}
+                  >
+                    {currentTrack.artistName}
+                  </button>
+                )}
                 {currentTrack.albumName && (
-                  <p className="text-white/35 text-[13px] mt-0.5 truncate">{currentTrack.albumName}</p>
+                  <button
+                    onClick={handleAlbumClick}
+                    className="text-white/35 hover:text-neon-cyan text-[13px] mt-0.5 truncate transition-colors cursor-pointer block"
+                    title={`Go to ${currentTrack.albumName}`}
+                  >
+                    {currentTrack.albumName}
+                  </button>
                 )}
               </div>
               <button
