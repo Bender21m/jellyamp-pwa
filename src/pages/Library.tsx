@@ -4,16 +4,18 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth'
 import { useUIStore } from '../stores/ui'
 import type { SortOption } from '../stores/ui'
-import { fetchAlbums, fetchArtists, fetchPlaylists, getImageUrl, SortOrder, ItemSortBy } from '../lib/jellyfin'
+import { fetchAlbums, fetchArtists, fetchPlaylists, fetchGenres, fetchAlbumsByGenre, fetchRecentAlbums, getImageUrl, SortOrder, ItemSortBy } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import FilterPill from '../components/FilterPill'
 import AlbumCard from '../components/AlbumCard'
 import ArtistCard from '../components/ArtistCard'
 import PlaylistCard from '../components/PlaylistCard'
+import GenreCard from '../components/GenreCard'
+import HorizontalScroll from '../components/HorizontalScroll'
 import EmptyStateComponent from '../components/EmptyState'
 import { useScrollRestore } from '../hooks/useScrollRestore'
 
-const filters = ['Artists', 'Albums', 'Playlists', 'Recent']
+const filters = ['Artists', 'Albums', 'Playlists', 'Genres', 'Recent']
 
 const sortLabels: Record<SortOption, string> = {
   'name-asc': 'Name A→Z',
@@ -34,6 +36,10 @@ export default function Library() {
   const [albums, setAlbums] = useState<BaseItemDto[]>([])
   const [artists, setArtists] = useState<BaseItemDto[]>([])
   const [playlists, setPlaylists] = useState<BaseItemDto[]>([])
+  const [genres, setGenres] = useState<BaseItemDto[]>([])
+  const [selectedGenre, setSelectedGenre] = useState<{ id: string; name: string } | null>(null)
+  const [genreAlbums, setGenreAlbums] = useState<BaseItemDto[]>([])
+  const [recentAlbums, setRecentAlbums] = useState<BaseItemDto[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showSort, setShowSort] = useState(false)
@@ -83,20 +89,6 @@ export default function Library() {
 
   // Responsive grid: larger minimum card sizes
   const gridCols = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 md:gap-6 lg:gap-7'
-
-  // Pull to refresh setup
-  const isTouchDevice = window.matchMedia('(hover: none)').matches
-  const { 
-    containerRef, 
-    touchHandlers, 
-    isRefreshing: isPullRefreshing, 
-    isPulling, 
-    shouldTrigger, 
-    progress 
-  } = usePullToRefresh({
-    onRefresh: loadData,
-    disabled: !isTouchDevice
-  })
 
   return (
     <div className="h-full flex flex-col">
@@ -245,21 +237,7 @@ export default function Library() {
       </div>
 
       {/* Content - extra bottom padding for player + mobile nav */}
-      <div 
-        ref={(el) => {
-          scrollContainerRef.current = el
-          containerRef(el)
-        }}
-        className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28 relative"
-        {...touchHandlers}
-      >
-        {/* Pull to refresh indicator */}
-        <PullToRefreshIndicator
-          isVisible={isPulling}
-          isRefreshing={isPullRefreshing}
-          shouldTrigger={shouldTrigger}
-          progress={progress}
-        />
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28">
         {loading ? (
           <SkeletonGrid viewMode={viewMode} type={libraryFilter === 'Artists' ? 'artist' : 'album'} />
         ) : libraryFilter === 'Albums' || libraryFilter === 'Recent' ? (
