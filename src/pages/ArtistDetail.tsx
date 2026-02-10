@@ -111,7 +111,7 @@ export default function ArtistDetail() {
     return (
       <div className="h-full overflow-y-auto pb-48 md:pb-28 px-4 md:px-8 pt-6">
         <div className="flex flex-col items-center md:flex-row md:items-start gap-5 md:gap-8 mb-8">
-          <div className="w-44 h-44 md:w-52 md:h-52 skeleton rounded-xl shrink-0" />
+          <div className="w-[200px] h-[200px] md:w-[240px] md:h-[240px] skeleton rounded-xl shrink-0" />
           <div className="flex flex-col items-center md:items-start gap-3 flex-1 w-full">
             <div className="h-4 skeleton rounded w-16" />
             <div className="h-10 skeleton rounded w-2/3" />
@@ -148,7 +148,7 @@ export default function ArtistDetail() {
           </div>
         )}
 
-        <div className="relative px-4 md:px-8 pt-5 md:pt-8 pb-6 md:pb-8">
+        <div className="relative px-4 md:px-8 py-8 md:py-10">
           {/* Back button */}
           <button
             onClick={() => navigate(-1)}
@@ -166,7 +166,7 @@ export default function ArtistDetail() {
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="w-44 h-44 md:w-52 md:h-52 rounded-xl overflow-hidden shadow-2xl shrink-0 ring-1 ring-white/10"
+              className="w-[200px] h-[200px] md:w-[240px] md:h-[240px] rounded-xl overflow-hidden shadow-2xl shrink-0 ring-1 ring-white/10"
             >
               {artistImage ? (
                 <img src={artistImage} alt={artist.Name ?? ''} className="w-full h-full object-cover" />
@@ -184,14 +184,14 @@ export default function ArtistDetail() {
               <h1 className="text-2xl md:text-4xl lg:text-[42px] font-black tracking-[-0.03em] leading-tight">
                 {artist.Name}
               </h1>
-              <p className="text-xs text-text-muted font-mono">
+              <p className="text-sm text-text-secondary">
                 {albums.length} album{albums.length !== 1 ? 's' : ''}
               </p>
               <div className="flex items-center gap-3 mt-4 flex-wrap justify-center md:justify-start">
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => playAll(false)}
-                  className="h-11 inline-flex items-center gap-2.5 px-6 rounded-full bg-gradient-primary text-deep-black font-semibold text-sm whitespace-nowrap shadow-[0_0_20px_rgba(0,255,221,0.2)] hover:shadow-[0_0_30px_rgba(0,255,221,0.35)] transition-shadow"
+                  className="h-11 inline-flex items-center gap-2.5 px-7 rounded-full bg-gradient-primary text-deep-black font-bold text-sm whitespace-nowrap shadow-[0_0_20px_rgba(0,255,221,0.2)] hover:shadow-[0_0_30px_rgba(0,255,221,0.35)] transition-shadow"
                 >
                   <svg viewBox="0 0 24 24" className="w-4.5 h-4.5" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                   Play All
@@ -256,7 +256,7 @@ export default function ArtistDetail() {
           <div className="flex gap-2.5 overflow-x-auto pb-5 mb-5 border-b border-white/5 scrollbar-hide">
             <button
               onClick={() => setYearFilter(null)}
-              className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+              className={`shrink-0 px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                 yearFilter === null
                   ? 'bg-neon-cyan text-deep-black shadow-[0_0_12px_rgba(0,255,221,0.3)]'
                   : 'bg-surface text-text-muted hover:text-text-primary border border-white/5'
@@ -270,7 +270,7 @@ export default function ArtistDetail() {
                 <button
                   key={year}
                   onClick={() => setYearFilter(yearFilter === year ? null : year)}
-                  className={`shrink-0 px-4 py-2 rounded-full text-sm font-mono font-medium transition-all whitespace-nowrap ${
+                  className={`shrink-0 px-5 py-2 rounded-full text-sm font-mono font-medium transition-all whitespace-nowrap ${
                     yearFilter === year
                       ? 'bg-neon-cyan text-deep-black shadow-[0_0_12px_rgba(0,255,221,0.3)]'
                       : 'bg-surface text-text-muted hover:text-text-primary border border-white/5'

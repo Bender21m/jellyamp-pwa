@@ -161,7 +161,7 @@ export default function AlbumDetail() {
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={() => playAll()}
-                className="h-11 inline-flex items-center gap-2.5 px-6 rounded-full bg-gradient-primary text-deep-black font-semibold text-sm whitespace-nowrap shadow-[0_0_20px_rgba(0,255,221,0.2)] hover:shadow-[0_0_30px_rgba(0,255,221,0.35)] transition-shadow"
+                className="h-11 inline-flex items-center gap-2.5 px-7 rounded-full bg-gradient-primary text-deep-black font-bold text-sm whitespace-nowrap shadow-[0_0_20px_rgba(0,255,221,0.2)] hover:shadow-[0_0_30px_rgba(0,255,221,0.35)] transition-shadow"
               >
                 <svg viewBox="0 0 24 24" className="w-4.5 h-4.5" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                 Play All
@@ -178,7 +178,7 @@ export default function AlbumDetail() {
                 onClick={handleFavorite}
                 className={`h-11 w-11 rounded-full border border-white/10 transition-all flex items-center justify-center ${isFav ? 'text-neon-pink border-neon-pink/30' : 'text-text-muted hover:text-neon-pink'}`}
               >
-                <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill={isFav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={isFav ? 0 : 2}>
+                <svg viewBox="0 0 24 24" className="w-5 h-5" fill={isFav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={isFav ? 0 : 2.5}>
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                 </svg>
               </button>
@@ -188,10 +188,12 @@ export default function AlbumDetail() {
       </div>
 
       {/* Tracks */}
-      <div className="px-4 md:px-7">
+      <div className="px-4 md:px-7 pr-6 md:pr-8">
         <div className="border-t border-white/5 pt-4">
           {tracks.map((track, i) => (
-            <TrackRow key={track.id} track={track} index={i} allTracks={tracks} showIndex />
+            <div key={track.id} className={i < tracks.length - 1 ? 'border-b border-white/5' : ''}>
+              <TrackRow track={track} index={i} allTracks={tracks} showIndex />
+            </div>
           ))}
         </div>
       </div>
