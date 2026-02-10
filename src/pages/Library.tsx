@@ -105,14 +105,70 @@ export default function Library() {
           </div>
         </div>
 
-        {/* Filters + Sort + View toggle */}
+        {/* Filters */}
         <div className="flex items-center gap-2 md:gap-3 overflow-x-auto pb-1 -mx-1 px-1">
           {filters.map((f) => (
             <FilterPill key={f} label={f} active={libraryFilter === f} onClick={() => setLibraryFilter(f)} />
           ))}
-          <div className="flex-1" />
-          {/* Sort */}
-          <div className="relative shrink-0">
+          {/* Sort + View toggle — inline on desktop */}
+          <div className="hidden md:flex items-center gap-2 ml-auto">
+            <div className="relative shrink-0">
+              <button
+                onClick={() => setShowSort(!showSort)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-white/5 text-xs text-text-secondary hover:text-text-primary transition-colors font-mono"
+              >
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor">
+                  <path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z" />
+                </svg>
+                <span>{sortLabels[sortOption]}</span>
+              </button>
+              {showSort && (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setShowSort(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute right-0 top-full mt-1.5 bg-card border border-white/[0.08] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] py-1.5 z-30 min-w-[170px]"
+                  >
+                    {sortOptions.map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => { setSortOption(opt); setShowSort(false) }}
+                        className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                          sortOption === opt ? 'text-neon-cyan bg-neon-cyan/5' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+                        }`}
+                      >
+                        {sortLabels[opt]}
+                      </button>
+                    ))}
+                  </motion.div>
+                </>
+              )}
+            </div>
+            <div className="flex rounded-lg overflow-hidden border border-white/5 shrink-0">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 transition-colors ${viewMode === 'grid' ? 'bg-neon-cyan text-deep-black' : 'bg-surface text-text-muted hover:text-text-primary'}`}
+              >
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                  <path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-neon-cyan text-deep-black' : 'bg-surface text-text-muted hover:text-text-primary'}`}
+              >
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                  <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Sort + View toggle — second row on mobile */}
+        <div className="flex md:hidden items-center gap-2 mt-1">
+          <div className="relative">
             <button
               onClick={() => setShowSort(!showSort)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-white/5 text-xs text-text-secondary hover:text-text-primary transition-colors font-mono"
@@ -120,7 +176,7 @@ export default function Library() {
               <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor">
                 <path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z" />
               </svg>
-              <span className="hidden sm:inline">{sortLabels[sortOption]}</span>
+              <span>{sortLabels[sortOption]}</span>
             </button>
             {showSort && (
               <>
@@ -128,7 +184,7 @@ export default function Library() {
                 <motion.div
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="absolute right-0 top-full mt-1.5 bg-card border border-white/[0.08] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] py-1.5 z-30 min-w-[170px]"
+                  className="absolute left-0 top-full mt-1.5 bg-card border border-white/[0.08] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] py-1.5 z-30 min-w-[170px]"
                 >
                   {sortOptions.map((opt) => (
                     <button
@@ -145,8 +201,8 @@ export default function Library() {
               </>
             )}
           </div>
-          {/* View toggle */}
-          <div className="flex rounded-lg overflow-hidden border border-white/5 shrink-0">
+          <div className="flex-1" />
+          <div className="flex rounded-lg overflow-hidden border border-white/5">
             <button
               onClick={() => setViewMode('grid')}
               className={`p-2 transition-colors ${viewMode === 'grid' ? 'bg-neon-cyan text-deep-black' : 'bg-surface text-text-muted hover:text-text-primary'}`}
