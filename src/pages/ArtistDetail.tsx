@@ -191,10 +191,10 @@ export default function ArtistDetail() {
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => playAll(false)}
-                  className="h-11 inline-flex items-center gap-2.5 px-7 rounded-full bg-gradient-primary text-deep-black font-bold text-sm whitespace-nowrap shadow-[0_0_20px_rgba(0,255,221,0.2)] hover:shadow-[0_0_30px_rgba(0,255,221,0.35)] transition-shadow"
+                  className="h-11 inline-flex items-center gap-2 px-8 rounded-full bg-gradient-primary text-deep-black font-bold text-sm whitespace-nowrap shrink-0"
                 >
-                  <svg viewBox="0 0 24 24" className="w-4.5 h-4.5" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                  Play All
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                  <span>Play All</span>
                 </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
