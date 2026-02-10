@@ -14,6 +14,8 @@ import GenreCard from '../components/GenreCard'
 import HorizontalScroll from '../components/HorizontalScroll'
 import EmptyStateComponent from '../components/EmptyState'
 import { useScrollRestore } from '../hooks/useScrollRestore'
+import { usePullToRefresh } from '../hooks/usePullToRefresh'
+import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 
 const filters = ['Artists', 'Albums', 'Playlists', 'Genres', 'Recent']
 
@@ -87,6 +89,20 @@ export default function Library() {
     const t = setTimeout(() => loadData(), 300)
     return () => clearTimeout(t)
   }, [search])
+
+  // Pull to refresh
+  const isTouchDevice = window.matchMedia('(hover: none)').matches
+  const {
+    containerRef: pullContainerRef,
+    touchHandlers: pullTouchHandlers,
+    isRefreshing: isPullRefreshing,
+    isPulling,
+    shouldTrigger,
+    progress: pullProgress
+  } = usePullToRefresh({
+    onRefresh: loadData,
+    disabled: !isTouchDevice
+  })
 
   // Genre selection handler
   const handleGenreClick = useCallback(async (genreId: string, genreName: string) => {
@@ -287,7 +303,21 @@ export default function Library() {
       </div>
 
       {/* Content - extra bottom padding for player + mobile nav */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28">
+      <div
+        ref={(el) => {
+          (scrollContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = el
+          pullContainerRef(el)
+        }}
+        className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28 relative"
+        {...pullTouchHandlers}
+      >
+        {/* Pull to refresh indicator */}
+        <PullToRefreshIndicator
+          isVisible={isPulling}
+          isRefreshing={isPullRefreshing}
+          shouldTrigger={shouldTrigger}
+          progress={pullProgress}
+        />
         {loading ? (
           <SkeletonGrid viewMode={viewMode} type={libraryFilter === 'Artists' ? 'artist' : 'album'} />
         ) : libraryFilter === 'Genres' ? (

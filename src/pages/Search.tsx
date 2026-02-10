@@ -8,6 +8,8 @@ import ArtistCard from '../components/ArtistCard'
 import TrackRow from '../components/TrackRow'
 import TrackContextMenu from '../components/TrackContextMenu'
 import EmptyState from '../components/EmptyState'
+import { usePullToRefresh } from '../hooks/usePullToRefresh'
+import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 
 export default function Search() {
   const { api, userId, serverUrl } = useAuthStore()
@@ -17,6 +19,32 @@ export default function Search() {
   const [error, setError] = useState<string | null>(null)
   const [contextTrack, setContextTrack] = useState<Track | null>(null)
   const [contextPos, setContextPos] = useState<{ x: number; y: number } | null>(null)
+
+  // Pull to refresh — re-runs current search
+  const isTouchDevice = window.matchMedia('(hover: none)').matches
+  const {
+    containerRef: pullContainerRef,
+    touchHandlers: pullTouchHandlers,
+    isRefreshing: isPullRefreshing,
+    isPulling,
+    shouldTrigger,
+    progress: pullProgress
+  } = usePullToRefresh({
+    onRefresh: async () => {
+      if (!query.trim() || !api || !userId) return
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await searchAll(api, userId, query.trim())
+        setResults(res.Items ?? [])
+      } catch (e) {
+        console.error('Search refresh failed', e)
+        setError('Search failed. Please try again.')
+      }
+      setLoading(false)
+    },
+    disabled: !isTouchDevice
+  })
 
   useEffect(() => {
     if (!query.trim() || !api || !userId) {
@@ -76,7 +104,18 @@ export default function Search() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28">
+      <div
+        ref={(el) => pullContainerRef(el)}
+        className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28 relative"
+        {...pullTouchHandlers}
+      >
+        {/* Pull to refresh indicator */}
+        <PullToRefreshIndicator
+          isVisible={isPulling}
+          isRefreshing={isPullRefreshing}
+          shouldTrigger={shouldTrigger}
+          progress={pullProgress}
+        />
         {!query ? (
           <div className="flex flex-col items-center justify-center h-64">
             <div className="w-16 h-16 mb-4 text-gradient opacity-60">

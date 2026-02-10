@@ -129,11 +129,11 @@ export default function QueuePanel() {
         </div>
 
         {/* Now Playing */}
-        <div className="px-4 py-3 border-b border-white/5">
+        <div className="px-4 py-3 border-b border-white/5 bg-neon-cyan/[0.04] shadow-[inset_0_0_24px_rgba(0,255,221,0.06)]">
           <p className="text-[11px] text-text-muted font-mono uppercase tracking-wider mb-2">Now Playing</p>
           <div className="flex items-center gap-3">
             {currentTrack.imageUrl && (
-              <img src={currentTrack.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover" />
+              <img src={currentTrack.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover shadow-[0_0_12px_rgba(0,255,221,0.15)]" />
             )}
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-neon-cyan truncate">{currentTrack.name}</p>

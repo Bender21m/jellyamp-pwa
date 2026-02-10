@@ -484,6 +484,11 @@ export default function Player() {
             bottom-[56px] md:bottom-0"
           style={{ background: 'linear-gradient(180deg, rgba(10,10,16,0.95) 0%, rgba(5,5,8,0.98) 100%)' }}
         >
+          {/* Mobile grabber pill — hints swipe-up */}
+          <div className="md:hidden flex justify-center pt-1.5 pb-0">
+            <div className="w-8 h-1 rounded-full bg-white/20" />
+          </div>
+
           {/* Mobile progress line */}
           <div className="md:hidden h-0.5 w-full bg-white/10">
             <div 
