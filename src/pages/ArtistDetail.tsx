@@ -187,7 +187,7 @@ export default function ArtistDetail() {
               <p className="text-sm text-text-secondary">
                 {albums.length} album{albums.length !== 1 ? 's' : ''}
               </p>
-              <div className="flex items-center gap-3 mt-4 flex-wrap justify-center md:justify-start">
+              <div className="flex items-center gap-3 mt-4 flex-wrap justify-center md:justify-start self-stretch">
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => playAll(false)}

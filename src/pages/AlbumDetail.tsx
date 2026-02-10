@@ -157,7 +157,7 @@ export default function AlbumDetail() {
             </p>
 
             {/* Actions */}
-            <div className="flex items-center gap-3 mt-4 flex-wrap justify-center md:justify-start">
+            <div className="flex items-center gap-3 mt-4 flex-wrap justify-center md:justify-start self-stretch">
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={() => playAll()}
