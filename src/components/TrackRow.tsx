@@ -76,7 +76,7 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
       {onContextMenu && (
         <button
           onClick={(e) => { e.stopPropagation(); onContextMenu(e) }}
-          className="w-8 h-8 flex items-center justify-center shrink-0 text-text-muted/40 hover:text-text-primary opacity-0 group-hover:opacity-100 transition-opacity rounded-md hover:bg-white/5"
+          className="w-8 h-8 flex items-center justify-center shrink-0 text-text-muted/40 hover:text-text-primary transition-opacity rounded-md hover:bg-white/5 opacity-60 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
         >
           <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
             <circle cx="12" cy="5" r="2" />
