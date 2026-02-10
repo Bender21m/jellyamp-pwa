@@ -4,6 +4,7 @@ import ArchiveSourceBadge from './ArchiveSourceBadge'
 interface ArchiveShowCardProps {
   show: ArchiveShow
   recordingCount?: number
+  hideArtist?: boolean
   onClick?: () => void
 }
 
@@ -33,7 +34,7 @@ function StarRating({ rating }: { rating: number }) {
 
 export { StarRating, formatDate }
 
-export default function ArchiveShowCard({ show, recordingCount, onClick }: ArchiveShowCardProps) {
+export default function ArchiveShowCard({ show, recordingCount, hideArtist, onClick }: ArchiveShowCardProps) {
   return (
     <button
       onClick={onClick}
@@ -52,6 +53,11 @@ export default function ArchiveShowCard({ show, recordingCount, onClick }: Archi
         </div>
 
         <div className="flex-1 min-w-0">
+          {/* Artist */}
+          {!hideArtist && show.artist && (
+            <p className="text-xs font-medium text-neon-cyan/80 truncate">{show.artist}</p>
+          )}
+
           {/* Date */}
           <p className="text-sm font-semibold text-text-primary group-hover:text-neon-cyan transition-colors truncate">
             {formatDate(show.date)}

@@ -260,6 +260,7 @@ export default function ArchiveArtist() {
                   <ArchiveShowCard
                     show={primary}
                     recordingCount={dateShows.length}
+                    hideArtist
                     onClick={() => navigate(`/archive/show/${encodeURIComponent(primary.identifier)}`)}
                   />
                 </motion.div>
