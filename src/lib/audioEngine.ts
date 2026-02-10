@@ -1,13 +1,9 @@
 /**
  * AudioEngine — singleton audio engine for gapless/crossfade playback
- * Replaces the dual-audio-element approach in Player.tsx
  * 
- * Architecture:
- *   HTMLAudioElement → MediaElementSourceNode → GainNode → masterGain → destination
- *   (two such chains exist: current + next, for gapless/crossfade transitions)
- * 
- * Key insight: uses AudioContext.currentTime scheduling for sample-accurate transitions
- * instead of unreliable event-based timing.
+ * Uses two HTMLAudioElements with requestAnimationFrame monitoring
+ * for precise gapless transitions. No Web Audio API (avoids CORS issues
+ * with Jellyfin servers).
  */
 
 export type EngineState = 'idle' | 'loading' | 'playing' | 'paused'
@@ -21,42 +17,23 @@ export interface AudioEngineCallbacks {
   onError?: (err: Error) => void
 }
 
-interface AudioSlot {
-  element: HTMLAudioElement
-  sourceNode: MediaElementAudioSourceNode | null
-  gainNode: GainNode | null
-  url: string
-}
-
 class AudioEngine {
-  private context: AudioContext | null = null
-  private masterGain: GainNode | null = null
-  
-  private current: AudioSlot | null = null
-  private next: AudioSlot | null = null
+  private currentAudio: HTMLAudioElement | null = null
+  private nextAudio: HTMLAudioElement | null = null
+  private currentUrl: string | null = null
+  private nextUrl: string | null = null
   
   private state: EngineState = 'idle'
   private callbacks: AudioEngineCallbacks = {}
   
-  // Crossfade settings
   private crossfadeMode: CrossfadeMode = 'gapless'
-  private crossfadeDuration: number = 3 // seconds
+  private crossfadeDuration: number = 3
   
-  // Volume
   private _volume: number = 0.8
   private _muted: boolean = false
   
-  // Monitoring
   private rafId: number | null = null
-  private transitionScheduled: boolean = false
-  private preloadedUrl: string | null = null
-  
-  // EQ integration point — external code can insert nodes between slots and master
-  private eqInputNode: GainNode | null = null  // if set, slots connect here instead of masterGain
-  private eqOutputNode: AudioNode | null = null // EQ chain output connects to masterGain
-  
-  // Track which elements already have MediaElementSourceNode (can only create once per element)
-  private sourceNodeMap = new WeakMap<HTMLAudioElement, MediaElementAudioSourceNode>()
+  private transitionTriggered: boolean = false
 
   // --- Public API ---
 
@@ -74,31 +51,31 @@ class AudioEngine {
 
   /**
    * Play a URL. Always works regardless of current state.
-   * Cancels any pending load/transition and starts fresh.
    */
   async play(url: string): Promise<void> {
-    this.ensureContext()
+    // Already playing this URL (e.g. after gapless transition) — no-op
+    if (this.currentAudio && this.currentUrl === url && !this.currentAudio.paused && !this.currentAudio.ended) {
+      this.setState('playing')
+      this.startMonitoring()
+      return
+    }
     
-    // Cancel any pending transition
-    this.transitionScheduled = false
     this.stopMonitoring()
+    this.transitionTriggered = false
     
-    // If the next slot has this URL preloaded, promote it
-    if (this.next && this.next.url === url && this.next.element.readyState >= 3) {
-      // Fade out current
-      if (this.current) {
-        this.destroySlot(this.current)
-      }
-      this.current = this.next
-      this.next = null
-      this.preloadedUrl = null
+    // If next audio has this URL preloaded and ready, promote it
+    if (this.nextAudio && this.nextUrl === url && this.nextAudio.readyState >= 3) {
+      this.destroyAudio(this.currentAudio)
+      this.currentAudio = this.nextAudio
+      this.currentUrl = this.nextUrl
+      this.nextAudio = null
+      this.nextUrl = null
       
-      this.connectSlot(this.current)
-      this.setSlotGain(this.current, this.effectiveVolume)
-      
+      this.currentAudio.volume = this.effectiveVolume
       try {
-        await this.current.element.play()
+        await this.currentAudio.play()
         this.setState('playing')
+        this.emitDuration()
         this.startMonitoring()
       } catch (err) {
         this.callbacks.onError?.(err instanceof Error ? err : new Error(String(err)))
@@ -107,28 +84,27 @@ class AudioEngine {
       return
     }
     
-    // Clean up existing slots
-    if (this.next) {
-      this.destroySlot(this.next)
-      this.next = null
-      this.preloadedUrl = null
-    }
-    if (this.current) {
-      this.destroySlot(this.current)
-      this.current = null
-    }
+    // Clean up
+    this.destroyAudio(this.nextAudio)
+    this.nextAudio = null
+    this.nextUrl = null
+    this.destroyAudio(this.currentAudio)
     
-    // Create new slot
+    // Create fresh audio
     this.setState('loading')
-    const slot = this.createSlot(url)
-    this.current = slot
-    this.connectSlot(slot)
+    const audio = new Audio()
+    audio.preload = 'auto'
+    audio.src = url
+    audio.volume = this.effectiveVolume
+    this.currentAudio = audio
+    this.currentUrl = url
     
-    // Wait for canplay, then start
-    if (slot.element.readyState >= 3) {
-      this.setSlotGain(slot, this.effectiveVolume)
+    // Set up ended handler as fallback (RAF should catch it first for gapless)
+    audio.addEventListener('ended', this.handleEnded)
+    
+    if (audio.readyState >= 3) {
       try {
-        await slot.element.play()
+        await audio.play()
         this.setState('playing')
         this.emitDuration()
         this.startMonitoring()
@@ -137,47 +113,49 @@ class AudioEngine {
         this.setState('idle')
       }
     } else {
-      await new Promise<void>((resolve, reject) => {
-        const onCanPlay = () => {
-          slot.element.removeEventListener('error', onError)
-          resolve()
-        }
-        const onError = () => {
-          slot.element.removeEventListener('canplay', onCanPlay)
-          reject(new Error(`Failed to load: ${url}`))
-        }
-        slot.element.addEventListener('canplay', onCanPlay, { once: true })
-        slot.element.addEventListener('error', onError, { once: true })
-      }).then(async () => {
-        // Check we're still the current slot (play() might have been called again)
-        if (this.current !== slot) {
-          this.destroySlot(slot)
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const onCanPlay = () => {
+            audio.removeEventListener('error', onError)
+            resolve()
+          }
+          const onError = () => {
+            audio.removeEventListener('canplay', onCanPlay)
+            reject(new Error(`Failed to load: ${url}`))
+          }
+          audio.addEventListener('canplay', onCanPlay, { once: true })
+          audio.addEventListener('error', onError, { once: true })
+        })
+        
+        // Verify we're still the current audio (play() might have been called again)
+        if (this.currentAudio !== audio) {
+          this.destroyAudio(audio)
           return
         }
-        this.setSlotGain(slot, this.effectiveVolume)
-        await slot.element.play()
+        
+        await audio.play()
         this.setState('playing')
         this.emitDuration()
         this.startMonitoring()
-      }).catch((err) => {
-        if (this.current === slot) {
+      } catch (err) {
+        if (this.currentAudio === audio) {
           this.callbacks.onError?.(err instanceof Error ? err : new Error(String(err)))
           this.setState('idle')
         }
-      })
+      }
     }
   }
 
   pause(): void {
-    if (this.current && this.state === 'playing') {
-      this.current.element.pause()
+    if (this.currentAudio && this.state === 'playing') {
+      this.currentAudio.pause()
       this.setState('paused')
     }
   }
 
   resume(): void {
-    if (this.current && this.state === 'paused') {
-      this.current.element.play().then(() => {
+    if (this.currentAudio && this.state === 'paused') {
+      this.currentAudio.play().then(() => {
         this.setState('playing')
         this.startMonitoring()
       }).catch((err) => {
@@ -187,8 +165,8 @@ class AudioEngine {
   }
 
   seek(time: number): void {
-    if (this.current) {
-      this.current.element.currentTime = time
+    if (this.currentAudio) {
+      this.currentAudio.currentTime = time
     }
   }
 
@@ -204,198 +182,79 @@ class AudioEngine {
 
   get volume(): number { return this._volume }
   get muted(): boolean { return this._muted }
-  get currentTime(): number { return this.current?.element.currentTime ?? 0 }
+  get currentTime(): number { return this.currentAudio?.currentTime ?? 0 }
   get duration(): number {
-    const d = this.current?.element.duration ?? 0
+    const d = this.currentAudio?.duration ?? 0
     return isFinite(d) ? d : 0
   }
   get currentState(): EngineState { return this.state }
-  get currentUrl(): string | null { return this.current?.url ?? null }
+  get playingUrl(): string | null { return this.currentUrl }
 
   /**
-   * Preload the next track for gapless/crossfade transition.
-   * Call this when ~10s from end of current track.
+   * Preload next track for gapless/crossfade.
    */
   preloadNext(url: string): void {
     if (this.crossfadeMode === 'off') return
-    if (this.preloadedUrl === url) return
+    if (this.nextUrl === url) return
     
-    this.ensureContext()
+    this.destroyAudio(this.nextAudio)
     
-    // Clean up existing next slot
-    if (this.next) {
-      this.destroySlot(this.next)
-    }
-    
-    const slot = this.createSlot(url)
-    slot.element.preload = 'auto'
-    slot.element.load()
-    this.next = slot
-    this.preloadedUrl = url
-    
-    // Connect but keep gain at 0
-    this.connectSlot(slot)
-    this.setSlotGain(slot, 0)
+    const audio = new Audio()
+    audio.preload = 'auto'
+    audio.src = url
+    audio.volume = 0
+    audio.load()
+    this.nextAudio = audio
+    this.nextUrl = url
   }
 
-  /**
-   * Stop everything and clean up.
-   */
   stop(): void {
     this.stopMonitoring()
-    this.transitionScheduled = false
-    if (this.current) {
-      this.destroySlot(this.current)
-      this.current = null
-    }
-    if (this.next) {
-      this.destroySlot(this.next)
-      this.next = null
-      this.preloadedUrl = null
-    }
+    this.transitionTriggered = false
+    this.destroyAudio(this.currentAudio)
+    this.currentAudio = null
+    this.currentUrl = null
+    this.destroyAudio(this.nextAudio)
+    this.nextAudio = null
+    this.nextUrl = null
     this.setState('idle')
   }
 
   /**
-   * Get the AudioContext for external use (EQ, visualizations).
-   */
-  getAudioContext(): AudioContext {
-    this.ensureContext()
-    return this.context!
-  }
-
-  /**
-   * Get the master gain node — EQ or other effects should connect to this.
-   */
-  getMasterGain(): GainNode {
-    this.ensureContext()
-    return this.masterGain!
-  }
-
-  /**
-   * Insert an EQ chain between audio slots and the master output.
-   * eqInput: node that receives audio from slots
-   * eqOutput: node whose output goes to masterGain -> destination
-   * Pass null to bypass EQ.
-   */
-  setEQChain(eqInput: GainNode | null, eqOutput: AudioNode | null): void {
-    // Disconnect current slots from their current destination
-    if (this.current?.gainNode) {
-      this.current.gainNode.disconnect()
-    }
-    if (this.next?.gainNode) {
-      this.next.gainNode.disconnect()
-    }
-    // Disconnect old EQ output
-    if (this.eqOutputNode) {
-      try { this.eqOutputNode.disconnect() } catch { /* ignore */ }
-    }
-    
-    this.eqInputNode = eqInput
-    this.eqOutputNode = eqOutput
-    
-    // Reconnect slots to new destination
-    const dest = this.getSlotDestination()
-    if (this.current?.gainNode) {
-      this.current.gainNode.connect(dest)
-    }
-    if (this.next?.gainNode) {
-      this.next.gainNode.connect(dest)
-    }
-    
-    // Connect EQ output to masterGain
-    if (eqOutput && this.masterGain) {
-      eqOutput.connect(this.masterGain)
-    }
-  }
-
-  /**
-   * Get the current audio element (for MediaSession position state, etc.)
+   * Get current audio element (for EQ, visualizations, etc.)
    */
   getCurrentElement(): HTMLAudioElement | null {
-    return this.current?.element ?? null
+    return this.currentAudio
   }
 
   // --- Internal ---
-
-  private ensureContext(): void {
-    if (!this.context) {
-      this.context = new (window.AudioContext || (window as any).webkitAudioContext)()
-      this.masterGain = this.context.createGain()
-      this.masterGain.gain.value = 1 // Volume is controlled per-slot
-      this.masterGain.connect(this.context.destination)
-    }
-    if (this.context.state === 'suspended') {
-      this.context.resume().catch(() => {})
-    }
-  }
 
   private get effectiveVolume(): number {
     return this._muted ? 0 : this._volume
   }
 
   private applyVolume(): void {
-    if (this.current?.gainNode) {
-      this.current.gainNode.gain.value = this.effectiveVolume
-    }
-    // Don't touch next slot volume — it's controlled by transition logic
-  }
-
-  private createSlot(url: string): AudioSlot {
-    const element = new Audio()
-    element.crossOrigin = 'anonymous'
-    element.preload = 'auto'
-    element.src = url
-    
-    return {
-      element,
-      sourceNode: null,
-      gainNode: null,
-      url,
+    if (this.currentAudio) {
+      this.currentAudio.volume = this.effectiveVolume
     }
   }
 
-  private connectSlot(slot: AudioSlot): void {
-    if (!this.context || slot.sourceNode) return
-    
-    // Check if this element already has a source node
-    let sourceNode = this.sourceNodeMap.get(slot.element)
-    if (!sourceNode) {
-      sourceNode = this.context.createMediaElementSource(slot.element)
-      this.sourceNodeMap.set(slot.element, sourceNode)
-    }
-    slot.sourceNode = sourceNode
-    
-    const gainNode = this.context.createGain()
-    gainNode.gain.value = 0
-    slot.gainNode = gainNode
-    
-    sourceNode.connect(gainNode)
-    gainNode.connect(this.getSlotDestination())
-  }
-
-  private getSlotDestination(): AudioNode {
-    return this.eqInputNode ?? this.masterGain!
-  }
-
-  private setSlotGain(slot: AudioSlot, value: number): void {
-    if (slot.gainNode) {
-      slot.gainNode.gain.value = value
+  private handleEnded = (): void => {
+    // Fallback: if RAF didn't catch the transition, handle it here
+    if (!this.transitionTriggered) {
+      this.transitionTriggered = true
+      this.stopMonitoring()
+      this.setState('idle')
+      this.callbacks.onTrackEnd?.()
     }
   }
 
-  private destroySlot(slot: AudioSlot): void {
-    slot.element.pause()
-    if (slot.gainNode) {
-      slot.gainNode.disconnect()
-      slot.gainNode = null
-    }
-    if (slot.sourceNode) {
-      slot.sourceNode.disconnect()
-      slot.sourceNode = null
-    }
-    slot.element.removeAttribute('src')
-    slot.element.load() // Reset the element
+  private destroyAudio(audio: HTMLAudioElement | null): void {
+    if (!audio) return
+    audio.removeEventListener('ended', this.handleEnded)
+    audio.pause()
+    audio.removeAttribute('src')
+    audio.load()
   }
 
   private setState(state: EngineState): void {
@@ -416,39 +275,44 @@ class AudioEngine {
     if (this.rafId !== null) return
     
     const tick = () => {
-      if (!this.current || this.state === 'idle') {
+      if (!this.currentAudio || this.state === 'idle') {
         this.rafId = null
         return
       }
       
-      const el = this.current.element
+      const audio = this.currentAudio
       
-      // Emit time update
-      this.callbacks.onTimeUpdate?.(el.currentTime)
+      // Time update
+      this.callbacks.onTimeUpdate?.(audio.currentTime)
       
-      // Check duration changes
-      if (el.duration && isFinite(el.duration)) {
+      // Duration
+      if (audio.duration && isFinite(audio.duration)) {
         this.emitDuration()
       }
       
-      // Handle end-of-track transitions
-      if (el.duration && isFinite(el.duration) && !el.paused) {
-        const remaining = el.duration - el.currentTime
+      // End-of-track handling
+      if (audio.duration && isFinite(audio.duration) && !audio.paused && !audio.ended) {
+        const remaining = audio.duration - audio.currentTime
         
-        if (this.crossfadeMode === 'gapless') {
-          this.handleGaplessMonitor(remaining)
+        if (this.crossfadeMode === 'gapless' && !this.transitionTriggered) {
+          // At ~50ms before end, start next track for seamless transition
+          if (remaining <= 0.05 && remaining > 0 && this.nextAudio && this.nextAudio.readyState >= 3) {
+            this.transitionTriggered = true
+            this.executeGaplessTransition()
+            return
+          }
         } else if (this.crossfadeMode === 'crossfade') {
-          this.handleCrossfadeMonitor(remaining)
+          this.handleCrossfade(remaining)
         }
-        
-        // Track ended naturally (no next track preloaded, or mode=off)
-        if (el.ended && !this.transitionScheduled) {
-          this.transitionScheduled = true
-          this.setState('idle')
-          this.callbacks.onTrackEnd?.()
-          this.rafId = null
-          return
-        }
+      }
+      
+      // Check if ended (RAF fallback for ended event)
+      if (audio.ended && !this.transitionTriggered) {
+        this.transitionTriggered = true
+        this.rafId = null
+        this.setState('idle')
+        this.callbacks.onTrackEnd?.()
+        return
       }
       
       this.rafId = requestAnimationFrame(tick)
@@ -464,65 +328,62 @@ class AudioEngine {
     }
   }
 
-  private handleGaplessMonitor(remaining: number): void {
-    if (this.transitionScheduled) return
-    
-    // At ~50ms before end, if next is ready, do instant cutover
-    if (remaining <= 0.05 && remaining > 0 && this.next && this.next.element.readyState >= 3) {
-      this.transitionScheduled = true
-      this.executeGaplessTransition()
-    }
-  }
-
-  private handleCrossfadeMonitor(remaining: number): void {
-    if (this.transitionScheduled && remaining > 0) {
-      // Already in crossfade — update gains
-      const progress = 1 - (remaining / this.crossfadeDuration)
-      const clampedProgress = Math.max(0, Math.min(1, progress))
-      
-      if (this.current?.gainNode) {
-        this.current.gainNode.gain.value = this.effectiveVolume * (1 - clampedProgress)
-      }
-      if (this.next?.gainNode) {
-        this.next.gainNode.gain.value = this.effectiveVolume * clampedProgress
-      }
-      
-      // Transition complete
-      if (remaining <= 0.01) {
-        this.finishTransition()
-      }
-      return
-    }
-    
-    // Start crossfade when within crossfadeDuration
-    if (!this.transitionScheduled && remaining <= this.crossfadeDuration && remaining > 0 && this.next && this.next.element.readyState >= 3) {
-      this.transitionScheduled = true
-      this.next.element.play().catch(() => {})
-    }
-  }
-
   private executeGaplessTransition(): void {
-    if (!this.next) return
+    if (!this.nextAudio) return
     
-    // Instant volume swap
-    this.setSlotGain(this.next, this.effectiveVolume)
-    this.next.element.play().catch(() => {})
+    // Start next track immediately
+    this.nextAudio.volume = this.effectiveVolume
+    this.nextAudio.play().catch(() => {})
     
-    this.finishTransition()
-  }
-
-  private finishTransition(): void {
-    // Destroy old current, promote next
-    if (this.current) {
-      this.destroySlot(this.current)
-    }
-    this.current = this.next
-    this.next = null
-    this.preloadedUrl = null
-    this.transitionScheduled = false
+    // Swap: destroy current, promote next
+    this.destroyAudio(this.currentAudio)
+    this.currentAudio = this.nextAudio
+    this.currentUrl = this.nextUrl
+    this.currentAudio.addEventListener('ended', this.handleEnded)
+    this.nextAudio = null
+    this.nextUrl = null
+    this.transitionTriggered = false // Reset for next transition
     
     this.emitDuration()
     this.callbacks.onTrackEnd?.()
+    
+    // Continue monitoring the new current track
+    // (don't stop/restart — just let the RAF loop pick up the new currentAudio)
+  }
+
+  private handleCrossfade(remaining: number): void {
+    if (!this.nextAudio || this.nextAudio.readyState < 3) return
+    
+    if (remaining <= this.crossfadeDuration && remaining > 0) {
+      const progress = 1 - (remaining / this.crossfadeDuration)
+      
+      // Start next if not playing yet
+      if (this.nextAudio.paused) {
+        this.nextAudio.play().catch(() => {})
+      }
+      
+      // Crossfade volumes
+      if (this.currentAudio) {
+        this.currentAudio.volume = this.effectiveVolume * (1 - progress)
+      }
+      this.nextAudio.volume = this.effectiveVolume * progress
+      
+      // Complete transition at end
+      if (remaining <= 0.05) {
+        this.transitionTriggered = true
+        this.destroyAudio(this.currentAudio)
+        this.currentAudio = this.nextAudio
+        this.currentUrl = this.nextUrl
+        this.currentAudio.addEventListener('ended', this.handleEnded)
+        this.currentAudio.volume = this.effectiveVolume
+        this.nextAudio = null
+        this.nextUrl = null
+        this.transitionTriggered = false
+        
+        this.emitDuration()
+        this.callbacks.onTrackEnd?.()
+      }
+    }
   }
 }
 
