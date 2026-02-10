@@ -16,10 +16,9 @@ export default function AlbumCard({ id, name, artistName, imageUrl, year }: Albu
   }
 
   return (
+    <div draggable onDragStart={handleDragStart}>
     <Link to={`/album/${id}`} draggable={false}>
       <motion.div
-        draggable
-        onDragStart={handleDragStart}
         whileHover={{ y: -2 }}
         transition={{ duration: 0.2 }}
         className="group cursor-pointer"
@@ -53,5 +52,6 @@ export default function AlbumCard({ id, name, artistName, imageUrl, year }: Albu
         </div>
       </motion.div>
     </Link>
+    </div>
   )
 }

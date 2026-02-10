@@ -33,9 +33,8 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
   }
 
   return (
+    <div draggable onDragStart={handleDragStart} className="cursor-grab active:cursor-grabbing">
     <motion.div
-      draggable
-      onDragStart={handleDragStart}
       onClick={handleClick}
       onContextMenu={onContextMenu}
       initial={{ opacity: 0, y: 4 }}
@@ -94,5 +93,6 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
         </button>
       )}
     </motion.div>
+    </div>
   )
 }
