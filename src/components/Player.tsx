@@ -17,7 +17,7 @@ import { useSwipeAction } from '../hooks/useSwipeAction'
 export default function Player() {
   const {
     currentTrack, isPlaying, currentTime, duration, volume, muted, shuffle, repeat,
-    queue, queueIndex, sleepTimer,
+    sleepTimer,
     play, pause, toggle, next, previous, seek, setVolume, toggleMute, toggleShuffle,
     cycleRepeat, setCurrentTime, setDuration, setShowNowPlaying, showQueue, setShowQueue,
     clearSleepTimer,
