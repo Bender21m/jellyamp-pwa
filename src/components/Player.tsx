@@ -6,6 +6,7 @@ import { getStreamUrl } from '../lib/jellyfin'
 import { useUIStore } from '../stores/ui'
 import KeyboardShortcuts from './KeyboardShortcuts'
 import Waveform from './Waveform'
+import { updateNowPlaying, scrobbleTrack, shouldScrobble } from '../lib/scrobble'
 
 export default function Player() {
   const {
@@ -15,13 +16,19 @@ export default function Player() {
     cycleRepeat, setCurrentTime, setDuration, setShowNowPlaying, showQueue, setShowQueue,
   } = usePlayerStore()
   const { serverUrl, api } = useAuthStore()
-  const { audioQuality, crossfadeMode, crossfadeDuration } = useUIStore()
+  const { audioQuality, crossfadeMode, crossfadeDuration, scrobbleSettings } = useUIStore()
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const nextAudioRef = useRef<HTMLAudioElement | null>(null)
   const seekingRef = useRef(false)
   const crossfadeTimerRef = useRef<number | null>(null)
   const preloadedTrackIdRef = useRef<string | null>(null)
   const [showShortcuts, setShowShortcuts] = useState(false)
+  
+  // Scrobbling state
+  const scrobbledTracksRef = useRef<Set<string>>(new Set())
+  const trackStartTimeRef = useRef<number | null>(null)
+  const playedTimeRef = useRef<number>(0)
+  const [scrobbleToast, setScrobbleToast] = useState('')
 
   // Get next track in queue
   const getNextTrack = useCallback(() => {
@@ -92,6 +99,31 @@ export default function Player() {
     const onTimeUpdate = () => {
       if (!seekingRef.current) setCurrentTime(audio.currentTime)
 
+      // Track playing time for scrobbling
+      if (trackStartTimeRef.current && isPlaying && !seekingRef.current) {
+        const now = Date.now()
+        const timeSinceStart = (now - trackStartTimeRef.current) / 1000
+        playedTimeRef.current = Math.min(timeSinceStart, audio.currentTime)
+
+        // Check if we should scrobble this track
+        if (
+          currentTrack && 
+          !scrobbledTracksRef.current.has(currentTrack.id) && 
+          audio.duration && 
+          shouldScrobble(playedTimeRef.current, audio.duration)
+        ) {
+          scrobbledTracksRef.current.add(currentTrack.id)
+          scrobbleTrack(currentTrack, trackStartTimeRef.current, scrobbleSettings)
+            .then((success) => {
+              if (success) {
+                setScrobbleToast('♫ Scrobbled')
+                setTimeout(() => setScrobbleToast(''), 2000)
+              }
+            })
+            .catch(() => {})
+        }
+      }
+
       // Preload next track when 10 seconds from end
       if (audio.duration && isFinite(audio.duration) && audio.duration - audio.currentTime < 10) {
         preloadNext()
@@ -161,6 +193,20 @@ export default function Player() {
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = muted ? 0 : volume
   }, [volume, muted])
+
+  // Handle scrobbling track changes and "now playing" updates
+  useEffect(() => {
+    if (!currentTrack) return
+
+    // Reset scrobbling state for new track
+    trackStartTimeRef.current = Date.now()
+    playedTimeRef.current = 0
+
+    // Send "now playing" update to scrobbling services
+    if (scrobbleSettings.enabled) {
+      updateNowPlaying(currentTrack, scrobbleSettings).catch(() => {})
+    }
+  }, [currentTrack?.id, scrobbleSettings.enabled])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -321,6 +367,22 @@ export default function Player() {
         isOpen={showShortcuts} 
         onClose={() => setShowShortcuts(false)} 
       />
+
+      {/* Scrobble toast */}
+      <AnimatePresence>
+        {scrobbleToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-20 md:bottom-24 left-1/2 -translate-x-1/2 z-50"
+          >
+            <div className="px-4 py-2 bg-deep-black/90 backdrop-blur-sm text-neon-cyan text-sm rounded-lg border border-neon-cyan/20 shadow-[0_0_20px_rgba(0,255,221,0.2)]">
+              {scrobbleToast}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   )
 }

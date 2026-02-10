@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useAuthStore } from '../stores/auth'
 import { useUIStore } from '../stores/ui'
 import type { AudioQuality, CrossfadeMode } from '../stores/ui'
+import { validateListenBrainzToken, startLastFmAuth } from '../lib/scrobble'
 
 const QUALITY_OPTIONS: { value: AudioQuality; label: string; desc: string }[] = [
   { value: 'original', label: 'Original', desc: 'Lossless / Direct stream' },
@@ -17,7 +19,63 @@ const CROSSFADE_OPTIONS: { value: CrossfadeMode; label: string; desc: string }[]
 
 export default function Settings() {
   const { serverUrl, serverName, username, logout } = useAuthStore()
-  const { audioQuality, setAudioQuality, crossfadeMode, setCrossfadeMode, crossfadeDuration, setCrossfadeDuration } = useUIStore()
+  const { audioQuality, setAudioQuality, crossfadeMode, setCrossfadeMode, crossfadeDuration, setCrossfadeDuration, scrobbleSettings, updateScrobbleSettings } = useUIStore()
+  
+  const [lastfmApiKey, setLastfmApiKey] = useState(scrobbleSettings.lastfm.apiKey)
+  const [listenbrainzToken, setListenbrainzToken] = useState(scrobbleSettings.listenbrainz.token)
+  const [isConnectingLastfm, setIsConnectingLastfm] = useState(false)
+  const [lastfmStatus, setLastfmStatus] = useState('')
+  const [listenbrainzStatus, setListenbrainzStatus] = useState('')
+
+  // Handle Last.fm API key and authentication
+  const handleLastfmApiKeySubmit = () => {
+    if (!lastfmApiKey.trim()) return
+    updateScrobbleSettings({
+      lastfm: { ...scrobbleSettings.lastfm, apiKey: lastfmApiKey.trim() }
+    })
+    setLastfmStatus('API key saved')
+  }
+
+  const handleLastfmConnect = async () => {
+    if (!scrobbleSettings.lastfm.apiKey) {
+      setLastfmStatus('Please enter API key first')
+      return
+    }
+    
+    setIsConnectingLastfm(true)
+    try {
+      const authUrl = await startLastFmAuth(scrobbleSettings.lastfm.apiKey)
+      window.open(authUrl, '_blank')
+      setLastfmStatus('Complete authorization in the popup window')
+    } catch (error) {
+      setLastfmStatus('Error: Invalid API key')
+    } finally {
+      setIsConnectingLastfm(false)
+    }
+  }
+
+  // Handle ListenBrainz token validation
+  const handleListenbrainzTokenSubmit = async () => {
+    if (!listenbrainzToken.trim()) return
+    
+    try {
+      const username = await validateListenBrainzToken(listenbrainzToken.trim())
+      updateScrobbleSettings({
+        listenbrainz: { 
+          token: listenbrainzToken.trim(),
+          username 
+        }
+      })
+      setListenbrainzStatus(`Connected as ${username}`)
+    } catch (error) {
+      setListenbrainzStatus('Error: Invalid token')
+    }
+  }
+
+  // Toggle scrobbling
+  const toggleScrobbling = () => {
+    updateScrobbleSettings({ enabled: !scrobbleSettings.enabled })
+  }
 
   return (
     <div className="h-full overflow-y-auto pb-48 md:pb-28">
@@ -123,6 +181,97 @@ export default function Settings() {
               />
             </div>
           )}
+        </section>
+
+        {/* Scrobbling */}
+        <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted">Scrobbling</h2>
+            <button
+              onClick={toggleScrobbling}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                scrobbleSettings.enabled ? 'bg-neon-cyan' : 'bg-white/20'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  scrobbleSettings.enabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Last.fm Section */}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-text-primary mb-3">Last.fm</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-text-muted mb-2">API Key</label>
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    value={lastfmApiKey}
+                    onChange={(e) => setLastfmApiKey(e.target.value)}
+                    placeholder="Enter your Last.fm API key"
+                    className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm focus:border-neon-cyan/50 focus:outline-none"
+                  />
+                  <button
+                    onClick={handleLastfmApiKeySubmit}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+              
+              {scrobbleSettings.lastfm.apiKey && (
+                <div>
+                  <button
+                    onClick={handleLastfmConnect}
+                    disabled={isConnectingLastfm}
+                    className="w-full px-4 py-2 bg-gradient-primary hover:shadow-[0_0_20px_rgba(0,255,221,0.15)] rounded-lg text-sm font-medium text-deep-black transition-shadow disabled:opacity-50"
+                  >
+                    {isConnectingLastfm ? 'Connecting...' : scrobbleSettings.lastfm.sessionKey ? `Connected as ${scrobbleSettings.lastfm.username}` : 'Connect to Last.fm'}
+                  </button>
+                  {lastfmStatus && (
+                    <p className="text-xs text-text-muted mt-2">{lastfmStatus}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ListenBrainz Section */}
+          <div>
+            <h3 className="text-sm font-semibold text-text-primary mb-3">ListenBrainz</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-text-muted mb-2">User Token</label>
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    value={listenbrainzToken}
+                    onChange={(e) => setListenbrainzToken(e.target.value)}
+                    placeholder="Enter your ListenBrainz token"
+                    className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm focus:border-neon-cyan/50 focus:outline-none"
+                  />
+                  <button
+                    onClick={handleListenbrainzTokenSubmit}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors"
+                  >
+                    Connect
+                  </button>
+                </div>
+                {listenbrainzStatus && (
+                  <p className="text-xs text-text-muted mt-2">{listenbrainzStatus}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-text-muted/60 mt-4 px-1">
+            Scrobbling tracks your listening habits to Last.fm and/or ListenBrainz. Tracks are scrobbled after 30 seconds or 50% played (whichever comes first).
+          </p>
         </section>
 
         {/* About */}

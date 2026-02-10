@@ -6,6 +6,19 @@ type SortOption = 'name-asc' | 'name-desc' | 'artist-asc' | 'artist-desc' | 'yea
 type AudioQuality = 'original' | 'high' | 'medium' | 'low'
 type CrossfadeMode = 'off' | 'gapless' | 'crossfade'
 
+interface ScrobbleSettings {
+  enabled: boolean
+  lastfm: {
+    apiKey: string
+    sessionKey: string
+    username: string
+  }
+  listenbrainz: {
+    token: string
+    username: string
+  }
+}
+
 interface UIState {
   viewMode: ViewMode
   sortOption: SortOption
@@ -13,6 +26,7 @@ interface UIState {
   audioQuality: AudioQuality
   crossfadeMode: CrossfadeMode
   crossfadeDuration: number // seconds (1-12)
+  scrobbleSettings: ScrobbleSettings
 
   setViewMode: (mode: ViewMode) => void
   setSortOption: (option: SortOption) => void
@@ -20,6 +34,7 @@ interface UIState {
   setAudioQuality: (quality: AudioQuality) => void
   setCrossfadeMode: (mode: CrossfadeMode) => void
   setCrossfadeDuration: (seconds: number) => void
+  updateScrobbleSettings: (settings: Partial<ScrobbleSettings>) => void
 }
 
 export const useUIStore = create<UIState>()(
@@ -31,6 +46,18 @@ export const useUIStore = create<UIState>()(
       audioQuality: 'original',
       crossfadeMode: 'gapless',
       crossfadeDuration: 3,
+      scrobbleSettings: {
+        enabled: false,
+        lastfm: {
+          apiKey: '',
+          sessionKey: '',
+          username: ''
+        },
+        listenbrainz: {
+          token: '',
+          username: ''
+        }
+      },
 
       setViewMode: (mode) => set({ viewMode: mode }),
       setSortOption: (option) => set({ sortOption: option }),
@@ -38,6 +65,9 @@ export const useUIStore = create<UIState>()(
       setAudioQuality: (quality) => set({ audioQuality: quality }),
       setCrossfadeMode: (mode) => set({ crossfadeMode: mode }),
       setCrossfadeDuration: (seconds) => set({ crossfadeDuration: seconds }),
+      updateScrobbleSettings: (newSettings) => set((state) => ({
+        scrobbleSettings: { ...state.scrobbleSettings, ...newSettings }
+      })),
     }),
     {
       name: 'jellyamp-ui',
@@ -45,4 +75,4 @@ export const useUIStore = create<UIState>()(
   )
 )
 
-export type { ViewMode, SortOption, AudioQuality, CrossfadeMode }
+export type { ViewMode, SortOption, AudioQuality, CrossfadeMode, ScrobbleSettings }
