@@ -2,16 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
-import { fetchPlaylists, addToPlaylist, createPlaylist } from '../lib/jellyfin'
+import { fetchPlaylists, addToPlaylist, createPlaylist, removeFromPlaylist } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 
 interface ContextMenuProps {
   track: Track | null
   position: { x: number; y: number } | null
   onClose: () => void
+  playlistId?: string // if viewing a playlist, enables "Remove from Playlist"
+  onRemoveFromPlaylist?: () => void // callback after removal to refresh
 }
 
-export default function TrackContextMenu({ track, position, onClose }: ContextMenuProps) {
+export default function TrackContextMenu({ track, position, onClose, playlistId, onRemoveFromPlaylist }: ContextMenuProps) {
   const { api, userId } = useAuthStore()
   const { playNext, addToQueue } = usePlayerStore()
   const [showPlaylists, setShowPlaylists] = useState(false)
@@ -149,6 +151,24 @@ export default function TrackContextMenu({ track, position, onClose }: ContextMe
                 onClick={() => setShowPlaylists(true)}
                 hasSubmenu
               />
+              {playlistId && track?.playlistItemId && (
+                <>
+                  <div className="mx-3 my-1.5 h-px bg-white/5" />
+                  <MenuItem
+                    icon="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                    label="Remove from Playlist"
+                    onClick={async () => {
+                      if (!api || !track?.playlistItemId) return
+                      try {
+                        await removeFromPlaylist(api, playlistId, [track.playlistItemId])
+                        showFeedbackAndClose('Removed from playlist')
+                        onRemoveFromPlaylist?.()
+                      } catch { onClose() }
+                    }}
+                    danger
+                  />
+                </>
+              )}
             </div>
           ) : (
             <div className="py-1.5">
@@ -218,15 +238,17 @@ export default function TrackContextMenu({ track, position, onClose }: ContextMe
   )
 }
 
-function MenuItem({ icon, label, onClick, hasSubmenu }: {
-  icon: string; label: string; onClick: () => void; hasSubmenu?: boolean
+function MenuItem({ icon, label, onClick, hasSubmenu, danger }: {
+  icon: string; label: string; onClick: () => void; hasSubmenu?: boolean; danger?: boolean
 }) {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors"
+      className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+        danger ? 'text-red-400 hover:bg-red-500/10' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+      }`}
     >
-      <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0 text-text-muted" fill="currentColor">
+      <svg viewBox="0 0 24 24" className={`w-4 h-4 shrink-0 ${danger ? 'text-red-400' : 'text-text-muted'}`} fill="currentColor">
         <path d={icon} />
       </svg>
       <span className="flex-1 text-left">{label}</span>

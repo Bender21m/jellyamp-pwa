@@ -8,23 +8,65 @@ import { useUIStore } from '../stores/ui'
 export default function Player() {
   const {
     currentTrack, isPlaying, currentTime, duration, volume, muted, shuffle, repeat,
+    queue, queueIndex,
     play, pause, toggle, next, previous, seek, setVolume, toggleMute, toggleShuffle,
     cycleRepeat, setCurrentTime, setDuration, setShowNowPlaying, showQueue, setShowQueue,
   } = usePlayerStore()
   const { serverUrl, api } = useAuthStore()
-  const { audioQuality } = useUIStore()
+  const { audioQuality, crossfadeMode, crossfadeDuration } = useUIStore()
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const nextAudioRef = useRef<HTMLAudioElement | null>(null)
   const seekingRef = useRef(false)
+  const crossfadeTimerRef = useRef<number | null>(null)
+  const preloadedTrackIdRef = useRef<string | null>(null)
+
+  // Get next track in queue
+  const getNextTrack = useCallback(() => {
+    if (queue.length === 0) return null
+    const nextIdx = queueIndex + 1
+    if (nextIdx < queue.length) return queue[nextIdx]
+    if (repeat === 'all') return queue[0]
+    return null
+  }, [queue, queueIndex, repeat])
+
+  // Preload next track for gapless/crossfade
+  const preloadNext = useCallback(() => {
+    if (crossfadeMode === 'off' || !serverUrl || !api?.accessToken) return
+    const nextTrack = getNextTrack()
+    if (!nextTrack || preloadedTrackIdRef.current === nextTrack.id) return
+
+    const nextAudio = new Audio()
+    nextAudio.preload = 'auto'
+    nextAudio.src = getStreamUrl(serverUrl, nextTrack.id, api.accessToken, audioQuality)
+    nextAudio.volume = 0
+    nextAudio.load()
+    nextAudioRef.current = nextAudio
+    preloadedTrackIdRef.current = nextTrack.id
+  }, [crossfadeMode, serverUrl, api?.accessToken, audioQuality, getNextTrack])
 
   // Create/update audio
   useEffect(() => {
     if (!currentTrack || !serverUrl || !api?.accessToken) return
 
-    const audio = audioRef.current ?? new Audio()
-    audioRef.current = audio
+    // If we have a preloaded audio for this track, use it (gapless transition)
+    let audio: HTMLAudioElement
+    if (nextAudioRef.current && preloadedTrackIdRef.current === currentTrack.id) {
+      audio = nextAudioRef.current
+      nextAudioRef.current = null
+      preloadedTrackIdRef.current = null
+    } else {
+      audio = audioRef.current ?? new Audio()
+      const streamUrl = getStreamUrl(serverUrl, currentTrack.id, api.accessToken, audioQuality)
+      audio.src = streamUrl
+      audio.load()
+    }
 
-    const streamUrl = getStreamUrl(serverUrl, currentTrack.id, api.accessToken, audioQuality)
-    audio.src = streamUrl
+    // Clean up old audio if different
+    if (audioRef.current && audioRef.current !== audio) {
+      audioRef.current.pause()
+      audioRef.current.src = ''
+    }
+    audioRef.current = audio
     audio.volume = muted ? 0 : volume
 
     const onError = (e: Event) => {
@@ -34,11 +76,38 @@ export default function Player() {
     const onCanPlay = () => {
       audio.play().then(() => play()).catch((err) => console.error('[JellyAmp] Play failed:', err))
     }
-    audio.addEventListener('error', onError)
-    audio.addEventListener('canplay', onCanPlay, { once: true })
-    audio.load()
 
-    const onTimeUpdate = () => { if (!seekingRef.current) setCurrentTime(audio.currentTime) }
+    // If audio is already ready (preloaded), play immediately
+    if (audio.readyState >= 3) {
+      audio.volume = muted ? 0 : volume
+      audio.play().then(() => play()).catch(() => {})
+    } else {
+      audio.addEventListener('canplay', onCanPlay, { once: true })
+    }
+    audio.addEventListener('error', onError)
+
+    const onTimeUpdate = () => {
+      if (!seekingRef.current) setCurrentTime(audio.currentTime)
+
+      // Preload next track when 10 seconds from end
+      if (audio.duration && isFinite(audio.duration) && audio.duration - audio.currentTime < 10) {
+        preloadNext()
+      }
+
+      // Start crossfade when approaching end
+      if (crossfadeMode === 'crossfade' && audio.duration && isFinite(audio.duration)) {
+        const timeLeft = audio.duration - audio.currentTime
+        if (timeLeft <= crossfadeDuration && timeLeft > 0 && nextAudioRef.current) {
+          // Fade out current, fade in next
+          const progress = 1 - (timeLeft / crossfadeDuration)
+          audio.volume = (muted ? 0 : volume) * (1 - progress)
+          nextAudioRef.current.volume = (muted ? 0 : volume) * progress
+          if (nextAudioRef.current.paused) {
+            nextAudioRef.current.play().catch(() => {})
+          }
+        }
+      }
+    }
     const onDuration = () => { if (audio.duration && isFinite(audio.duration)) setDuration(audio.duration) }
     const onEnded = () => next()
 
@@ -73,6 +142,10 @@ export default function Player() {
       audio.removeEventListener('durationchange', onDuration)
       audio.removeEventListener('ended', onEnded)
       audio.removeEventListener('error', onError)
+      if (crossfadeTimerRef.current) {
+        cancelAnimationFrame(crossfadeTimerRef.current)
+        crossfadeTimerRef.current = null
+      }
     }
   }, [currentTrack?.id])
 

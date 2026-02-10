@@ -146,6 +146,8 @@ export default function PlaylistDetail() {
         track={contextTrack}
         position={contextPos}
         onClose={() => { setContextTrack(null); setContextPos(null) }}
+        playlistId={id}
+        onRemoveFromPlaylist={loadPlaylist}
       />
     </div>
   )

@@ -1,8 +1,11 @@
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePlayerStore } from '../stores/player'
 
 export default function QueuePanel() {
-  const { queue, queueIndex, currentTrack, showQueue, setShowQueue, jumpToTrack, removeFromQueue, clearQueue, isPlaying } = usePlayerStore()
+  const { queue, queueIndex, currentTrack, showQueue, setShowQueue, jumpToTrack, removeFromQueue, moveInQueue, clearQueue, isPlaying } = usePlayerStore()
+  const [dragIdx, setDragIdx] = useState<number | null>(null)
+  const [overIdx, setOverIdx] = useState<number | null>(null)
 
   if (!showQueue || !currentTrack) return null
 
@@ -81,12 +84,34 @@ export default function QueuePanel() {
               </p>
               {upcoming.map((track, i) => {
                 const realIndex = queueIndex + 1 + i
+                const isDragging = dragIdx === realIndex
+                const isOver = overIdx === realIndex
                 return (
                   <div
                     key={`${track.id}-${realIndex}`}
+                    draggable
+                    onDragStart={() => setDragIdx(realIndex)}
+                    onDragOver={(e) => { e.preventDefault(); setOverIdx(realIndex) }}
+                    onDragLeave={() => { if (overIdx === realIndex) setOverIdx(null) }}
+                    onDrop={() => {
+                      if (dragIdx !== null && dragIdx !== realIndex) {
+                        moveInQueue(dragIdx, realIndex)
+                      }
+                      setDragIdx(null)
+                      setOverIdx(null)
+                    }}
+                    onDragEnd={() => { setDragIdx(null); setOverIdx(null) }}
                     onClick={() => jumpToTrack(realIndex)}
-                    className="flex items-center gap-3 px-4 py-2.5 min-h-[48px] hover:bg-white/5 cursor-pointer group transition-colors"
+                    className={`flex items-center gap-3 px-4 py-2.5 min-h-[48px] cursor-pointer group transition-all ${
+                      isDragging ? 'opacity-30' : isOver ? 'bg-neon-cyan/10 border-t border-neon-cyan/30' : 'hover:bg-white/5'
+                    }`}
                   >
+                    {/* Drag handle */}
+                    <div className="opacity-0 group-hover:opacity-40 cursor-grab active:cursor-grabbing shrink-0 text-text-muted">
+                      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                        <path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                      </svg>
+                    </div>
                     {track.imageUrl && (
                       <img src={track.imageUrl} alt="" className="w-9 h-9 rounded-lg object-cover" loading="lazy" />
                     )}
