@@ -235,7 +235,7 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
     }
   }, [trackId])
 
-  // Play/pause sync
+  // Play/pause sync — only react to isPlaying changes, not volume/muted
   useEffect(() => {
     if (!audioRef.current) return
     if (isPlaying) {
@@ -252,7 +252,8 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
       lastPauseTimeRef.current = Date.now()
       audioRef.current.pause()
     }
-  }, [isPlaying, muted, volume, startFadeIn])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPlaying])
 
   // Volume sync
   useEffect(() => {

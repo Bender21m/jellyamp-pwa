@@ -20,7 +20,7 @@ import SleepTimer from './SleepTimer'
 export default function Player() {
   const {
     currentTrack, isPlaying, currentTime, duration, volume, muted, shuffle, repeat,
-    queue, queueIndex, sleepTimer,
+    queue, queueIndex, sleepTimer, showNowPlaying,
     play, pause, toggle, next, previous, seek, setVolume, toggleMute, toggleShuffle,
     cycleRepeat, setCurrentTime, setDuration, setShowNowPlaying, showQueue, setShowQueue,
     clearSleepTimer,
@@ -139,7 +139,7 @@ export default function Player() {
 
   return (
     <AnimatePresence>
-      {currentTrack && (
+      {currentTrack && !showNowPlaying && (
         <motion.div
           initial={{ y: 80, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}

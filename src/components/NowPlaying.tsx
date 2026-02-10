@@ -150,14 +150,14 @@ export default function NowPlaying() {
           <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/20 md:hidden z-20" />
 
           {/* Main content area — scrollable on mobile */}
-          <div className="relative z-10 flex-1 flex flex-col items-center px-6 md:px-12 max-w-2xl mx-auto w-full overflow-y-auto overscroll-contain pt-4 md:pt-0 md:justify-center pb-8">
+          <div className="relative z-10 flex-1 flex flex-col items-center px-6 md:px-16 max-w-lg md:max-w-3xl mx-auto w-full overflow-y-auto overscroll-contain pt-4 md:pt-0 md:justify-center pb-8">
             {/* Album Art */}
             <motion.div
               key={currentTrack.id}
               initial={{ scale: 0.8, opacity: 0, rotateY: -15 }}
               animate={{ scale: 1, opacity: 1, rotateY: 0 }}
               transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-              className="w-[60vw] md:w-[72vw] aspect-square max-w-[360px] rounded-2xl overflow-hidden mb-6 md:mb-10 relative group shrink-0"
+              className="w-[60vw] md:w-[40vw] aspect-square max-w-[320px] md:max-w-[480px] rounded-2xl overflow-hidden mb-6 md:mb-10 relative group shrink-0"
               style={{ boxShadow: '0 20px 80px rgba(0, 0, 0, 0.6), 0 0 60px rgba(0, 255, 221, 0.08), 0 0 120px rgba(139, 92, 246, 0.06)' }}
             >
               {currentTrack.imageUrl ? (
