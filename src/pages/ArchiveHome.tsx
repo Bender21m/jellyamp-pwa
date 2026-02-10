@@ -5,6 +5,7 @@ import { searchArtists, searchShows, getShowsOnThisDay, getRecentlyAdded } from 
 import { useArchiveStore } from '../stores/archive'
 import type { FavoriteShowDetails } from '../stores/archive'
 import type { ArchiveShow } from '../lib/archive'
+import { getArtistInfo } from '../lib/artistInfo'
 import ArchiveShowCard from '../components/ArchiveShowCard'
 import EmptyState from '../components/EmptyState'
 
@@ -126,7 +127,31 @@ export default function ArchiveHome() {
   const [onThisDayTotal, setOnThisDayTotal] = useState(0)
   const [recentlyAdded, setRecentlyAdded] = useState<ArchiveShow[]>([])
   const [sectionsLoading, setSectionsLoading] = useState({ topRated: false, onThisDay: false, recentlyAdded: false })
+  const [artistImages, setArtistImages] = useState<Map<string, string>>(new Map())
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Fetch artist images with staggered delays
+  useEffect(() => {
+    let cancelled = false
+    const fetchImages = async () => {
+      for (let i = 0; i < POPULAR_ARTISTS.length; i++) {
+        if (cancelled) return
+        const name = POPULAR_ARTISTS[i]
+        try {
+          const info = await getArtistInfo(name)
+          if (info?.imageUrl && !cancelled) {
+            setArtistImages(prev => new Map(prev).set(name, info.imageUrl!))
+          }
+        } catch { /* skip */ }
+        // Delay between calls to respect MusicBrainz rate limits
+        if (i < POPULAR_ARTISTS.length - 1 && !cancelled) {
+          await new Promise(r => setTimeout(r, 1000))
+        }
+      }
+    }
+    fetchImages()
+    return () => { cancelled = true }
+  }, [])
 
   const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) {
@@ -385,6 +410,7 @@ export default function ArchiveHome() {
               <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
                 {POPULAR_ARTISTS.map((name, i) => {
                   const [from, to] = artistColor(name)
+                  const imgUrl = artistImages.get(name)
                   return (
                     <motion.button
                       key={name}
@@ -394,8 +420,12 @@ export default function ArchiveHome() {
                       onClick={() => handleSelectArtist(name)}
                       className="shrink-0 w-[120px] text-center bg-white/[0.02] hover:bg-white/[0.05] rounded-2xl p-3.5 transition-all duration-300 group border border-white/[0.04] hover:border-white/[0.08]"
                     >
-                      <div className={`w-16 h-16 rounded-full mx-auto mb-2.5 ring-2 ring-white/10 group-hover:ring-neon-cyan/30 transition-all shadow-lg shadow-black/30 bg-gradient-to-br ${from} ${to} flex items-center justify-center`}>
-                        <span className="text-xl font-bold text-white/60 group-hover:text-white/80 transition-colors">{name.charAt(0)}</span>
+                      <div className={`w-16 h-16 rounded-full mx-auto mb-2.5 ring-2 ring-white/10 group-hover:ring-neon-cyan/30 transition-all shadow-lg shadow-black/30 overflow-hidden ${!imgUrl ? `bg-gradient-to-br ${from} ${to} flex items-center justify-center` : ''}`}>
+                        {imgUrl ? (
+                          <img src={imgUrl} alt="" className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                        ) : (
+                          <span className="text-xl font-bold text-white/60 group-hover:text-white/80 transition-colors">{name.charAt(0)}</span>
+                        )}
                       </div>
                       <p className="text-[13px] font-semibold text-text-primary group-hover:text-neon-cyan transition-colors line-clamp-2 leading-tight">
                         {name}

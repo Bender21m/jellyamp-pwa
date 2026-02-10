@@ -4,6 +4,8 @@ import { motion } from 'framer-motion'
 import { searchShows, groupShowsByDate, getArtistYears } from '../lib/archive'
 import type { ArchiveShow } from '../lib/archive'
 import { useArchiveStore } from '../stores/archive'
+import { getArtistInfo } from '../lib/artistInfo'
+import type { ArtistInfo } from '../lib/artistInfo'
 import ArchiveShowCard from '../components/ArchiveShowCard'
 import FilterPill from '../components/FilterPill'
 import EmptyState from '../components/EmptyState'
@@ -39,9 +41,19 @@ export default function ArchiveArtist() {
   const [sort, setSort] = useState('date desc')
   const [sortOpen, setSortOpen] = useState(false)
   const [sourceFilter, setSourceFilter] = useState('')
+  const [artistInfo, setArtistInfo] = useState<ArtistInfo | null>(null)
+  const [bioExpanded, setBioExpanded] = useState(false)
   const sortRef = useRef<HTMLDivElement>(null)
 
   const isPinned = pinnedArtists.some((a) => a.name === artistName)
+
+  // Fetch artist enrichment
+  useEffect(() => {
+    if (!artistName) return
+    getArtistInfo(artistName).then((info) => {
+      if (info) setArtistInfo(info)
+    })
+  }, [artistName])
 
   // Close sort dropdown on outside click
   useEffect(() => {
@@ -104,14 +116,33 @@ export default function ArchiveArtist() {
 
   const currentSortLabel = SORT_OPTIONS.find((o) => o.value === sort)?.label ?? 'Sort'
 
+  // Build meta line
+  const metaParts: string[] = []
+  if (artistInfo?.description) metaParts.push(artistInfo.description)
+  if (artistInfo?.origin) metaParts.push(artistInfo.origin)
+  if (artistInfo?.formedYear) metaParts.push(`est. ${artistInfo.formedYear}`)
+
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="px-4 md:px-8 pt-5 md:pt-8 pb-4 shrink-0">
-        {/* Back */}
+      {/* Hero */}
+      <div className="relative shrink-0 h-[200px] md:h-[280px] overflow-hidden">
+        {/* Background image or gradient fallback */}
+        {artistInfo?.fullImageUrl ? (
+          <img
+            src={artistInfo.fullImageUrl}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-neon-cyan/5 to-transparent" />
+        )}
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/70 to-transparent" />
+
+        {/* Back button */}
         <button
           onClick={() => navigate('/archive')}
-          className="mb-3 text-text-muted hover:text-text-primary transition-colors flex items-center gap-1.5 text-sm"
+          className="absolute top-4 left-4 z-10 text-white/70 hover:text-white transition-colors flex items-center gap-1.5 text-sm bg-black/30 backdrop-blur-sm px-3 py-1.5 rounded-full"
         >
           <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
             <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
@@ -119,37 +150,93 @@ export default function ArchiveArtist() {
           Back
         </button>
 
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-4xl font-extrabold tracking-[-0.04em]">{artistName}</h1>
-            {!loading && (
-              <p className="text-[13px] text-text-muted font-mono mt-1.5 tracking-wide">
-                {total.toLocaleString()} recording{total !== 1 ? 's' : ''}
-              </p>
-            )}
-          </div>
-          {/* Pin/Unpin */}
-          <button
-            onClick={() => {
-              if (isPinned) unpinArtist(artistName)
-              else pinArtist({ name: artistName, showCount: total, pinnedAt: Date.now(), imageUrl: shows[0]?.imageUrl })
-            }}
-            className={`shrink-0 w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
-              isPinned
-                ? 'border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan'
-                : 'border-white/10 text-text-muted hover:text-neon-cyan hover:border-neon-cyan/30'
-            }`}
-            title={isPinned ? 'Unpin artist' : 'Pin artist'}
-          >
-            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
-              <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
-            </svg>
-          </button>
-        </div>
+        {/* Pin button */}
+        <button
+          onClick={() => {
+            if (isPinned) unpinArtist(artistName)
+            else pinArtist({ name: artistName, showCount: total, pinnedAt: Date.now(), imageUrl: artistInfo?.imageUrl || shows[0]?.imageUrl })
+          }}
+          className={`absolute top-4 right-4 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all backdrop-blur-sm ${
+            isPinned
+              ? 'bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/40'
+              : 'bg-black/30 text-white/60 hover:text-neon-cyan border border-white/10 hover:border-neon-cyan/30'
+          }`}
+          title={isPinned ? 'Unpin artist' : 'Pin artist'}
+        >
+          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+            <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+          </svg>
+        </button>
 
+        {/* Hero content */}
+        <div className="absolute bottom-0 left-0 right-0 px-4 md:px-8 pb-4">
+          <h1
+            className="text-3xl md:text-5xl font-extrabold tracking-[-0.04em]"
+            style={{ textShadow: '0 2px 12px rgba(0,0,0,0.7)' }}
+          >
+            {artistName}
+          </h1>
+
+          {metaParts.length > 0 && (
+            <p className="text-sm text-text-secondary mt-1.5" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
+              {metaParts.join(' · ')}
+            </p>
+          )}
+
+          {!loading && (
+            <p className="text-[13px] text-text-muted font-mono mt-1 tracking-wide">
+              {total.toLocaleString()} recording{total !== 1 ? 's' : ''}
+            </p>
+          )}
+
+          {/* Genre tags */}
+          {artistInfo?.genres && artistInfo.genres.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2.5">
+              {artistInfo.genres.map((g) => (
+                <span
+                  key={g}
+                  className="px-2.5 py-1 rounded-full text-[11px] bg-white/[0.05] border border-white/[0.08] text-text-secondary"
+                >
+                  {g}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bio extract */}
+      {artistInfo?.extract && (
+        <div className="px-4 md:px-8 pt-3 pb-2 shrink-0">
+          <p className={`text-sm text-text-secondary leading-relaxed ${!bioExpanded ? 'line-clamp-3' : ''}`}>
+            {artistInfo.extract}
+          </p>
+          {artistInfo.extract.length > 200 && (
+            <button
+              onClick={() => setBioExpanded(!bioExpanded)}
+              className="text-xs text-neon-cyan hover:text-neon-cyan/80 mt-1 transition-colors"
+            >
+              {bioExpanded ? 'Show less' : 'Read more'}
+            </button>
+          )}
+          {artistInfo.wikiUrl && (
+            <a
+              href={artistInfo.wikiUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-text-muted hover:text-text-secondary ml-3 transition-colors"
+            >
+              Wikipedia ↗
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="px-4 md:px-8 pb-3 shrink-0">
         {/* Year filter pills */}
         {!yearsLoading && years.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-1 mt-4 scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             <FilterPill
               label={`All (${total})`}
               active={yearFilter === null}
