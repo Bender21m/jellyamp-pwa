@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
-import { fetchAlbums, fetchTracks, getImageUrl, fetchArtistById } from '../lib/jellyfin'
+import { fetchAlbums, fetchTracks, getImageUrl, fetchArtistById, toggleFavorite } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import AlbumCard from '../components/AlbumCard'
 
@@ -38,6 +38,7 @@ export default function ArtistDetail() {
   const [discSort, setDiscSort] = useState<DiscographySort>('year-newest')
   const [showSort, setShowSort] = useState(false)
   const [yearFilter, setYearFilter] = useState<number | null>(null)
+  const [isFav, setIsFav] = useState(false)
 
   useEffect(() => {
     if (!api || !userId || !id) return
@@ -53,6 +54,7 @@ export default function ArtistDetail() {
         fetchAlbums(api, userId, { artistIds: [id], limit: 200 }),
       ])
       setArtist(artistData)
+      setIsFav(artistData?.UserData?.IsFavorite ?? false)
       setAlbums(albumsRes.Items ?? [])
     } catch (e) {
       console.error('Failed to load artist', e)
@@ -205,6 +207,24 @@ export default function ArtistDetail() {
                   <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" /></svg>
                   Shuffle
                 </motion.button>
+                <button
+                  onClick={async () => {
+                    if (!api || !userId || !id) return
+                    try {
+                      await toggleFavorite(api, userId, id, isFav)
+                      setIsFav(!isFav)
+                    } catch { /* ignore */ }
+                  }}
+                  className={`w-11 h-11 rounded-full border flex items-center justify-center transition-all shrink-0 ${
+                    isFav
+                      ? 'border-neon-pink/40 bg-neon-pink/10 text-neon-pink'
+                      : 'border-white/10 text-text-muted hover:text-neon-pink hover:border-neon-pink/30'
+                  }`}
+                >
+                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill={isFav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={isFav ? 0 : 2}>
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
