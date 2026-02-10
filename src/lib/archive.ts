@@ -77,16 +77,16 @@ function parseDuration(length: string | undefined): number {
 
 export async function searchShows(
   artist: string,
-  options?: { year?: number; page?: number; rows?: number }
+  options?: { year?: number; page?: number; rows?: number; sort?: string }
 ): Promise<{ shows: ArchiveShow[]; total: number }> {
-  const { year, page = 1, rows = 50 } = options ?? {}
+  const { year, page = 1, rows = 50, sort = 'date desc' } = options ?? {}
   let q = `collection:etree AND creator:"${artist}"`
   if (year) q += ` AND date:${year}*`
 
   const params = new URLSearchParams({
     q,
     'fl[]': 'identifier,title,creator,date,venue,avg_rating,num_reviews,source',
-    'sort[]': 'date desc',
+    'sort[]': sort,
     rows: String(rows),
     page: String(page),
     output: 'json',

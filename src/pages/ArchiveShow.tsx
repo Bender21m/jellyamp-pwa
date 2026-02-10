@@ -16,6 +16,27 @@ function formatDuration(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
+function formatTotalDuration(seconds: number): string {
+  if (!seconds) return ''
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  if (h > 0) return `${h}h ${m}m`
+  return `${m}m`
+}
+
+/** Parse set number from track filename. Returns 0 if not detected. */
+function getSetNumber(trackId: string): number {
+  // trackId is `identifier/filename` — grab filename part
+  const filename = trackId.split('/').pop() ?? ''
+  const match = filename.match(/s(\d+)t\d+/i)
+  return match ? parseInt(match[1], 10) : 0
+}
+
+function getSetLabel(setNum: number): string {
+  if (setNum >= 3) return 'Encore'
+  return `Set ${setNum}`
+}
+
 export default function ArchiveShow() {
   const { id } = useParams<{ id: string }>()
   const identifier = decodeURIComponent(id ?? '')
@@ -31,6 +52,7 @@ export default function ArchiveShow() {
   const [error, setError] = useState<string | null>(null)
   const [alternatives, setAlternatives] = useState<ArchiveShow[]>([])
   const [showAlternatives, setShowAlternatives] = useState(false)
+  const [showSourceInfo, setShowSourceInfo] = useState(false)
 
   const isFav = isFavoriteShow(identifier)
 
@@ -75,6 +97,14 @@ export default function ArchiveShow() {
     if (index < 0 || index >= tracks.length) return
     setTrack(tracks[index], tracks, index)
   }
+
+  // Compute total duration
+  const totalDuration = tracks.reduce((sum, t) => sum + t.duration, 0)
+
+  // Check if source info is available
+  const hasSourceInfo = metadata && (
+    metadata.source || metadata.taper || metadata.notes || metadata.description
+  )
 
   if (loading) {
     return (
@@ -128,6 +158,10 @@ export default function ArchiveShow() {
     )
   }
 
+  // Pre-compute set numbers for segue/set-break logic
+  const trackSets = tracks.map((t) => getSetNumber(t.id))
+  const trackSegues = tracks.map((t) => t.name.endsWith('>'))
+
   return (
     <div className="h-full overflow-y-auto pb-48 md:pb-28">
       {/* Header */}
@@ -158,9 +192,17 @@ export default function ArchiveShow() {
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-[-0.03em] leading-tight">
               {formatDate(metadata.date)}
             </h1>
-            {metadata.venue && (
-              <p className="text-sm text-text-secondary mt-1">{metadata.venue}</p>
-            )}
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              {metadata.venue && (
+                <p className="text-sm text-text-secondary">{metadata.venue}</p>
+              )}
+              {totalDuration > 0 && (
+                <>
+                  {metadata.venue && <span className="text-text-muted text-sm">·</span>}
+                  <span className="text-sm text-text-muted font-mono">{formatTotalDuration(totalDuration)}</span>
+                </>
+              )}
+            </div>
             <Link
               to={`/archive/artist/${encodeURIComponent(metadata.creator)}`}
               className="text-sm text-neon-cyan hover:underline mt-1 inline-block"
@@ -176,12 +218,6 @@ export default function ArchiveShow() {
                 <span className="text-xs text-text-muted font-mono">{metadata.reviewCount} review{metadata.reviewCount !== 1 ? 's' : ''}</span>
               )}
             </div>
-
-            {metadata.taper && (
-              <p className="text-xs text-text-muted mt-2">
-                <span className="text-text-secondary">Taper:</span> {metadata.taper}
-              </p>
-            )}
 
             {/* Actions */}
             <div className="flex items-center gap-3 mt-5 flex-wrap">
@@ -210,6 +246,49 @@ export default function ArchiveShow() {
             </div>
           </div>
         </div>
+
+        {/* Source Info expandable */}
+        {hasSourceInfo && (
+          <div className="mt-4">
+            <button
+              onClick={() => setShowSourceInfo(!showSourceInfo)}
+              className="flex items-center gap-2 text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted hover:text-text-primary transition-colors"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className={`w-4 h-4 transition-transform ${showSourceInfo ? 'rotate-90' : ''}`}
+                fill="currentColor"
+              >
+                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+              </svg>
+              Source Info
+            </button>
+            {showSourceInfo && (
+              <div className="mt-2 bg-surface rounded-lg p-3 ring-1 ring-white/5 space-y-1.5">
+                {metadata.source && (
+                  <p className="text-xs text-text-muted">
+                    <span className="text-text-secondary font-medium">Source:</span> {metadata.source}
+                  </p>
+                )}
+                {metadata.taper && (
+                  <p className="text-xs text-text-muted">
+                    <span className="text-text-secondary font-medium">Taper:</span> {metadata.taper}
+                  </p>
+                )}
+                {metadata.notes && (
+                  <p className="text-xs text-text-muted">
+                    <span className="text-text-secondary font-medium">Notes:</span> {metadata.notes}
+                  </p>
+                )}
+                {metadata.description && (
+                  <p className="text-xs text-text-muted">
+                    <span className="text-text-secondary font-medium">Description:</span> {metadata.description}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Setlist */}
@@ -218,57 +297,87 @@ export default function ArchiveShow() {
         {tracks.length === 0 ? (
           <p className="text-sm text-text-muted">No playable tracks found for this recording.</p>
         ) : (
-          <div className="space-y-px">
+          <div>
             {tracks.map((track, i) => {
               const isCurrentTrack = currentTrack?.id === track.id
-              const hasSegue = track.name.endsWith('>')
+              const hasSegue = trackSegues[i]
               const displayName = hasSegue ? track.name.slice(0, -1).trimEnd() : track.name
+              const currentSet = trackSets[i]
+              const prevSet = i > 0 ? trackSets[i - 1] : 0
+              const showSetBreak = currentSet > 0 && prevSet > 0 && currentSet !== prevSet
+              // Previous track segues into this one — show connecting line on top
+              const prevSegue = i > 0 && trackSegues[i - 1]
 
               return (
-                <motion.button
-                  key={track.id}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(i * 0.02, 0.4) }}
-                  onClick={() => playFrom(i)}
-                  className={`w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-lg transition-colors group text-left ${
-                    isCurrentTrack
-                      ? 'bg-neon-cyan/[0.08]'
-                      : 'hover:bg-white/[0.03] odd:bg-white/[0.015]'
-                  }`}
-                >
-                  {/* Track number / playing indicator */}
-                  <span className={`w-6 text-right text-xs font-mono shrink-0 ${
-                    isCurrentTrack ? 'text-neon-cyan' : 'text-text-muted'
-                  }`}>
-                    {isCurrentTrack && isPlaying ? (
-                      <svg viewBox="0 0 24 24" className="w-4 h-4 text-neon-cyan ml-auto" fill="currentColor">
-                        <rect x="6" y="4" width="4" height="16" rx="1"><animate attributeName="height" values="16;8;16" dur="0.8s" repeatCount="indefinite" /><animate attributeName="y" values="4;8;4" dur="0.8s" repeatCount="indefinite" /></rect>
-                        <rect x="14" y="4" width="4" height="16" rx="1"><animate attributeName="height" values="8;16;8" dur="0.8s" repeatCount="indefinite" /><animate attributeName="y" values="8;4;8" dur="0.8s" repeatCount="indefinite" /></rect>
-                      </svg>
-                    ) : (
-                      i + 1
-                    )}
-                  </span>
-
-                  {/* Title */}
-                  <div className="flex-1 min-w-0">
-                    <span className={`text-sm truncate block ${
-                      isCurrentTrack ? 'text-neon-cyan font-semibold' : 'text-text-primary group-hover:text-neon-cyan transition-colors'
+                <div key={track.id}>
+                  {/* Set separator */}
+                  {showSetBreak && (
+                    <div className="flex items-center gap-3 py-3 px-3 md:px-4">
+                      <div className="flex-1 h-px bg-white/[0.06]" />
+                      <span className="text-[11px] font-mono uppercase tracking-widest text-text-muted">
+                        {getSetLabel(currentSet)}
+                      </span>
+                      <div className="flex-1 h-px bg-white/[0.06]" />
+                    </div>
+                  )}
+                  {/* First set label if sets are detected and this is the first track */}
+                  {i === 0 && currentSet > 0 && (
+                    <div className="flex items-center gap-3 py-3 px-3 md:px-4">
+                      <div className="flex-1 h-px bg-white/[0.06]" />
+                      <span className="text-[11px] font-mono uppercase tracking-widest text-text-muted">
+                        {getSetLabel(currentSet)}
+                      </span>
+                      <div className="flex-1 h-px bg-white/[0.06]" />
+                    </div>
+                  )}
+                  <motion.button
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(i * 0.02, 0.4) }}
+                    onClick={() => playFrom(i)}
+                    className={`w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-lg transition-colors group text-left ${
+                      isCurrentTrack
+                        ? 'bg-neon-cyan/[0.08]'
+                        : 'hover:bg-white/[0.03] odd:bg-white/[0.015]'
+                    }`}
+                  >
+                    {/* Track number column with segue line */}
+                    <span className={`w-6 text-right text-xs font-mono shrink-0 relative ${
+                      isCurrentTrack ? 'text-neon-cyan' : 'text-text-muted'
                     }`}>
-                      {displayName}
+                      {/* Segue connecting line from previous track */}
+                      {prevSegue && (
+                        <span className="absolute left-1/2 -top-3 w-0 h-3 border-l-2 border-neon-cyan/30" />
+                      )}
+                      {isCurrentTrack && isPlaying ? (
+                        <svg viewBox="0 0 24 24" className="w-4 h-4 text-neon-cyan ml-auto" fill="currentColor">
+                          <rect x="6" y="4" width="4" height="16" rx="1"><animate attributeName="height" values="16;8;16" dur="0.8s" repeatCount="indefinite" /><animate attributeName="y" values="4;8;4" dur="0.8s" repeatCount="indefinite" /></rect>
+                          <rect x="14" y="4" width="4" height="16" rx="1"><animate attributeName="height" values="8;16;8" dur="0.8s" repeatCount="indefinite" /><animate attributeName="y" values="8;4;8" dur="0.8s" repeatCount="indefinite" /></rect>
+                        </svg>
+                      ) : (
+                        i + 1
+                      )}
+                      {/* Segue connecting line to next track */}
+                      {hasSegue && (
+                        <span className="absolute left-1/2 -bottom-3 w-0 h-3 border-l-2 border-neon-cyan/30" />
+                      )}
                     </span>
-                    {/* Segue indicator */}
-                    {hasSegue && (
-                      <span className="text-[10px] text-neon-cyan/60 font-mono">→</span>
-                    )}
-                  </div>
 
-                  {/* Duration */}
-                  <span className="text-xs text-text-muted font-mono shrink-0">
-                    {formatDuration(track.duration)}
-                  </span>
-                </motion.button>
+                    {/* Title */}
+                    <div className="flex-1 min-w-0">
+                      <span className={`text-sm truncate block ${
+                        isCurrentTrack ? 'text-neon-cyan font-semibold' : 'text-text-primary group-hover:text-neon-cyan transition-colors'
+                      }`}>
+                        {displayName}
+                      </span>
+                    </div>
+
+                    {/* Duration */}
+                    <span className="text-xs text-text-muted font-mono shrink-0">
+                      {formatDuration(track.duration)}
+                    </span>
+                  </motion.button>
+                </div>
               )
             })}
           </div>
