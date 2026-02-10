@@ -272,6 +272,8 @@ export default function NowPlaying() {
                   duration={duration}
                   onSeek={(time) => {
                     seek(time)
+                    // Dispatch event so Player.tsx can sync audio element
+                    window.dispatchEvent(new CustomEvent('jellyamp-seek', { detail: { time } }))
                   }}
                   trackId={currentTrack?.id}
                   className="h-full"

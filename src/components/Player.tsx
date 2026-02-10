@@ -299,6 +299,18 @@ export default function Player() {
     if (audioRef.current) audioRef.current.volume = muted ? 0 : volume
   }, [volume, muted])
 
+  // Listen for seek events from NowPlaying (or any external component)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const time = (e as CustomEvent).detail?.time
+      if (audioRef.current && typeof time === 'number' && isFinite(time)) {
+        audioRef.current.currentTime = time
+      }
+    }
+    window.addEventListener('jellyamp-seek', handler)
+    return () => window.removeEventListener('jellyamp-seek', handler)
+  }, [])
+
   // Handle scrobbling track changes and "now playing" updates
   useEffect(() => {
     if (!currentTrack) return
