@@ -69,11 +69,13 @@ export default function Search() {
 
       <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28">
         {!query ? (
-          <div className="flex flex-col items-center justify-center h-64 text-text-muted">
-            <svg viewBox="0 0 24 24" className="w-16 h-16 mb-4 opacity-20" fill="currentColor">
-              <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-            </svg>
-            <p className="text-sm">Start typing to search your library</p>
+          <div className="flex flex-col items-center justify-center h-64">
+            <div className="w-16 h-16 mb-4 text-gradient opacity-60">
+              <svg viewBox="0 0 24 24" className="w-full h-full" fill="currentColor">
+                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+              </svg>
+            </div>
+            <p className="text-[15px] text-text-secondary">Start typing to search your library</p>
           </div>
         ) : loading ? (
           <div className="space-y-8 mt-4">

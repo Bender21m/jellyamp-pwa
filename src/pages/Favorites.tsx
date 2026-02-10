@@ -62,26 +62,36 @@ export default function Favorites() {
           </div>
         ) : (
           <div className="space-y-8">
-            {artists.length > 0 && (
-              <section>
-                <h2 className="text-lg font-bold mb-4">Favorite Artists</h2>
+            <section>
+              <h2 className="text-lg font-bold tracking-[-0.02em] mb-4">Favorite Artists</h2>
+              {artists.length > 0 ? (
                 <div className={gridCols}>
                   {artists.map(a => (
                     <ArtistCard key={a.Id} id={a.Id!} name={a.Name ?? ''} imageUrl={a.ImageTags?.Primary ? imgUrl(a) : undefined} />
                   ))}
                 </div>
-              </section>
-            )}
-            {albums.length > 0 && (
-              <section>
-                <h2 className="text-lg font-bold mb-4">Favorite Albums</h2>
+              ) : (
+                <div className="py-8 text-center text-text-muted">
+                  <p className="text-sm">No favorite artists yet</p>
+                  <p className="text-xs mt-1 text-text-muted/60">Tap the ♥ on any artist to add them here</p>
+                </div>
+              )}
+            </section>
+            <section>
+              <h2 className="text-lg font-bold tracking-[-0.02em] mb-4">Favorite Albums</h2>
+              {albums.length > 0 ? (
                 <div className={gridCols}>
                   {albums.map(a => (
                     <AlbumCard key={a.Id} id={a.Id!} name={a.Name ?? ''} artistName={a.AlbumArtist ?? ''} imageUrl={imgUrl(a)} year={a.ProductionYear ?? undefined} />
                   ))}
                 </div>
-              </section>
-            )}
+              ) : (
+                <div className="py-8 text-center text-text-muted">
+                  <p className="text-sm">No favorite albums yet</p>
+                  <p className="text-xs mt-1 text-text-muted/60">Tap the ♥ on any album to add it here</p>
+                </div>
+              )}
+            </section>
           </div>
         )}
       </div>

@@ -48,7 +48,7 @@ export default function Settings() {
         <div className="p-px rounded-xl bg-gradient-primary hover:shadow-[0_0_20px_rgba(0,255,221,0.15)] transition-shadow">
           <button
             onClick={logout}
-            className="w-full py-3.5 rounded-[11px] bg-deep-black text-gradient font-semibold text-sm hover:bg-card transition-colors min-h-[48px]"
+            className="w-full py-3.5 rounded-[11px] bg-deep-black font-semibold text-sm hover:bg-card transition-colors min-h-[48px] text-white"
           >
             Sign Out
           </button>
