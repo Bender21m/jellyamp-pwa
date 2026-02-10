@@ -41,7 +41,7 @@ export default function Favorites() {
         <h1 className="text-2xl md:text-3xl font-extrabold tracking-[-0.03em]">Favorites</h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-40 md:pb-28">
+      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28">
         {loading ? (
           <div className={gridCols}>
             {Array.from({ length: 8 }).map((_, i) => (

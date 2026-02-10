@@ -88,7 +88,7 @@ export default function Playlists() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-40 md:pb-28">
+      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28">
         {loading ? (
           <div className={gridCols}>
             {Array.from({ length: 6 }).map((_, i) => (

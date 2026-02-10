@@ -54,7 +54,7 @@ export default function PlaylistDetail() {
 
   if (loading) {
     return (
-      <div className="h-full overflow-y-auto pb-40 md:pb-28">
+      <div className="h-full overflow-y-auto pb-48 md:pb-28">
         <div className="px-4 md:px-8 pt-5 md:pt-8">
           <div className="h-8 w-16 skeleton rounded mb-6" />
           <div className="flex flex-col md:flex-row gap-6">
@@ -73,7 +73,7 @@ export default function PlaylistDetail() {
   }
 
   return (
-    <div className="h-full overflow-y-auto pb-40 md:pb-28">
+    <div className="h-full overflow-y-auto pb-48 md:pb-28">
       {/* Back button */}
       <div className="px-4 md:px-8 pt-4 md:pt-6">
         <button onClick={() => navigate(-1)} className="text-text-muted hover:text-text-primary transition-colors p-1 -ml-1 mb-2">

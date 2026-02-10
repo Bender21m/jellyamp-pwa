@@ -67,7 +67,7 @@ export default function Search() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-40 md:pb-28">
+      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28">
         {!query ? (
           <div className="flex flex-col items-center justify-center h-64 text-text-muted">
             <svg viewBox="0 0 24 24" className="w-16 h-16 mb-4 opacity-20" fill="currentColor">

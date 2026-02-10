@@ -109,7 +109,7 @@ export default function ArtistDetail() {
 
   if (loading) {
     return (
-      <div className="h-full overflow-y-auto pb-40 md:pb-28 px-4 md:px-8 pt-6">
+      <div className="h-full overflow-y-auto pb-48 md:pb-28 px-4 md:px-8 pt-6">
         <div className="flex flex-col items-center md:flex-row md:items-start gap-5 md:gap-8 mb-8">
           <div className="w-44 h-44 md:w-52 md:h-52 skeleton rounded-xl shrink-0" />
           <div className="flex flex-col items-center md:items-start gap-3 flex-1 w-full">
@@ -138,7 +138,7 @@ export default function ArtistDetail() {
   if (!artist) return <div className="p-6 text-text-muted">Artist not found</div>
 
   return (
-    <div className="h-full overflow-y-auto pb-40 md:pb-28">
+    <div className="h-full overflow-y-auto pb-48 md:pb-28">
       {/* Artist header */}
       <div className="relative overflow-hidden">
         {backdropUrl && (
@@ -180,29 +180,28 @@ export default function ArtistDetail() {
             </motion.div>
 
             {/* Info */}
-            <div className="flex flex-col min-w-0 py-1">
-              <p className="text-xs font-mono uppercase tracking-widest text-neon-cyan/70 mb-1.5">Artist</p>
-              <h1 className="text-2xl md:text-4xl lg:text-[42px] font-black tracking-[-0.03em] leading-tight mb-2">
+            <div className="flex flex-col items-center md:items-start min-w-0 gap-1">
+              <h1 className="text-2xl md:text-4xl lg:text-[42px] font-black tracking-[-0.03em] leading-tight">
                 {artist.Name}
               </h1>
-              <p className="text-sm text-text-muted font-mono mb-5">
+              <p className="text-xs text-text-muted font-mono">
                 {albums.length} album{albums.length !== 1 ? 's' : ''}
               </p>
-              <div className="flex items-center gap-3 justify-center md:justify-start flex-wrap">
+              <div className="flex items-center gap-2.5 mt-3 flex-wrap justify-center md:justify-start">
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => playAll(false)}
-                  className="inline-flex items-center gap-2 px-7 py-2.5 rounded-full bg-gradient-primary text-deep-black font-semibold text-sm whitespace-nowrap hover:shadow-[0_0_24px_rgba(0,255,221,0.3)] transition-shadow"
+                  className="h-10 inline-flex items-center gap-2 px-5 rounded-full bg-gradient-primary text-deep-black font-semibold text-[13px] whitespace-nowrap"
                 >
                   <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                  Play All
+                  Play
                 </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => playAll(true)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-white/10 text-sm text-text-secondary whitespace-nowrap hover:text-text-primary hover:border-white/20 transition-all"
+                  className="h-10 inline-flex items-center gap-2 px-5 rounded-full border border-white/10 text-[13px] text-text-secondary whitespace-nowrap hover:text-text-primary hover:border-white/20 transition-all"
                 >
-                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" /></svg>
+                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" /></svg>
                   Shuffle
                 </motion.button>
               </div>
@@ -254,7 +253,7 @@ export default function ArtistDetail() {
 
         {/* Year filter pills */}
         {years.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-1 mb-5 scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto pb-4 mb-4 border-b border-white/5 scrollbar-hide">
             <button
               onClick={() => setYearFilter(null)}
               className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${

@@ -168,7 +168,7 @@ export default function Library() {
       </div>
 
       {/* Content - extra bottom padding for player + mobile nav */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-40 md:pb-28">
+      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28">
         {loading ? (
           <SkeletonGrid viewMode={viewMode} type={libraryFilter === 'Artists' ? 'artist' : 'album'} />
         ) : libraryFilter === 'Albums' || libraryFilter === 'Recent' ? (

@@ -109,7 +109,7 @@ export default function AlbumDetail() {
   const artistId = album.AlbumArtists?.[0]?.Id
 
   return (
-    <div className="h-full overflow-y-auto pb-40 md:pb-28">
+    <div className="h-full overflow-y-auto pb-48 md:pb-28">
       <div className="px-5 md:px-8 pt-5 md:pt-6">
         {/* Back */}
         <button
