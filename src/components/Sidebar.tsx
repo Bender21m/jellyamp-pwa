@@ -1,16 +1,18 @@
-import { NavLink } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore } from '../stores/player'
+import { fetchPlaylists, fetchFavorites, BaseItemKind } from '../lib/jellyfin'
+import type { BaseItemDto } from '../lib/jellyfin'
 import logoSvg from '../assets/logo.svg'
+
+const SIDEBAR_ITEM_LIMIT = 8
 
 const libraryNav = [
   { to: '/library', label: 'Library', icon: 'M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z' },
   { to: '/search', label: 'Search', icon: 'M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z' },
   { to: '/favorites', label: 'Favorites', icon: 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z' },
-]
-
-const playlistNav = [
   { to: '/playlists', label: 'Playlists', icon: 'M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z' },
 ]
 
@@ -51,9 +53,68 @@ function NavItem({ item, collapsed }: { item: typeof libraryNav[0]; collapsed: b
   )
 }
 
+function SidebarPlaylistItem({ playlist }: { playlist: BaseItemDto }) {
+  return (
+    <NavLink
+      to={`/playlist/${playlist.Id}`}
+      className={({ isActive }) =>
+        `relative block text-sm truncate py-1.5 px-4 rounded-md transition-all duration-200
+        ${isActive
+          ? 'text-neon-cyan bg-neon-cyan/5'
+          : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          {isActive && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full bg-neon-cyan shadow-[0_0_6px_rgba(0,255,221,0.4)]" />
+          )}
+          <span className="truncate block">{playlist.Name ?? 'Untitled'}</span>
+        </>
+      )}
+    </NavLink>
+  )
+}
+
+function SidebarArtistItem({ artist }: { artist: BaseItemDto }) {
+  return (
+    <NavLink
+      to={`/artist/${artist.Id}`}
+      className={({ isActive }) =>
+        `relative block text-sm truncate py-1.5 px-4 rounded-md transition-all duration-200
+        ${isActive
+          ? 'text-neon-cyan bg-neon-cyan/5'
+          : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          {isActive && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full bg-neon-cyan shadow-[0_0_6px_rgba(0,255,221,0.4)]" />
+          )}
+          <span className="truncate block">{artist.Name ?? 'Unknown'}</span>
+        </>
+      )}
+    </NavLink>
+  )
+}
+
 export default function Sidebar() {
-  const { username } = useAuthStore()
+  const { username, api, userId } = useAuthStore()
   const { currentTrack, setShowNowPlaying } = usePlayerStore()
+  const [playlists, setPlaylists] = useState<BaseItemDto[]>([])
+  const [favoriteArtists, setFavoriteArtists] = useState<BaseItemDto[]>([])
+
+  useEffect(() => {
+    if (!api || !userId) return
+    fetchPlaylists(api, userId).then(res => setPlaylists(res.Items ?? [])).catch(() => {})
+    fetchFavorites(api, userId, [BaseItemKind.MusicArtist]).then(res => setFavoriteArtists(res.Items ?? [])).catch(() => {})
+  }, [api, userId])
+
+  const displayPlaylists = playlists.slice(0, SIDEBAR_ITEM_LIMIT)
+  const displayArtists = favoriteArtists.slice(0, SIDEBAR_ITEM_LIMIT)
 
   return (
     <aside className="hidden md:flex h-full flex-col bg-card/50 border-r border-white/5 backdrop-blur-sm shrink-0 overflow-hidden
@@ -75,24 +136,57 @@ export default function Sidebar() {
       {/* Library section */}
       <div className="px-2 lg:px-3 pt-4">
         <p className="hidden lg:block text-[11px] font-mono uppercase tracking-widest text-text-muted/60 px-4 mb-2">Library</p>
-        <nav className="space-y-0.5">
+        <nav className="space-y-1">
           {libraryNav.map((item) => (
             <NavItem key={item.to} item={item} collapsed={false} />
           ))}
         </nav>
       </div>
 
-      {/* Playlists section */}
-      <div className="px-2 lg:px-3 pt-5">
-        <p className="hidden lg:block text-[11px] font-mono uppercase tracking-widest text-text-muted/60 px-4 mb-2">Playlists</p>
-        <nav className="space-y-0.5">
-          {playlistNav.map((item) => (
-            <NavItem key={item.to} item={item} collapsed={false} />
-          ))}
-        </nav>
-      </div>
+      {/* Scrollable middle section for playlists + favorites */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+        {/* Playlists section */}
+        {displayPlaylists.length > 0 && (
+          <div className="hidden lg:block px-3 pt-5">
+            <div className="mx-1 mb-2 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+            <p className="text-[11px] font-mono uppercase tracking-widest text-text-muted/60 px-4 mb-2">Playlists</p>
+            <nav className="space-y-0.5">
+              {displayPlaylists.map((p) => (
+                <SidebarPlaylistItem key={p.Id} playlist={p} />
+              ))}
+            </nav>
+            {playlists.length > SIDEBAR_ITEM_LIMIT && (
+              <Link
+                to="/playlists"
+                className="block text-xs text-text-muted/50 hover:text-neon-cyan px-4 pt-2 transition-colors"
+              >
+                Show all ({playlists.length})
+              </Link>
+            )}
+          </div>
+        )}
 
-      <div className="flex-1" />
+        {/* Favorite Artists section */}
+        {displayArtists.length > 0 && (
+          <div className="hidden lg:block px-3 pt-5">
+            <div className="mx-1 mb-2 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+            <p className="text-[11px] font-mono uppercase tracking-widest text-text-muted/60 px-4 mb-2">Favorites</p>
+            <nav className="space-y-0.5">
+              {displayArtists.map((a) => (
+                <SidebarArtistItem key={a.Id} artist={a} />
+              ))}
+            </nav>
+            {favoriteArtists.length > SIDEBAR_ITEM_LIMIT && (
+              <Link
+                to="/favorites"
+                className="block text-xs text-text-muted/50 hover:text-neon-cyan px-4 pt-2 transition-colors"
+              >
+                Show all ({favoriteArtists.length})
+              </Link>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Now Playing mini (desktop only) */}
       {currentTrack && (
@@ -114,13 +208,13 @@ export default function Sidebar() {
       )}
 
       {/* Settings + User */}
-      <div className="px-2 lg:px-3 pb-2">
+      <div className="px-2 lg:px-3 pb-2 shrink-0">
         {bottomNav.map((item) => (
           <NavItem key={item.to} item={item} collapsed={false} />
         ))}
       </div>
 
-      <div className="mx-3 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+      <div className="mx-3 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent shrink-0" />
 
       <div className="px-3 lg:px-4 py-4 shrink-0">
         <div className="flex items-center gap-3">

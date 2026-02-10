@@ -19,7 +19,8 @@ import MobileNav from './components/MobileNav'
 
 function AppLayout() {
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col relative">
+      <div className="noise absolute inset-0 pointer-events-none z-50" />
       <div className="flex flex-1 min-h-0">
         {/* Sidebar: hidden on mobile, icon-only on tablet, full on desktop */}
         <Sidebar />

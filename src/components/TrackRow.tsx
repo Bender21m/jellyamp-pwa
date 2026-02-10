@@ -48,7 +48,14 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
               <span className="w-[3px] bg-neon-cyan rounded-full eq-bar-3" />
             </span>
           ) : (
-            track.indexNumber ?? index + 1
+            <>
+              <span className="group-hover:hidden">{track.indexNumber ?? index + 1}</span>
+              <span className="hidden group-hover:flex items-center justify-end">
+                <svg viewBox="0 0 24 24" className="w-4 h-4 text-neon-cyan" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </span>
+            </>
           )}
         </span>
       )}
