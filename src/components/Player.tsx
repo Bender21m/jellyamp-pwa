@@ -1,9 +1,11 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePlayerStore } from '../stores/player'
 import { useAuthStore } from '../stores/auth'
 import { getStreamUrl } from '../lib/jellyfin'
 import { useUIStore } from '../stores/ui'
+import KeyboardShortcuts from './KeyboardShortcuts'
+import Waveform from './Waveform'
 
 export default function Player() {
   const {
@@ -19,6 +21,7 @@ export default function Player() {
   const seekingRef = useRef(false)
   const crossfadeTimerRef = useRef<number | null>(null)
   const preloadedTrackIdRef = useRef<string | null>(null)
+  const [showShortcuts, setShowShortcuts] = useState(false)
 
   // Get next track in queue
   const getNextTrack = useCallback(() => {
@@ -170,41 +173,12 @@ export default function Player() {
         case e.code === 'KeyM': toggleMute(); break
         case e.code === 'ArrowUp' && !e.shiftKey: e.preventDefault(); setVolume(Math.min(1, volume + 0.05)); break
         case e.code === 'ArrowDown' && !e.shiftKey: e.preventDefault(); setVolume(Math.max(0, volume - 0.05)); break
+        case e.key === '?' && !e.shiftKey: e.preventDefault(); setShowShortcuts(true); break
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [volume])
-
-  const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!audioRef.current || !duration) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-    const time = pct * duration
-    audioRef.current.currentTime = time
-    seek(time)
-  }, [duration])
-
-  const handleSeekDrag = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!audioRef.current || !duration) return
-    seekingRef.current = true
-    const rect = e.currentTarget.getBoundingClientRect()
-    const onMove = (me: MouseEvent) => {
-      const pct = Math.max(0, Math.min(1, (me.clientX - rect.left) / rect.width))
-      setCurrentTime(pct * duration)
-    }
-    const onUp = (me: MouseEvent) => {
-      const pct = Math.max(0, Math.min(1, (me.clientX - rect.left) / rect.width))
-      const time = pct * duration
-      audioRef.current!.currentTime = time
-      seek(time)
-      seekingRef.current = false
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }, [duration])
 
   function formatTime(s: number) {
     if (!s || !isFinite(s)) return '0:00'
@@ -212,8 +186,6 @@ export default function Player() {
     const sec = Math.floor(s % 60)
     return `${m}:${sec.toString().padStart(2, '0')}`
   }
-
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
     <AnimatePresence>
@@ -227,16 +199,23 @@ export default function Player() {
             bottom-[56px] md:bottom-0"
           style={{ background: 'linear-gradient(180deg, rgba(10,10,16,0.95) 0%, rgba(5,5,8,0.98) 100%)' }}
         >
-          {/* Progress bar */}
-          <div
-            onClick={handleSeek}
-            onMouseDown={handleSeekDrag}
-            className="h-[2px] hover:h-1 bg-surface cursor-pointer group relative transition-[height] duration-150"
-          >
-            <div className="h-full bg-gradient-primary transition-none shadow-[0_0_6px_rgba(0,255,221,0.25)]" style={{ width: `${progress}%` }} />
-            <div
-              className="absolute top-1/2 w-3 h-3 rounded-full bg-neon-cyan opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_6px_rgba(0,255,221,0.5)] hidden md:block"
-              style={{ left: `${progress}%`, transform: 'translate(-50%, -50%)' }}
+          {/* Waveform progress */}
+          <div className="h-[2px] hover:h-2 transition-[height] duration-150">
+            <Waveform
+              currentTime={currentTime}
+              duration={duration}
+              onSeek={(time) => {
+                if (audioRef.current) {
+                  audioRef.current.currentTime = time
+                  seek(time)
+                }
+              }}
+              onSeekStart={() => { seekingRef.current = true }}
+              onSeekEnd={() => { seekingRef.current = false }}
+              trackId={currentTrack?.id}
+              className="h-full"
+              barCount={120}
+              showTooltip={false} // No tooltip on minimal player bar
             />
           </div>
 
@@ -336,6 +315,12 @@ export default function Player() {
           </div>
         </motion.div>
       )}
+      
+      {/* Keyboard shortcuts overlay */}
+      <KeyboardShortcuts 
+        isOpen={showShortcuts} 
+        onClose={() => setShowShortcuts(false)} 
+      />
     </AnimatePresence>
   )
 }
