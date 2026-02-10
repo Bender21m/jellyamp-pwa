@@ -90,6 +90,32 @@ export default function Waveform({
     setHoverTime(pct * duration)
   }, [duration, showTooltip])
 
+  // Touch support for mobile seeking
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!waveformRef.current || !duration) return
+    e.stopPropagation() // prevent parent drag/swipe
+    onSeekStart?.()
+    const touch = e.touches[0]
+    const rect = waveformRef.current.getBoundingClientRect()
+    const pct = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width))
+    onSeek(pct * duration)
+  }, [duration, onSeek, onSeekStart])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!waveformRef.current || !duration) return
+    e.stopPropagation()
+    e.preventDefault() // prevent scroll while seeking
+    const touch = e.touches[0]
+    const rect = waveformRef.current.getBoundingClientRect()
+    const pct = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width))
+    onSeek(pct * duration)
+  }, [duration, onSeek])
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    e.stopPropagation()
+    onSeekEnd?.()
+  }, [onSeekEnd])
+
   const handleMouseEnter = useCallback(() => {
     setIsHovering(true)
   }, [])
@@ -118,6 +144,9 @@ export default function Waveform({
         onClick={handleClick}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {waveformBars.map((height, index) => {
           const barProgress = index / waveformBars.length

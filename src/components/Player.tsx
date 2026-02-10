@@ -200,9 +200,28 @@ export default function Player() {
           }
         }
       }
+
+      // Gapless: trigger next track slightly before current ends
+      // This avoids the React render cycle gap between 'ended' event and new audio starting
+      if (crossfadeMode === 'gapless' && audio.duration && isFinite(audio.duration)) {
+        const timeLeft = audio.duration - audio.currentTime
+        if (timeLeft <= 0.15 && timeLeft > 0 && nextAudioRef.current && !nextAudioRef.current.dataset.started) {
+          nextAudioRef.current.dataset.started = 'true'
+          const targetVol = muted ? 0 : volume
+          nextAudioRef.current.volume = targetVol
+          nextAudioRef.current.play().catch(() => {})
+          // Advance to next track in store (audio element swap happens in the effect)
+          next()
+        }
+      }
     }
     const onDuration = () => { if (audio.duration && isFinite(audio.duration)) setDuration(audio.duration) }
-    const onEnded = () => next()
+    const onEnded = () => {
+      // Only call next() if gapless didn't already handle it
+      if (crossfadeMode !== 'gapless' || !nextAudioRef.current?.dataset.started) {
+        next()
+      }
+    }
 
     audio.addEventListener('timeupdate', onTimeUpdate)
     audio.addEventListener('durationchange', onDuration)

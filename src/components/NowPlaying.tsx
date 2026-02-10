@@ -132,11 +132,7 @@ export default function NowPlaying() {
           exit={{ opacity: 0, y: '100%' }}
           transition={{ type: 'spring', damping: 30, stiffness: 300 }}
           style={{ y, opacity }}
-          drag="y"
-          dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={0.2}
-          onDragEnd={handlePanEnd}
-          className="fixed inset-0 z-[60] flex flex-col overflow-hidden touch-none bg-deep-black"
+          className="fixed inset-0 z-[60] flex flex-col overflow-hidden bg-deep-black"
         >
           {/* Blurred album art background */}
           <div className="absolute inset-0">
@@ -171,8 +167,14 @@ export default function NowPlaying() {
             <div className="absolute inset-0 noise-overlay opacity-[0.03]" />
           </div>
 
-          {/* Top bar */}
-          <div className="relative z-10 flex items-center justify-between px-5 pt-4 pb-2 md:pt-6 md:px-8">
+          {/* Top bar — draggable to dismiss */}
+          <motion.div
+            className="relative z-10 flex items-center justify-between px-5 pt-4 pb-2 md:pt-6 md:px-8 cursor-grab active:cursor-grabbing touch-none"
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={0.3}
+            onDragEnd={handlePanEnd}
+          >
             <button
               onClick={() => setShowNowPlaying(false)}
               className="p-2 -ml-2 text-white/60 hover:text-white transition-colors"
@@ -194,20 +196,20 @@ export default function NowPlaying() {
                 <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
               </svg>
             </button>
-          </div>
+          </motion.div>
 
           {/* Drag handle - mobile */}
           <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/20 md:hidden z-20" />
 
-          {/* Main content area */}
-          <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-8 md:px-12 max-w-2xl mx-auto w-full">
+          {/* Main content area — scrollable on mobile */}
+          <div className="relative z-10 flex-1 flex flex-col items-center px-6 md:px-12 max-w-2xl mx-auto w-full overflow-y-auto overscroll-contain pt-4 md:pt-0 md:justify-center pb-8">
             {/* Album Art */}
             <motion.div
               key={currentTrack.id}
               initial={{ scale: 0.8, opacity: 0, rotateY: -15 }}
               animate={{ scale: 1, opacity: 1, rotateY: 0 }}
               transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-              className="w-[72vw] aspect-square max-w-[360px] rounded-2xl overflow-hidden mb-8 md:mb-10 relative group"
+              className="w-[60vw] md:w-[72vw] aspect-square max-w-[360px] rounded-2xl overflow-hidden mb-6 md:mb-10 relative group shrink-0"
               style={{ boxShadow: '0 20px 80px rgba(0, 0, 0, 0.6), 0 0 60px rgba(0, 255, 221, 0.08), 0 0 120px rgba(139, 92, 246, 0.06)' }}
             >
               {currentTrack.imageUrl ? (

@@ -196,20 +196,23 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
         <div className="text-[13px] text-text-muted truncate flex items-center gap-1">
           {track.artistName && (
             <>
-              <button
-                onClick={handleArtistClick}
-                className="text-text-muted hover:text-neon-cyan transition-colors cursor-pointer truncate"
-                title={`Go to ${track.artistName}`}
-              >
-                {track.artistName}
-              </button>
-              {track.albumName && <span className="text-text-muted/60">•</span>}
+              <span className="hidden md:contents">
+                <button
+                  onClick={handleArtistClick}
+                  className="text-text-muted hover:text-neon-cyan transition-colors cursor-pointer truncate"
+                  title={`Go to ${track.artistName}`}
+                >
+                  {track.artistName}
+                </button>
+                {track.albumName && <span className="text-text-muted/60">•</span>}
+              </span>
+              <span className="md:hidden truncate">{track.artistName}{track.albumName ? ` · ${track.albumName}` : ''}</span>
             </>
           )}
           {track.albumName && (
             <button
               onClick={handleAlbumClick}
-              className="text-text-muted hover:text-neon-cyan transition-colors cursor-pointer truncate"
+              className="text-text-muted hover:text-neon-cyan transition-colors cursor-pointer truncate hidden md:inline"
               title={`Go to ${track.albumName}`}
             >
               {track.albumName}
