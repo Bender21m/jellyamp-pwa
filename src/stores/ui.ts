@@ -30,6 +30,7 @@ interface UIState {
   eqGains: number[] // 5-band EQ gains (-12 to +12dB)
   eqEnabled: boolean
   showMiniPlayer: boolean
+  playbackSpeed: number // 0.5x, 0.75x, 1x, 1.25x, 1.5x, 2x
 
   setViewMode: (mode: ViewMode) => void
   setSortOption: (option: SortOption) => void
@@ -41,6 +42,7 @@ interface UIState {
   setEQGains: (gains: number[]) => void
   setEQEnabled: (enabled: boolean) => void
   setShowMiniPlayer: (show: boolean) => void
+  setPlaybackSpeed: (speed: number) => void
 }
 
 export const useUIStore = create<UIState>()(
@@ -67,6 +69,7 @@ export const useUIStore = create<UIState>()(
       eqGains: [0, 0, 0, 0, 0], // Flat EQ by default
       eqEnabled: false,
       showMiniPlayer: false,
+      playbackSpeed: 1,
 
       setViewMode: (mode) => set({ viewMode: mode }),
       setSortOption: (option) => set({ sortOption: option }),
@@ -80,6 +83,7 @@ export const useUIStore = create<UIState>()(
       setEQGains: (gains) => set({ eqGains: gains }),
       setEQEnabled: (enabled) => set({ eqEnabled: enabled }),
       setShowMiniPlayer: (show) => set({ showMiniPlayer: show }),
+      setPlaybackSpeed: (speed) => set({ playbackSpeed: speed }),
     }),
     {
       name: 'jellyamp-ui',

@@ -18,9 +18,18 @@ const CROSSFADE_OPTIONS: { value: CrossfadeMode; label: string; desc: string }[]
   { value: 'off', label: 'Off', desc: 'Standard playback with natural gaps' },
 ]
 
+const SPEED_OPTIONS: { value: number; label: string }[] = [
+  { value: 0.5, label: '0.5×' },
+  { value: 0.75, label: '0.75×' },
+  { value: 1, label: '1×' },
+  { value: 1.25, label: '1.25×' },
+  { value: 1.5, label: '1.5×' },
+  { value: 2, label: '2×' },
+]
+
 export default function Settings() {
   const { serverUrl, serverName, username, logout } = useAuthStore()
-  const { audioQuality, setAudioQuality, crossfadeMode, setCrossfadeMode, crossfadeDuration, setCrossfadeDuration, scrobbleSettings, updateScrobbleSettings } = useUIStore()
+  const { audioQuality, setAudioQuality, crossfadeMode, setCrossfadeMode, crossfadeDuration, setCrossfadeDuration, playbackSpeed, setPlaybackSpeed, scrobbleSettings, updateScrobbleSettings } = useUIStore()
   
   const [lastfmApiKey, setLastfmApiKey] = useState(scrobbleSettings.lastfm.apiKey)
   const [listenbrainzToken, setListenbrainzToken] = useState(scrobbleSettings.listenbrainz.token)
@@ -210,6 +219,29 @@ export default function Settings() {
               />
             </div>
           )}
+        </section>
+
+        {/* Playback Speed */}
+        <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
+          <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted mb-4">Playback Speed</h2>
+          <div className="grid grid-cols-3 gap-2">
+            {SPEED_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setPlaybackSpeed(opt.value)}
+                className={`flex items-center justify-center px-4 py-3 rounded-lg transition-all text-sm font-semibold ${
+                  playbackSpeed === opt.value
+                    ? 'bg-neon-cyan/[0.08] ring-1 ring-neon-cyan/30 text-neon-cyan'
+                    : 'hover:bg-white/5 text-text-primary'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-text-muted/60 mt-3 px-1">
+            Adjust playback speed. Useful for learning music or speeding through spoken content.
+          </p>
         </section>
 
         {/* Scrobbling */}

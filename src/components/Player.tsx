@@ -6,8 +6,9 @@ import { getStreamUrl } from '../lib/jellyfin'
 import { useUIStore } from '../stores/ui'
 import KeyboardShortcuts from './KeyboardShortcuts'
 import Waveform from './Waveform'
-import MiniPlayer from './MiniPlayer'
+import Equalizer from './Equalizer'
 import { updateNowPlaying, scrobbleTrack, shouldScrobble } from '../lib/scrobble'
+import { AudioEqualizer, type EQPreset } from '../lib/equalizer'
 
 export default function Player() {
   const {
@@ -17,13 +18,15 @@ export default function Player() {
     cycleRepeat, setCurrentTime, setDuration, setShowNowPlaying, showQueue, setShowQueue,
   } = usePlayerStore()
   const { serverUrl, api } = useAuthStore()
-  const { audioQuality, crossfadeMode, crossfadeDuration, scrobbleSettings, showMiniPlayer, setShowMiniPlayer } = useUIStore()
+  const { audioQuality, crossfadeMode, crossfadeDuration, scrobbleSettings, eqGains, eqEnabled, setEQGains, setEQEnabled } = useUIStore()
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const nextAudioRef = useRef<HTMLAudioElement | null>(null)
   const seekingRef = useRef(false)
   const crossfadeTimerRef = useRef<number | null>(null)
   const preloadedTrackIdRef = useRef<string | null>(null)
+  const equalizerRef = useRef<AudioEqualizer | null>(null)
   const [showShortcuts, setShowShortcuts] = useState(false)
+  const [showEqualizer, setShowEqualizer] = useState(false)
   
   // Scrobbling state
   const scrobbledTracksRef = useRef<Set<string>>(new Set())
@@ -96,6 +99,14 @@ export default function Player() {
       audio.addEventListener('canplay', onCanPlay, { once: true })
     }
     audio.addEventListener('error', onError)
+
+    // Initialize EQ if enabled
+    if (eqEnabled && !equalizerRef.current) {
+      initializeEqualizer(audio)
+    } else if (eqEnabled && equalizerRef.current) {
+      // Reconnect EQ to new audio element
+      equalizerRef.current.connectToAudio(audio).catch(console.error)
+    }
 
     const onTimeUpdate = () => {
       if (!seekingRef.current) setCurrentTime(audio.currentTime)
@@ -234,9 +245,55 @@ export default function Player() {
     return `${m}:${sec.toString().padStart(2, '0')}`
   }
 
+  // Initialize the equalizer
+  async function initializeEqualizer(audioElement: HTMLAudioElement) {
+    try {
+      if (!equalizerRef.current) {
+        equalizerRef.current = new AudioEqualizer()
+      }
+      
+      await equalizerRef.current.connectToAudio(audioElement)
+      
+      // Apply saved EQ settings
+      if (eqGains.length === 5) {
+        equalizerRef.current.setEQGains(eqGains)
+      }
+    } catch (error) {
+      console.error('Failed to initialize equalizer:', error)
+    }
+  }
+
+  // Handle EQ gain changes
+  function handleEQGainsChange(gains: number[]) {
+    setEQGains(gains)
+    if (equalizerRef.current?.connected) {
+      equalizerRef.current.setEQGains(gains)
+    }
+  }
+
+  // Handle EQ preset application
+  function handleEQPresetApply(preset: EQPreset) {
+    handleEQGainsChange(preset.gains)
+  }
+
+  // Toggle EQ on/off
+  function toggleEqualizer() {
+    const newEqEnabled = !eqEnabled
+    setEQEnabled(newEqEnabled)
+    
+    if (newEqEnabled && audioRef.current) {
+      // Initialize EQ
+      initializeEqualizer(audioRef.current)
+    } else if (!newEqEnabled && equalizerRef.current) {
+      // Disable EQ
+      equalizerRef.current.disconnect()
+      equalizerRef.current = null
+    }
+  }
+
   return (
     <AnimatePresence>
-      {currentTrack && !showMiniPlayer && (
+      {currentTrack && (
         <motion.div
           initial={{ y: 80, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -350,12 +407,21 @@ export default function Player() {
                 />
               </div>
               <button
-                onClick={() => setShowMiniPlayer(!showMiniPlayer)}
-                className="p-2 rounded transition-colors text-text-muted hover:text-text-primary"
-                title="Mini Player"
+                onClick={toggleEqualizer}
+                className={`p-2 rounded transition-colors ${eqEnabled ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
+                title="Equalizer"
               >
                 <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
-                  <path d="M19 7h-3V6a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v1H5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zM9 6h6v1H9V6zm9 13H6V8h2v1a1 1 0 0 0 2 0V8h4v1a1 1 0 0 0 2 0V8h2v11z" />
+                  <path d="M7 20h4v-9H7v9zm6-16h-4v7h4V4zm6 0h-4v3h4V4zm0 5h-4v11h4V9z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setShowEqualizer(!showEqualizer)}
+                className={`p-2 rounded transition-colors ${showEqualizer ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
+                title="EQ Settings"
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+                  <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z" />
                 </svg>
               </button>
               <button
@@ -372,13 +438,19 @@ export default function Player() {
         </motion.div>
       )}
 
-      {/* Mini Player */}
-      {currentTrack && showMiniPlayer && <MiniPlayer />}
-      
       {/* Keyboard shortcuts overlay */}
       <KeyboardShortcuts 
         isOpen={showShortcuts} 
         onClose={() => setShowShortcuts(false)} 
+      />
+
+      {/* Equalizer overlay */}
+      <Equalizer
+        isOpen={showEqualizer}
+        onClose={() => setShowEqualizer(false)}
+        gains={eqGains}
+        onGainsChange={handleEQGainsChange}
+        onPresetApply={handleEQPresetApply}
       />
 
       {/* Scrobble toast */}
