@@ -6,6 +6,7 @@ import { usePlayerStore, type Track } from '../stores/player'
 import { fetchTracks, getImageUrl, toggleFavorite } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import { useAlbumColors } from '../hooks/useAlbumColors'
+import { parseShowDate, formatShowDate } from '../lib/dateParser'
 import TrackRow from '../components/TrackRow'
 import TrackContextMenu from '../components/TrackContextMenu'
 
@@ -158,6 +159,17 @@ export default function AlbumDetail() {
             <h1 className="text-xl md:text-3xl font-extrabold tracking-[-0.02em] leading-tight">
               {album.Name}
             </h1>
+
+            {/* Show Date - only display if parsed from album name */}
+            {(() => {
+              const showDate = parseShowDate(album.Name ?? '');
+              if (!showDate) return null;
+              return (
+                <div className="text-xs text-text-muted font-mono bg-white/5 px-2 py-1 rounded-md border border-white/10 mt-1">
+                  {formatShowDate(showDate)}
+                </div>
+              );
+            })()}
 
             {album.AlbumArtist && (
               <Link

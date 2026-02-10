@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { setDragData } from '../lib/dragdrop'
+import { parseShowDate, formatShowDate } from '../lib/dateParser'
 
 interface AlbumCardProps {
   id: string
@@ -50,6 +51,16 @@ export default function AlbumCard({ id, name, artistName, imageUrl, year }: Albu
             <span className="text-[11px] text-text-muted font-mono shrink-0 px-2 py-0.5 rounded-full bg-surface border border-white/5">{year}</span>
           )}
         </div>
+        {/* Show Date - only display if parsed from album name */}
+        {(() => {
+          const showDate = parseShowDate(name);
+          if (!showDate) return null;
+          return (
+            <p className="text-[11px] text-text-muted font-mono mt-1 truncate">
+              {formatShowDate(showDate)}
+            </p>
+          );
+        })()}
       </motion.div>
     </Link>
     </div>
