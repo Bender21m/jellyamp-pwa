@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
+import { setDragData } from '../lib/dragdrop'
 
 interface ArtistCardProps {
   id: string
@@ -8,8 +9,13 @@ interface ArtistCardProps {
 }
 
 export default function ArtistCard({ id, name, imageUrl }: ArtistCardProps) {
+  function handleDragStart(e: React.DragEvent) {
+    setDragData(e, { type: 'artist', artistId: id, label: name })
+  }
+
   return (
-    <Link to={`/artist/${id}`}>
+    <div draggable onDragStart={handleDragStart}>
+    <Link to={`/artist/${id}`} draggable={false}>
       <motion.div
         whileHover={{ y: -2 }}
         transition={{ duration: 0.2 }}
@@ -47,5 +53,6 @@ export default function ArtistCard({ id, name, imageUrl }: ArtistCardProps) {
         </h3>
       </motion.div>
     </Link>
+    </div>
   )
 }

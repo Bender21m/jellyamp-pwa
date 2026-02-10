@@ -3,7 +3,7 @@ import { NavLink, Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore } from '../stores/player'
-import { fetchPlaylists, fetchFavorites, fetchTracks, createPlaylist, deletePlaylist, addToPlaylist, BaseItemKind } from '../lib/jellyfin'
+import { fetchPlaylists, fetchFavorites, fetchTracks, fetchArtistTracks, createPlaylist, deletePlaylist, addToPlaylist, BaseItemKind } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import { getDragData, DRAG_FORMAT } from '../lib/dragdrop'
 import logoSvg from '../assets/logo.svg'
@@ -237,12 +237,17 @@ export default function Sidebar() {
       } else if (data.type === 'album' && data.albumId) {
         const res = await fetchTracks(api, userId, data.albumId)
         trackIds = (res.Items ?? []).map((t: any) => t.Id).filter(Boolean)
+      } else if (data.type === 'artist' && data.artistId) {
+        const res = await fetchArtistTracks(api, userId, data.artistId)
+        trackIds = (res.Items ?? []).map((t: any) => t.Id).filter(Boolean)
       }
 
       if (trackIds.length === 0) return
 
       await addToPlaylist(api, playlistId, trackIds)
-      const label = data.label ?? `${trackIds.length} track${trackIds.length > 1 ? 's' : ''}`
+      const label = data.type === 'tracks'
+        ? (data.label ?? '1 track')
+        : `${data.label ?? 'items'} (${trackIds.length} tracks)`
       setDropToast(`Added ${label} to ${playlistName}`)
       setTimeout(() => setDropToast(''), 2500)
     } catch {

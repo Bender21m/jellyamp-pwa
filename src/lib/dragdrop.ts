@@ -2,9 +2,10 @@
 // Data format: JSON string with { type, trackIds?, albumId?, albumName? }
 
 export interface DragData {
-  type: 'tracks' | 'album'
+  type: 'tracks' | 'album' | 'artist'
   trackIds?: string[]
   albumId?: string
+  artistId?: string
   label?: string // display name for feedback
 }
 

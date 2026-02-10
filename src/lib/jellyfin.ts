@@ -116,6 +116,20 @@ export async function fetchTracks(api: Api, userId: string, parentId: string) {
   return data
 }
 
+export async function fetchArtistTracks(api: Api, userId: string, artistId: string) {
+  const itemsApi = getItemsApi(api)
+  const { data } = await itemsApi.getItems({
+    userId,
+    artistIds: [artistId],
+    includeItemTypes: [BaseItemKind.Audio],
+    sortBy: [ItemSortBy.Album, ItemSortBy.SortName],
+    sortOrder: [SortOrder.Ascending, SortOrder.Ascending],
+    recursive: true,
+    fields: [ItemFields.MediaSources],
+  })
+  return data
+}
+
 export async function fetchFavorites(api: Api, userId: string, itemTypes: BaseItemKind[]) {
   const itemsApi = getItemsApi(api)
   const { data } = await itemsApi.getItems({
