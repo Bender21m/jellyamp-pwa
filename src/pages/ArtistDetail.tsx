@@ -228,6 +228,27 @@ export default function ArtistDetail() {
                   <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" /></svg>
                   Shuffle
                 </motion.button>
+                {/* Random Show button - only show if artist has more than 1 album */}
+                {albums.length > 1 && (
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={async () => {
+                      // Pick a random album from the artist's discography
+                      const randomIndex = Math.floor(Math.random() * albums.length)
+                      const randomAlbum = albums[randomIndex]
+                      // Navigate to the album and auto-play
+                      navigate(`/album/${randomAlbum.Id}`)
+                      // Small delay to let navigation complete, then play
+                      setTimeout(() => {
+                        playAll(false)
+                      }, 100)
+                    }}
+                    className="h-11 inline-flex items-center gap-2.5 px-6 rounded-full border border-white/10 text-sm text-text-secondary whitespace-nowrap hover:text-text-primary hover:border-white/20 transition-all"
+                  >
+                    <span className="text-base">🎲</span>
+                    Random Show
+                  </motion.button>
+                )}
                 <button
                   onClick={async () => {
                     if (!api || !userId || !id) return
