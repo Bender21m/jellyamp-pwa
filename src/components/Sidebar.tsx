@@ -3,8 +3,9 @@ import { NavLink, Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore } from '../stores/player'
-import { fetchPlaylists, fetchFavorites, createPlaylist, deletePlaylist, BaseItemKind } from '../lib/jellyfin'
+import { fetchPlaylists, fetchFavorites, fetchTracks, createPlaylist, deletePlaylist, addToPlaylist, BaseItemKind } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
+import { getDragData, hasDragData, DRAG_FORMAT } from '../lib/dragdrop'
 import logoSvg from '../assets/logo.svg'
 
 const SIDEBAR_ITEM_LIMIT = 8
@@ -53,9 +54,14 @@ function NavItem({ item, collapsed }: { item: typeof libraryNav[0]; collapsed: b
   )
 }
 
-function SidebarPlaylistItem({ playlist, onDelete }: { playlist: BaseItemDto; onDelete: (id: string, name: string) => void }) {
+function SidebarPlaylistItem({ playlist, onDelete, onDrop }: {
+  playlist: BaseItemDto
+  onDelete: (id: string, name: string) => void
+  onDrop: (playlistId: string, playlistName: string, e: React.DragEvent) => void
+}) {
   const [showCtx, setShowCtx] = useState(false)
   const [ctxPos, setCtxPos] = useState({ x: 0, y: 0 })
+  const [isDragOver, setIsDragOver] = useState(false)
   const ctxRef = useRef<HTMLDivElement>(null)
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
@@ -71,22 +77,45 @@ function SidebarPlaylistItem({ playlist, onDelete }: { playlist: BaseItemDto; on
     return () => window.removeEventListener('click', close)
   }, [showCtx])
 
+  function handleDragOver(e: React.DragEvent) {
+    if (e.dataTransfer.types.includes(DRAG_FORMAT)) {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'copy'
+      setIsDragOver(true)
+    }
+  }
+
+  function handleDragLeave() {
+    setIsDragOver(false)
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setIsDragOver(false)
+    onDrop(playlist.Id!, playlist.Name ?? 'Untitled', e)
+  }
+
   return (
     <>
       <NavLink
         to={`/playlist/${playlist.Id}`}
         onContextMenu={handleContextMenu}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         className={({ isActive }) =>
           `relative block text-sm truncate py-1.5 px-4 rounded-md transition-all duration-200
-          ${isActive
-            ? 'text-neon-cyan bg-neon-cyan/5'
-            : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+          ${isDragOver
+            ? 'text-neon-cyan bg-neon-cyan/15 ring-1 ring-neon-cyan/40 shadow-[0_0_12px_rgba(0,255,221,0.15)]'
+            : isActive
+              ? 'text-neon-cyan bg-neon-cyan/5'
+              : 'text-text-muted hover:text-text-primary hover:bg-white/5'
           }`
         }
       >
         {({ isActive }) => (
           <>
-            {isActive && (
+            {(isActive && !isDragOver) && (
               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full bg-neon-cyan shadow-[0_0_6px_rgba(0,255,221,0.4)]" />
             )}
             <span className="truncate block">{playlist.Name ?? 'Untitled'}</span>
@@ -150,6 +179,7 @@ export default function Sidebar() {
   const [creatingPlaylist, setCreatingPlaylist] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null)
   const [deleteError, setDeleteError] = useState('')
+  const [dropToast, setDropToast] = useState('')
 
   async function loadPlaylists() {
     if (!api || !userId) return
@@ -192,6 +222,32 @@ export default function Sidebar() {
       } else {
         setDeleteError('Failed to delete playlist. Try again.')
       }
+    }
+  }
+
+  async function handlePlaylistDrop(playlistId: string, playlistName: string, e: React.DragEvent) {
+    if (!api || !userId) return
+    const data = getDragData(e)
+    if (!data) return
+
+    try {
+      let trackIds: string[] = []
+      if (data.type === 'tracks' && data.trackIds) {
+        trackIds = data.trackIds
+      } else if (data.type === 'album' && data.albumId) {
+        const res = await fetchTracks(api, userId, data.albumId)
+        trackIds = (res.Items ?? []).map((t: any) => t.Id).filter(Boolean)
+      }
+
+      if (trackIds.length === 0) return
+
+      await addToPlaylist(api, playlistId, trackIds)
+      const label = data.label ?? `${trackIds.length} track${trackIds.length > 1 ? 's' : ''}`
+      setDropToast(`Added ${label} to ${playlistName}`)
+      setTimeout(() => setDropToast(''), 2500)
+    } catch {
+      setDropToast('Failed to add to playlist')
+      setTimeout(() => setDropToast(''), 2500)
     }
   }
 
@@ -277,7 +333,7 @@ export default function Sidebar() {
           {displayPlaylists.length > 0 && (
             <nav className="space-y-0.5">
               {displayPlaylists.map((p) => (
-                <SidebarPlaylistItem key={p.Id} playlist={p} onDelete={(id, name) => setConfirmDelete({ id, name })} />
+                <SidebarPlaylistItem key={p.Id} playlist={p} onDelete={(id, name) => setConfirmDelete({ id, name })} onDrop={handlePlaylistDrop} />
               ))}
             </nav>
           )}
@@ -351,6 +407,20 @@ export default function Sidebar() {
           </span>
         </div>
       </div>
+      {/* Drop toast */}
+      <AnimatePresence>
+        {dropToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[80] px-4 py-2.5 rounded-xl bg-neon-cyan/20 border border-neon-cyan/30 text-neon-cyan text-sm font-medium shadow-[0_8px_30px_rgba(0,255,221,0.15)] backdrop-blur-md"
+          >
+            {dropToast}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Delete confirmation modal */}
       <AnimatePresence>
         {confirmDelete && (

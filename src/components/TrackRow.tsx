@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { usePlayerStore, type Track } from '../stores/player'
+import { setDragData } from '../lib/dragdrop'
 
 interface TrackRowProps {
   track: Track
@@ -26,8 +27,15 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
     return `${m}:${s.toString().padStart(2, '0')}`
   }
 
+  function handleDragStart(e: React.DragEvent) {
+    setDragData(e, { type: 'tracks', trackIds: [track.id], label: track.name })
+    e.dataTransfer.effectAllowed = 'copy'
+  }
+
   return (
     <motion.div
+      draggable
+      onDragStart={handleDragStart}
       onClick={handleClick}
       onContextMenu={onContextMenu}
       initial={{ opacity: 0, y: 4 }}

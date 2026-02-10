@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
+import { setDragData } from '../lib/dragdrop'
 
 interface AlbumCardProps {
   id: string
@@ -10,9 +11,15 @@ interface AlbumCardProps {
 }
 
 export default function AlbumCard({ id, name, artistName, imageUrl, year }: AlbumCardProps) {
+  function handleDragStart(e: React.DragEvent) {
+    setDragData(e, { type: 'album', albumId: id, label: name })
+  }
+
   return (
-    <Link to={`/album/${id}`}>
+    <Link to={`/album/${id}`} draggable={false}>
       <motion.div
+        draggable
+        onDragStart={handleDragStart}
         whileHover={{ y: -2 }}
         transition={{ duration: 0.2 }}
         className="group cursor-pointer"
