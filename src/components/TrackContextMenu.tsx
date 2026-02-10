@@ -29,16 +29,18 @@ export default function TrackContextMenu({ track, position, onClose, playlistId,
 
   useEffect(() => {
     if (!isOpen) return
-    function handleClick(e: MouseEvent) {
+    function handleClick(e: MouseEvent | TouchEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose()
     }
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
     }
-    document.addEventListener('mousedown', handleClick)
+    // Use pointerdown instead of mousedown — works for both mouse and touch,
+    // and fires on the correct target (not stealing clicks from child buttons)
+    document.addEventListener('pointerdown', handleClick)
     document.addEventListener('keydown', handleKey)
     return () => {
-      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('pointerdown', handleClick)
       document.removeEventListener('keydown', handleKey)
     }
   }, [isOpen, onClose])
@@ -209,12 +211,12 @@ export default function TrackContextMenu({ track, position, onClose, playlistId,
                     value={newPlaylistName}
                     onChange={e => setNewPlaylistName(e.target.value)}
                     placeholder="Playlist name"
-                    className="flex-1 bg-white/5 border border-white/10 rounded-md px-2.5 py-1.5 text-sm text-text-primary placeholder-text-muted/50 focus:outline-none focus:border-neon-cyan/40"
+                    className="min-w-0 flex-1 bg-white/5 border border-white/10 rounded-md px-2.5 py-1.5 text-sm text-text-primary placeholder-text-muted/50 focus:outline-none focus:border-neon-cyan/40"
                   />
                   <button
                     type="submit"
                     disabled={!newPlaylistName.trim()}
-                    className="text-neon-cyan text-sm font-semibold disabled:opacity-30"
+                    className="shrink-0 text-neon-cyan text-sm font-semibold disabled:opacity-30"
                   >
                     Add
                   </button>

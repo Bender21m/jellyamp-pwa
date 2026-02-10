@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { usePlayerStore } from '../stores/player'
+import EmptyState from './EmptyState'
 
 export default function QueuePanel() {
   const { queue, queueIndex, currentTrack, showQueue, setShowQueue, jumpToTrack, removeFromQueue, moveInQueue, clearQueue, isPlaying } = usePlayerStore()
+  const navigate = useNavigate()
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [overIdx, setOverIdx] = useState<number | null>(null)
 
@@ -74,8 +77,23 @@ export default function QueuePanel() {
         {/* Up Next */}
         <div className="flex-1 overflow-y-auto">
           {upcoming.length === 0 ? (
-            <div className="flex items-center justify-center h-32 text-text-muted text-sm">
-              Nothing up next
+            <div className="py-8">
+              <EmptyState
+                icon={
+                  <svg viewBox="0 0 24 24" className="w-12 h-12" fill="currentColor">
+                    <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
+                  </svg>
+                }
+                title="Queue is empty"
+                subtitle="Play something to get started"
+                action={{
+                  label: "Browse library",
+                  onClick: () => {
+                    setShowQueue(false)
+                    navigate('/library')
+                  }
+                }}
+              />
             </div>
           ) : (
             <>

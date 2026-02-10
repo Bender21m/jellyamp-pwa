@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth'
 import { fetchFavorites, getImageUrl, BaseItemKind } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import AlbumCard from '../components/AlbumCard'
 import ArtistCard from '../components/ArtistCard'
+import EmptyState from '../components/EmptyState'
 
 export default function Favorites() {
   const { api, userId, serverUrl } = useAuthStore()
+  const navigate = useNavigate()
   const [items, setItems] = useState<BaseItemDto[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -53,13 +56,19 @@ export default function Favorites() {
             ))}
           </div>
         ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-text-muted">
-            <svg viewBox="0 0 24 24" className="w-16 h-16 mb-4 opacity-20" fill="currentColor">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-            </svg>
-            <p className="text-sm">No favorites yet</p>
-            <p className="text-xs mt-1 text-text-muted/60">Tap the heart on albums and artists to add them</p>
-          </div>
+          <EmptyState
+            icon={
+              <svg viewBox="0 0 24 24" className="w-16 h-16" fill="currentColor">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+            }
+            title="No favorites yet"
+            subtitle="Tap the heart on albums and artists to add them to your favorites."
+            action={{
+              label: "Browse your library",
+              onClick: () => navigate('/library')
+            }}
+          />
         ) : (
           <div className="space-y-8">
             <section>

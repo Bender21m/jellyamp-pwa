@@ -7,6 +7,7 @@ import { fetchAlbums, fetchTracks, getImageUrl, fetchArtistById, toggleFavorite,
 import type { BaseItemDto } from '../lib/jellyfin'
 import { useAlbumColors } from '../hooks/useAlbumColors'
 import AlbumCard from '../components/AlbumCard'
+import EmptyState from '../components/EmptyState'
 
 type DiscographySort = 'year-newest' | 'year-oldest' | 'name-asc' | 'name-desc'
 
@@ -37,6 +38,7 @@ export default function ArtistDetail() {
   const [albums, setAlbums] = useState<BaseItemDto[]>([])
   const [similarArtists, setSimilarArtists] = useState<BaseItemDto[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [discSort, setDiscSort] = useState<DiscographySort>('year-newest')
   const [showSort, setShowSort] = useState(false)
   const [yearFilter, setYearFilter] = useState<number | null>(null)
@@ -50,6 +52,7 @@ export default function ArtistDetail() {
   async function loadArtist() {
     if (!api || !userId || !id || !serverUrl) return
     setLoading(true)
+    setError(null)
     try {
       const [artistData, albumsRes, similarRes] = await Promise.all([
         fetchArtistById(api, userId, id),
@@ -62,6 +65,10 @@ export default function ArtistDetail() {
       setSimilarArtists(similarRes)
     } catch (e) {
       console.error('Failed to load artist', e)
+      setError('Failed to load artist. Please try again.')
+      setArtist(null)
+      setAlbums([])
+      setSimilarArtists([])
     }
     setLoading(false)
   }
@@ -140,6 +147,39 @@ export default function ArtistDetail() {
               <div className="h-3.5 skeleton rounded w-1/2" />
             </div>
           ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="px-4 md:px-8 pt-5 md:pt-8 pb-4 shrink-0">
+          <button
+            onClick={() => navigate(-1)}
+            className="mb-4 text-text-muted hover:text-text-primary transition-colors flex items-center gap-1.5 text-sm"
+          >
+            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+            </svg>
+            Back
+          </button>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <EmptyState
+            icon={
+              <svg viewBox="0 0 24 24" className="w-16 h-16" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+              </svg>
+            }
+            title="Something went wrong"
+            subtitle={error}
+            action={{
+              label: "Try again",
+              onClick: () => loadArtist()
+            }}
+          />
         </div>
       </div>
     )

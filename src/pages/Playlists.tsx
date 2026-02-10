@@ -4,6 +4,7 @@ import { useAuthStore } from '../stores/auth'
 import { fetchPlaylists, createPlaylist, deletePlaylist, getImageUrl } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import PlaylistCard from '../components/PlaylistCard'
+import EmptyState from '../components/EmptyState'
 
 export default function Playlists() {
   const { api, userId, serverUrl } = useAuthStore()
@@ -119,12 +120,19 @@ export default function Playlists() {
             ))}
           </div>
         ) : playlists.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-text-muted">
-            <svg viewBox="0 0 24 24" className="w-16 h-16 mb-4 opacity-20" fill="currentColor">
-              <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
-            </svg>
-            <p className="text-sm">No playlists yet</p>
-          </div>
+          <EmptyState
+            icon={
+              <svg viewBox="0 0 24 24" className="w-16 h-16" fill="currentColor">
+                <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
+              </svg>
+            }
+            title="No playlists yet"
+            subtitle="Create custom playlists to organize your favorite tracks."
+            action={{
+              label: "Create your first playlist",
+              onClick: () => setShowCreate(true)
+            }}
+          />
         ) : (
           <div className={gridCols}>
             {playlists.map((p, i) => (
