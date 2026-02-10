@@ -21,7 +21,7 @@ export default function NowPlaying() {
   const y = useMotionValue(0)
   const opacity = useTransform(y, [0, 300], [1, 0])
 
-  // Track favorite state — sync from currentTrack, allow local optimistic toggle
+  // Favorite: optimistic local override, synced back to store
   const [localFavOverride, setLocalFavOverride] = useState<{ trackId: string; isFav: boolean } | null>(null)
   const trackIsFav = localFavOverride !== null && localFavOverride.trackId === currentTrack?.id
     ? localFavOverride.isFav
@@ -33,17 +33,14 @@ export default function NowPlaying() {
   async function handleFavorite() {
     if (!api || !userId || !currentTrack) return
     const newFav = !trackIsFav
-    // Optimistic update
     setLocalFavOverride({ trackId: currentTrack.id, isFav: newFav })
     try {
       await toggleFavorite(api, userId, currentTrack.id, trackIsFav)
-      // Also update the track in the player store queue so it persists
       const { queue } = usePlayerStore.getState()
       const updatedQueue = queue.map(t => t.id === currentTrack.id ? { ...t, isFavorite: newFav } : t)
       const updatedTrack = { ...currentTrack, isFavorite: newFav }
       usePlayerStore.setState({ queue: updatedQueue, currentTrack: updatedTrack })
     } catch {
-      // Revert on error
       setLocalFavOverride({ trackId: currentTrack.id, isFav: trackIsFav })
     }
   }
