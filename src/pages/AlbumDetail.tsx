@@ -6,6 +6,7 @@ import { usePlayerStore, type Track } from '../stores/player'
 import { fetchTracks, getImageUrl, toggleFavorite } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import { useAlbumColors } from '../hooks/useAlbumColors'
+import JellyImage from '../components/JellyImage'
 import { useScrollRestore } from '../hooks/useScrollRestore'
 import { parseShowDate, formatShowDate } from '../lib/dateParser'
 import { parseVenue } from '../lib/venueParser'
@@ -23,7 +24,7 @@ export default function AlbumDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { api, userId, serverUrl } = useAuthStore()
-  const { setTrack } = usePlayerStore()
+  const setTrack = usePlayerStore(s => s.setTrack)
   const [album, setAlbum] = useState<BaseItemDto | null>(null)
   const [tracks, setTracks] = useState<Track[]>([])
   const [loading, setLoading] = useState(true)
@@ -259,7 +260,7 @@ export default function AlbumDetail() {
             animate={{ opacity: 1, scale: 1 }}
             className="w-[220px] md:w-[260px] aspect-square rounded-2xl overflow-hidden shadow-2xl shrink-0 ring-1 ring-white/10"
           >
-            <img src={imageUrl} alt={album.Name ?? ''} className="w-full h-full object-cover" />
+            <JellyImage src={imageUrl} width={260} height={260} maxWidth={600} alt={album.Name ?? ''} className="w-full h-full" />
           </motion.div>
 
           {/* Info */}

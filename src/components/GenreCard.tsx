@@ -1,3 +1,5 @@
+import React from 'react'
+
 const GENRE_COLORS = [
   ['#00FFDD', '#8B5CF6'],
   ['#FF2D78', '#8B5CF6'],
@@ -6,7 +8,7 @@ const GENRE_COLORS = [
   ['#00FFDD', '#3B82F6'],
 ]
 
-export default function GenreCard({ name, onClick, index }: { name: string; onClick: () => void; index: number }) {
+const GenreCard = React.memo(function GenreCard({ name, onClick, index }: { name: string; onClick: () => void; index: number }) {
   const colors = GENRE_COLORS[index % GENRE_COLORS.length]
   return (
     <button
@@ -27,4 +29,6 @@ export default function GenreCard({ name, onClick, index }: { name: string; onCl
       />
     </button>
   )
-}
+})
+
+export default GenreCard

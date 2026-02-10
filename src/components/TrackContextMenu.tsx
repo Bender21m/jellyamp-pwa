@@ -15,7 +15,8 @@ interface ContextMenuProps {
 
 export default function TrackContextMenu({ track, position, onClose, playlistId, onRemoveFromPlaylist }: ContextMenuProps) {
   const { api, userId } = useAuthStore()
-  const { playNext, addToQueue } = usePlayerStore()
+  const playNext = usePlayerStore(s => s.playNext)
+  const addToQueue = usePlayerStore(s => s.addToQueue)
   const [showPlaylists, setShowPlaylists] = useState(false)
   const [playlists, setPlaylists] = useState<BaseItemDto[]>([])
   const [loadingPlaylists, setLoadingPlaylists] = useState(false)

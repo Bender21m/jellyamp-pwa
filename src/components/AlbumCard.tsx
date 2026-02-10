@@ -1,3 +1,4 @@
+import React from 'react'
 import { Link } from 'react-router-dom'
 import { setDragData } from '../lib/dragdrop'
 import { parseShowDate, formatShowDate } from '../lib/dateParser'
@@ -11,7 +12,7 @@ interface AlbumCardProps {
   year?: number
 }
 
-export default function AlbumCard({ id, name, artistName, imageUrl, year }: AlbumCardProps) {
+const AlbumCard = React.memo(function AlbumCard({ id, name, artistName, imageUrl, year }: AlbumCardProps) {
   function handleDragStart(e: React.DragEvent) {
     setDragData(e, { type: 'album', albumId: id, label: name })
   }
@@ -23,12 +24,7 @@ export default function AlbumCard({ id, name, artistName, imageUrl, year }: Albu
         className="group cursor-pointer hover:-translate-y-0.5 transition-transform duration-200"
       >
         <div className="relative aspect-square rounded-xl overflow-hidden mb-3 bg-card ring-1 ring-white/5 group-hover:ring-neon-cyan/40 transition-all duration-300 group-hover:shadow-[0_0_20px_rgba(0,255,221,0.12)]">
-          <img
-            src={imageUrl}
-            alt={name}
-            className="w-full h-full object-cover transition-transform duration-500 hover-scale"
-            loading="lazy"
-          />
+          <JellyImage src={imageUrl} width={300} height={300} maxWidth={300} alt={name} className="w-full h-full transition-transform duration-500 hover-scale" />
           <div className="absolute inset-0 bg-gradient-to-t from-deep-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none hidden md:block" />
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none hidden md:flex">
             <div className="w-12 h-12 rounded-full bg-neon-cyan flex items-center justify-center shadow-[0_0_24px_rgba(0,255,221,0.5)]">
@@ -63,4 +59,6 @@ export default function AlbumCard({ id, name, artistName, imageUrl, year }: Albu
     </Link>
     </div>
   )
-}
+})
+
+export default AlbumCard

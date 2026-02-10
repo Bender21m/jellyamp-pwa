@@ -3,9 +3,19 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { usePlayerStore } from '../stores/player'
 import EmptyState from './EmptyState'
+import JellyImage from './JellyImage'
 
 export default function QueuePanel() {
-  const { queue, queueIndex, currentTrack, showQueue, setShowQueue, jumpToTrack, removeFromQueue, moveInQueue, clearQueue, isPlaying } = usePlayerStore()
+  const queue = usePlayerStore(s => s.queue)
+  const queueIndex = usePlayerStore(s => s.queueIndex)
+  const currentTrack = usePlayerStore(s => s.currentTrack)
+  const showQueue = usePlayerStore(s => s.showQueue)
+  const setShowQueue = usePlayerStore(s => s.setShowQueue)
+  const jumpToTrack = usePlayerStore(s => s.jumpToTrack)
+  const removeFromQueue = usePlayerStore(s => s.removeFromQueue)
+  const moveInQueue = usePlayerStore(s => s.moveInQueue)
+  const clearQueue = usePlayerStore(s => s.clearQueue)
+  const isPlaying = usePlayerStore(s => s.isPlaying)
   const navigate = useNavigate()
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [overIdx, setOverIdx] = useState<number | null>(null)
@@ -133,7 +143,7 @@ export default function QueuePanel() {
           <p className="text-[11px] text-text-muted font-mono uppercase tracking-wider mb-2">Now Playing</p>
           <div className="flex items-center gap-3">
             {currentTrack.imageUrl && (
-              <img src={currentTrack.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover shadow-[0_0_12px_rgba(0,255,221,0.15)]" />
+              <JellyImage src={currentTrack.imageUrl} width={40} height={40} maxWidth={80} className="rounded-lg shadow-[0_0_12px_rgba(0,255,221,0.15)]" />
             )}
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-neon-cyan truncate">{currentTrack.name}</p>
@@ -206,7 +216,7 @@ export default function QueuePanel() {
                       </svg>
                     </div>
                     {track.imageUrl && (
-                      <img src={track.imageUrl} alt="" className="w-9 h-9 rounded-lg object-cover" loading="lazy" />
+                      <JellyImage src={track.imageUrl} width={36} height={36} maxWidth={80} className="rounded-lg" />
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="text-sm truncate group-hover:text-neon-cyan transition-colors">{track.name}</p>

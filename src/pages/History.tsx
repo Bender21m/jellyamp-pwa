@@ -28,7 +28,7 @@ function createTrack(item: BaseItemDto, serverUrl: string, albumName?: string): 
 
 export default function History() {
   const { api, userId, serverUrl } = useAuthStore()
-  const { setTrack } = usePlayerStore()
+  const setTrack = usePlayerStore(s => s.setTrack)
   const [tab, setTab] = useState<Tab>('recent')
   const [recentTracks, setRecentTracks] = useState<(Track & { lastPlayed?: string })[]>([])
   const [mostPlayedTracks, setMostPlayedTracks] = useState<(Track & { playCount?: number })[]>([])

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth'
 import { useUIStore } from '../stores/ui'
+import JellyImage from '../components/JellyImage'
 import type { SortOption } from '../stores/ui'
 import { fetchAlbums, fetchArtists, fetchPlaylists, fetchGenres, fetchAlbumsByGenre, fetchRecentAlbums, getImageUrl, SortOrder, ItemSortBy } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
@@ -532,15 +533,7 @@ function ArtistListRow({ id, name, imageUrl, albumCount }: { id: string; name: s
   return (
     <Link to={`/artist/${id}`} className="flex items-center gap-4 px-4 py-2.5 min-h-[56px] rounded-lg hover:bg-surface transition-colors group cursor-pointer">
       <div className="w-12 h-12 rounded-xl overflow-hidden bg-card shrink-0 ring-1 ring-white/5 group-hover:ring-neon-cyan/30 transition-all">
-        {imageUrl ? (
-          <img src={imageUrl} alt={name} className="w-full h-full object-cover" loading="lazy" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-surface">
-            <svg viewBox="0 0 24 24" className="w-5 h-5 text-text-muted" fill="currentColor">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-            </svg>
-          </div>
-        )}
+        <JellyImage src={imageUrl} width={48} height={48} maxWidth={80} alt={name} className="w-full h-full" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[15px] font-semibold truncate group-hover:text-neon-cyan transition-colors">{name}</p>
@@ -559,7 +552,7 @@ function AlbumListRow({ id, name, artistName, imageUrl, year, trackCount }: { id
   return (
     <Link to={`/album/${id}`} className="flex items-center gap-4 px-4 py-2.5 min-h-[64px] rounded-lg hover:bg-surface transition-colors group cursor-pointer">
       <div className="w-14 h-14 rounded-xl overflow-hidden bg-card shrink-0 ring-1 ring-white/5 group-hover:ring-neon-cyan/30 transition-all">
-        <img src={imageUrl} alt={name} className="w-full h-full object-cover" loading="lazy" />
+        <JellyImage src={imageUrl} width={56} height={56} maxWidth={80} alt={name} className="w-full h-full" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[15px] font-semibold truncate group-hover:text-neon-cyan transition-colors">{name}</p>

@@ -8,7 +8,8 @@ interface SelectionBarProps {
 }
 
 export default function SelectionBar({ selectedCount, selectedTracks, onClear }: SelectionBarProps) {
-  const { setTrack, addToQueue } = usePlayerStore()
+  const setTrack = usePlayerStore(s => s.setTrack)
+  const addToQueue = usePlayerStore(s => s.addToQueue)
 
   function handlePlay() {
     if (selectedTracks.length > 0) {

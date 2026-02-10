@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useAuthStore } from '../stores/auth'
 import type { Track } from '../stores/player'
 import { searchAll, getImageUrl, BaseItemKind } from '../lib/jellyfin'
@@ -71,11 +71,11 @@ export default function Search() {
   const imgUrl = (item: BaseItemDto, size = 400) =>
     serverUrl ? getImageUrl(serverUrl, item.Id!, item.ImageTags?.Primary, size) : ''
 
-  const artists = results.filter(r => r.Type === BaseItemKind.MusicArtist)
-  const albums = results.filter(r => r.Type === BaseItemKind.MusicAlbum)
-  const tracks = results.filter(r => r.Type === BaseItemKind.Audio)
+  const artists = useMemo(() => results.filter(r => r.Type === BaseItemKind.MusicArtist), [results])
+  const albums = useMemo(() => results.filter(r => r.Type === BaseItemKind.MusicAlbum), [results])
+  const tracks = useMemo(() => results.filter(r => r.Type === BaseItemKind.Audio), [results])
 
-  const mappedTracks: Track[] = tracks.map(t => ({
+  const mappedTracks: Track[] = useMemo(() => tracks.map(t => ({
     id: t.Id!,
     name: t.Name ?? 'Unknown',
     albumId: t.AlbumId ?? undefined,
@@ -83,7 +83,7 @@ export default function Search() {
     artistName: t.AlbumArtist ?? t.Artists?.[0] ?? '',
     duration: (t.RunTimeTicks ?? 0) / 10000000,
     imageUrl: t.AlbumId && serverUrl ? getImageUrl(serverUrl, t.AlbumId, t.AlbumPrimaryImageTag, 120) : undefined,
-  }))
+  })), [tracks, serverUrl])
 
   return (
     <div className="h-full flex flex-col">

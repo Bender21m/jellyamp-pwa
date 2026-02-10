@@ -196,4 +196,15 @@ const TrackRow = React.memo(function TrackRow({ track, index, allTracks, showInd
       </div>
     </div>
   )
-}
+}, (prev, next) =>
+  prev.track.id === next.track.id &&
+  prev.isSelected === next.isSelected &&
+  prev.isFocused === next.isFocused &&
+  prev.index === next.index &&
+  prev.showIndex === next.showIndex &&
+  prev.showArt === next.showArt &&
+  prev.onPlay === next.onPlay &&
+  prev.onContextMenu === next.onContextMenu
+)
+
+export default TrackRow

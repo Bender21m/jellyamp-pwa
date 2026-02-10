@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth'
 import { fetchAlbums, getImageUrl } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import { parseShowDate } from '../lib/dateParser'
+import JellyImage from './JellyImage'
 
 interface OnThisDayAlbum {
   id: string
@@ -91,12 +92,7 @@ export default function OnThisDay() {
                 to={`/album/${album.id}`}
                 className="flex items-center gap-2.5 px-3 py-1.5 rounded-md hover:bg-white/5 transition-colors group"
               >
-                <img
-                  src={album.imageUrl}
-                  alt=""
-                  className="w-8 h-8 rounded object-cover shrink-0 ring-1 ring-white/10"
-                  loading="lazy"
-                />
+                <JellyImage src={album.imageUrl} width={32} height={32} maxWidth={80} className="rounded shrink-0 ring-1 ring-white/10" />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium truncate text-text-secondary group-hover:text-neon-cyan transition-colors">
                     {album.name}

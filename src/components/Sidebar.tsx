@@ -172,7 +172,8 @@ function SidebarArtistItem({ artist }: { artist: BaseItemDto }) {
 
 export default function Sidebar() {
   const { username, api, userId } = useAuthStore()
-  const { currentTrack, setShowNowPlaying } = usePlayerStore()
+  const currentTrack = usePlayerStore(s => s.currentTrack)
+  const setShowNowPlaying = usePlayerStore(s => s.setShowNowPlaying)
   const navigate = useNavigate()
   const [playlists, setPlaylists] = useState<BaseItemDto[]>([])
   const [favoriteArtists, setFavoriteArtists] = useState<BaseItemDto[]>([])

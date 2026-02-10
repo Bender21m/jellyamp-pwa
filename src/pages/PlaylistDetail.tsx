@@ -6,6 +6,7 @@ import { usePlayerStore, type Track } from '../stores/player'
 import { fetchPlaylistTracks, getImageUrl } from '../lib/jellyfin'
 import { detectSetBreaks } from '../lib/setBreaks'
 import TrackRow from '../components/TrackRow'
+import JellyImage from '../components/JellyImage'
 import TrackContextMenu from '../components/TrackContextMenu'
 import SelectionBar from '../components/SelectionBar'
 import SetBreakIndicator from '../components/SetBreakIndicator'
@@ -16,7 +17,8 @@ export default function PlaylistDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { api, userId, serverUrl } = useAuthStore()
-  const { setTrack, addToQueue } = usePlayerStore()
+  const setTrack = usePlayerStore(s => s.setTrack)
+  const addToQueue = usePlayerStore(s => s.addToQueue)
   const [playlist, setPlaylist] = useState<{ name: string; imageUrl?: string } | null>(null)
   const [tracks, setTracks] = useState<Track[]>([])
   const [loading, setLoading] = useState(true)
@@ -111,7 +113,7 @@ export default function PlaylistDetail() {
         <div className="flex flex-col md:flex-row gap-5 md:gap-6">
           <div className="w-48 h-48 rounded-xl overflow-hidden shadow-2xl shrink-0 bg-surface ring-1 ring-white/10 mx-auto md:mx-0">
             {playlist?.imageUrl ? (
-              <img src={playlist.imageUrl} alt="" className="w-full h-full object-cover" />
+              <JellyImage src={playlist.imageUrl} width={260} height={260} maxWidth={600} className="w-full h-full" />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple/20 to-neon-pink/20">
                 <svg viewBox="0 0 24 24" className="w-16 h-16 text-purple" fill="currentColor">

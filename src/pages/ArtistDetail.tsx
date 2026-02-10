@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
+import JellyImage from '../components/JellyImage'
 import { fetchAlbums, fetchTracks, getImageUrl, fetchArtistById, toggleFavorite, fetchSimilarArtists } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import { useAlbumColors } from '../hooks/useAlbumColors'
@@ -35,7 +36,7 @@ export default function ArtistDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { api, userId, serverUrl } = useAuthStore()
-  const { setTrack } = usePlayerStore()
+  const setTrack = usePlayerStore(s => s.setTrack)
   const [artist, setArtist] = useState<BaseItemDto | null>(null)
   const [albums, setAlbums] = useState<BaseItemDto[]>([])
   const [similarArtists, setSimilarArtists] = useState<BaseItemDto[]>([])
@@ -444,12 +445,7 @@ export default function ArtistDetail() {
                   className="flex items-center gap-4 px-3 md:px-4 h-[60px] rounded-lg cursor-pointer group transition-colors hover:bg-white/[0.03] odd:bg-white/[0.015]"
                 >
                   {/* Album art */}
-                  <img 
-                    src={imgUrl(a, 48)} 
-                    alt={a.Name ?? ''} 
-                    className="w-12 h-12 rounded-lg object-cover shrink-0 ring-1 ring-white/10" 
-                    loading="lazy"
-                  />
+                  <JellyImage src={imgUrl(a, 48)} width={48} height={48} maxWidth={80} alt={a.Name ?? ''} className="rounded-lg shrink-0 ring-1 ring-white/10" />
                   
                   {/* Album info */}
                   <div className="flex-1 min-w-0">
@@ -497,19 +493,7 @@ export default function ArtistDetail() {
                     className="flex flex-col items-center gap-2 p-2 hover:bg-white/5 rounded-lg transition-colors min-w-[100px]"
                   >
                     <div className="w-20 h-20 rounded-full overflow-hidden bg-card ring-1 ring-white/5 hover:ring-neon-cyan/40 transition-all">
-                      {similarImageUrl ? (
-                        <img
-                          src={similarImageUrl}
-                          alt={similar.Name ?? ''}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-neon-cyan/20 via-purple/20 to-neon-pink/20 flex items-center justify-center">
-                          <svg viewBox="0 0 24 24" className="w-8 h-8 text-text-muted/30" fill="currentColor">
-                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                          </svg>
-                        </div>
-                      )}
+                      <JellyImage src={similarImageUrl} width={80} height={80} maxWidth={300} alt={similar.Name ?? ''} className="w-full h-full" />
                     </div>
                     <span className="text-xs text-center font-medium text-text-secondary hover:text-neon-cyan transition-colors max-w-[90px] truncate">
                       {similar.Name ?? 'Unknown Artist'}
