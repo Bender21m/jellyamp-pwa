@@ -189,7 +189,7 @@ export default function AlbumDetail() {
       </div>
 
       {/* Tracks */}
-      <div className="px-4 md:px-7 pr-6 md:pr-8">
+      <div className="px-4 md:px-8 pr-6 md:pr-8">
         <div className="border-t border-white/5 pt-4">
           {tracks.map((track, i) => (
             <div key={track.id} className={i < tracks.length - 1 ? 'border-b border-white/5' : ''}>

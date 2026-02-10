@@ -18,11 +18,9 @@
   --font-mono: 'Space Mono', monospace;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* margin/padding/box-sizing reset handled by Tailwind preflight (@layer base).
+   Do NOT add padding:0 here — unlayered rules override @layer utilities,
+   which breaks px-4 etc. (padding-inline gets zeroed). */
 
 html, body, #root {
   height: 100%;
