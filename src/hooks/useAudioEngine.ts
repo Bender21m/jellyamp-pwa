@@ -43,6 +43,7 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
   const equalizerRef = useRef<AudioEqualizer | null>(null)
   const fadeInRef = useRef<number | null>(null)
   const lastPauseTimeRef = useRef<number>(0)
+  const userInitiatedRef = useRef(false) // tracks whether playback was user-initiated vs restore from reload
 
   // Fade-in helper function
   const startFadeIn = useCallback((audioElement: HTMLAudioElement, targetVolume: number) => {
@@ -142,27 +143,33 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
       const a = e.target as HTMLAudioElement
       console.error('[JellyAmp] Audio error:', a.error?.code, a.error?.message)
     }
-    const onCanPlay = () => {
-      const targetVolume = muted ? 0 : volume
-      if (crossfadeMode === 'gapless') {
-        audio.volume = targetVolume
-      } else {
-        startFadeIn(audio, targetVolume)
-      }
-      audio.play().then(() => onPlay()).catch((err) => console.error('[JellyAmp] Play failed:', err))
-    }
 
-    const isGaplessPreloaded = crossfadeMode === 'gapless' && audio.readyState >= 3
-    if (audio.readyState >= 3) {
-      const targetVolume = muted ? 0 : volume
-      if (isGaplessPreloaded) {
-        audio.volume = targetVolume
-      } else {
-        startFadeIn(audio, targetVolume)
+    // Only auto-play if this is a user-initiated track change (not a page reload restore)
+    const shouldAutoPlay = userInitiatedRef.current
+
+    if (shouldAutoPlay) {
+      const onCanPlay = () => {
+        const targetVolume = muted ? 0 : volume
+        if (crossfadeMode === 'gapless') {
+          audio.volume = targetVolume
+        } else {
+          startFadeIn(audio, targetVolume)
+        }
+        audio.play().then(() => onPlay()).catch((err) => console.error('[JellyAmp] Play failed:', err))
       }
-      audio.play().then(() => onPlay()).catch(() => {})
-    } else {
-      audio.addEventListener('canplay', onCanPlay, { once: true })
+
+      const isGaplessPreloaded = crossfadeMode === 'gapless' && audio.readyState >= 3
+      if (audio.readyState >= 3) {
+        const targetVolume = muted ? 0 : volume
+        if (isGaplessPreloaded) {
+          audio.volume = targetVolume
+        } else {
+          startFadeIn(audio, targetVolume)
+        }
+        audio.play().then(() => onPlay()).catch(() => {})
+      } else {
+        audio.addEventListener('canplay', onCanPlay, { once: true })
+      }
     }
     audio.addEventListener('error', onError)
 
@@ -239,8 +246,19 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
   useEffect(() => {
     if (!audioRef.current) return
     if (isPlaying) {
+      // Mark that user has initiated playback (for reload detection)
+      userInitiatedRef.current = true
+
       const timeSinceLastPause = Date.now() - lastPauseTimeRef.current
       const isShortPause = timeSinceLastPause < 500
+
+      // If audio has no src yet (restored from reload but track effect hasn't loaded it),
+      // load it now before trying to play
+      if (!audioRef.current.src && trackId && serverUrl && accessToken) {
+        const streamUrl = getStreamUrl(serverUrl, trackId, accessToken, audioQuality)
+        audioRef.current.src = streamUrl
+        audioRef.current.load()
+      }
       
       if (!isShortPause && audioRef.current.currentTime === 0) {
         const targetVolume = muted ? 0 : volume
