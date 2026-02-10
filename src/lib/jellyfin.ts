@@ -33,15 +33,33 @@ export function getImageUrl(serverUrl: string, itemId: string, tag?: string | nu
   return `${serverUrl}/Items/${itemId}/Images/Primary?${params}`
 }
 
-export function getStreamUrl(serverUrl: string, itemId: string, token: string): string {
-  // Use /stream endpoint (same as iOS app) — more reliable than /universal for web
+export type StreamQuality = 'original' | 'high' | 'medium' | 'low'
+
+const QUALITY_BITRATES: Record<Exclude<StreamQuality, 'original'>, string> = {
+  high: '320000',
+  medium: '192000',
+  low: '128000',
+}
+
+export function getStreamUrl(serverUrl: string, itemId: string, token: string, quality: StreamQuality = 'original'): string {
+  if (quality === 'original') {
+    // Direct stream — no transcoding, original file as-is
+    const params = new URLSearchParams({
+      static: 'true',
+      mediaSourceId: itemId,
+      api_key: token,
+    })
+    return `${serverUrl}/Audio/${itemId}/stream?${params}`
+  }
+
+  // Transcoded stream
   const params = new URLSearchParams({
-    static: 'true',
+    static: 'false',
     mediaSourceId: itemId,
     api_key: token,
-    MaxStreamingBitrate: '320000',
+    MaxStreamingBitrate: QUALITY_BITRATES[quality],
     AudioCodec: 'mp3',
-    Container: 'mp3,aac',
+    Container: 'mp3',
     TranscodingContainer: 'mp3',
     TranscodingProtocol: 'http',
   })

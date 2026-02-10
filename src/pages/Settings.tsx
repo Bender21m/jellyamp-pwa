@@ -1,7 +1,17 @@
 import { useAuthStore } from '../stores/auth'
+import { useUIStore } from '../stores/ui'
+import type { AudioQuality } from '../stores/ui'
+
+const QUALITY_OPTIONS: { value: AudioQuality; label: string; desc: string }[] = [
+  { value: 'original', label: 'Original', desc: 'Lossless / Direct stream' },
+  { value: 'high', label: 'High', desc: '320 kbps MP3' },
+  { value: 'medium', label: 'Medium', desc: '192 kbps MP3' },
+  { value: 'low', label: 'Low', desc: '128 kbps MP3' },
+]
 
 export default function Settings() {
   const { serverUrl, serverName, username, logout } = useAuthStore()
+  const { audioQuality, setAudioQuality } = useUIStore()
 
   return (
     <div className="h-full overflow-y-auto pb-48 md:pb-28">
@@ -27,6 +37,39 @@ export default function Settings() {
               <span className="text-sm font-mono">{username}</span>
             </div>
           </div>
+        </section>
+
+        {/* Audio Quality */}
+        <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
+          <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted mb-4">Streaming Quality</h2>
+          <div className="space-y-1.5">
+            {QUALITY_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setAudioQuality(opt.value)}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all text-left ${
+                  audioQuality === opt.value
+                    ? 'bg-neon-cyan/[0.08] ring-1 ring-neon-cyan/30'
+                    : 'hover:bg-white/5'
+                }`}
+              >
+                <div>
+                  <span className={`text-sm font-semibold ${audioQuality === opt.value ? 'text-neon-cyan' : 'text-text-primary'}`}>
+                    {opt.label}
+                  </span>
+                  <p className="text-xs text-text-muted mt-0.5">{opt.desc}</p>
+                </div>
+                {audioQuality === opt.value && (
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 text-neon-cyan shrink-0" fill="currentColor">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-text-muted/60 mt-3 px-1">
+            Original streams the file as-is (FLAC, WAV, etc). Lower quality saves bandwidth but transcodes on the server.
+          </p>
         </section>
 
         {/* About */}

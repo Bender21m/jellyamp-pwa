@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { usePlayerStore } from '../stores/player'
 import { useAuthStore } from '../stores/auth'
 import { getStreamUrl } from '../lib/jellyfin'
+import { useUIStore } from '../stores/ui'
 
 export default function Player() {
   const {
@@ -11,6 +12,7 @@ export default function Player() {
     cycleRepeat, setCurrentTime, setDuration, setShowNowPlaying, showQueue, setShowQueue,
   } = usePlayerStore()
   const { serverUrl, api } = useAuthStore()
+  const { audioQuality } = useUIStore()
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const seekingRef = useRef(false)
 
@@ -21,7 +23,7 @@ export default function Player() {
     const audio = audioRef.current ?? new Audio()
     audioRef.current = audio
 
-    const streamUrl = getStreamUrl(serverUrl, currentTrack.id, api.accessToken)
+    const streamUrl = getStreamUrl(serverUrl, currentTrack.id, api.accessToken, audioQuality)
     audio.src = streamUrl
     audio.volume = muted ? 0 : volume
 
