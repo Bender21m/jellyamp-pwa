@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
 import { fetchTracks, getImageUrl, toggleFavorite } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
+import { useAlbumColors } from '../hooks/useAlbumColors'
 import TrackRow from '../components/TrackRow'
 import TrackContextMenu from '../components/TrackContextMenu'
 
@@ -76,6 +77,9 @@ export default function AlbumDetail() {
   const imageUrl = album && serverUrl ? getImageUrl(serverUrl, album.Id!, album.ImageTags?.Primary, 600) : ''
   const totalDuration = tracks.reduce((sum, t) => sum + t.duration, 0)
   const totalMin = Math.round(totalDuration / 60)
+  
+  // Extract colors from album art
+  const { colors: albumColors } = useAlbumColors(imageUrl)
 
   if (loading) {
     return (
@@ -112,8 +116,21 @@ export default function AlbumDetail() {
   const artistId = album.AlbumArtists?.[0]?.Id
 
   return (
-    <div className="h-full overflow-y-auto pb-48 md:pb-28">
-      <div className="px-5 md:px-8 pt-5 md:pt-6">
+    <div className="h-full overflow-y-auto pb-48 md:pb-28 relative">
+      {/* Color gradient overlay */}
+      {albumColors && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.12 }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `linear-gradient(135deg, ${albumColors.primary}40 0%, ${albumColors.secondary}30 50%, transparent 100%)`
+          }}
+        />
+      )}
+      
+      <div className="px-5 md:px-8 pt-5 md:pt-6 relative z-10">
         {/* Back */}
         <button
           onClick={() => navigate(-1)}

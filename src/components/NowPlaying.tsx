@@ -2,7 +2,10 @@ import { useRef, useCallback, useState } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform, type PanInfo } from 'framer-motion'
 import { usePlayerStore } from '../stores/player'
 import { useAuthStore } from '../stores/auth'
+import { useAlbumColors } from '../hooks/useAlbumColors'
 import { toggleFavorite } from '../lib/jellyfin'
+import LyricsView from './LyricsView'
+import Waveform from './Waveform'
 
 export default function NowPlaying() {
   const {
@@ -15,12 +18,16 @@ export default function NowPlaying() {
   const [isFav, setIsFav] = useState(false)
   const [isDraggingProgress, setIsDraggingProgress] = useState(false)
   const [dragProgress, setDragProgress] = useState(0)
+  const [showLyrics, setShowLyrics] = useState(false)
 
   const y = useMotionValue(0)
   const opacity = useTransform(y, [0, 300], [1, 0])
 
   // Track favorite state from currentTrack
   const trackIsFav = currentTrack?.isFavorite ?? isFav
+  
+  // Extract colors from current track album art
+  const { colors: trackColors } = useAlbumColors(currentTrack?.imageUrl)
 
   async function handleFavorite() {
     if (!api || !userId || !currentTrack) return
@@ -139,6 +146,21 @@ export default function NowPlaying() {
               />
             )}
             <div className="absolute inset-0 bg-gradient-to-b from-deep-black/60 via-deep-black/80 to-deep-black/95" />
+            
+            {/* Color tint overlay */}
+            {trackColors && (
+              <motion.div
+                key={currentTrack.id + '-color'}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.15 }}
+                transition={{ duration: 0.8 }}
+                className="absolute inset-0"
+                style={{
+                  background: `linear-gradient(135deg, ${trackColors.primary}40 0%, ${trackColors.secondary}30 50%, transparent 100%)`
+                }}
+              />
+            )}
+            
             {/* Noise texture */}
             <div className="absolute inset-0 noise-overlay opacity-[0.03]" />
           </div>
@@ -220,31 +242,26 @@ export default function NowPlaying() {
               </button>
             </div>
 
-            {/* Progress bar */}
+            {/* Waveform progress */}
             <div className="w-full mb-4">
-              <div
-                ref={progressRef}
-                onClick={handleProgressClick}
-                onMouseDown={handleProgressMouseDown}
-                onTouchStart={handleProgressTouchStart}
-                onTouchMove={handleProgressTouchMove}
-                onTouchEnd={handleProgressTouchEnd}
-                className="w-full h-2 bg-white/10 rounded-full cursor-pointer group relative touch-none"
-              >
-                <div
-                  className="h-full bg-gradient-primary rounded-full relative transition-none"
-                  style={{ width: `${progress}%` }}
-                >
-                  <div
-                    className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-5 h-5 rounded-full bg-white transition-all
-                      ${isDraggingProgress ? 'opacity-100 scale-110 shadow-[0_0_12px_rgba(0,255,221,0.6)]' : 'opacity-0 group-hover:opacity-100 shadow-[0_0_8px_rgba(0,255,221,0.4)]'}
-                      md:w-4 md:h-4`}
-                  />
-                </div>
-                {/* Larger touch target overlay */}
-                <div className="absolute -top-3 -bottom-3 left-0 right-0 md:hidden" />
+              <div className="h-8 mb-3">
+                <Waveform
+                  currentTime={isDraggingProgress ? dragProgress * duration : currentTime}
+                  duration={duration}
+                  onSeek={(time) => {
+                    seek(time)
+                  }}
+                  onSeekStart={() => setIsDraggingProgress(true)}
+                  onSeekEnd={() => setIsDraggingProgress(false)}
+                  trackId={currentTrack?.id}
+                  className="h-full"
+                  barCount={90}
+                  showTooltip={true}
+                  isDragging={isDraggingProgress}
+                  dragTime={isDraggingProgress ? dragProgress * duration : undefined}
+                />
               </div>
-              <div className="flex justify-between mt-2.5 text-[11px] text-white/40 font-mono">
+              <div className="flex justify-between text-[11px] text-white/40 font-mono">
                 <span>{formatTime(currentTime)}</span>
                 <span>{formatTime(duration)}</span>
               </div>
@@ -293,32 +310,90 @@ export default function NowPlaying() {
               </button>
             </div>
 
-            {/* Up Next */}
-            {nextTrack && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="mt-8 w-full"
-              >
-                <p className="text-[11px] uppercase tracking-[0.12em] text-white/30 font-mono mb-2">Up Next</p>
-                <button
-                  onClick={next}
-                  className="w-full flex items-center gap-3 p-2.5 -mx-2.5 rounded-xl hover:bg-white/5 transition-colors group text-left"
-                >
-                  {nextTrack.imageUrl && (
-                    <img src={nextTrack.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover ring-1 ring-white/10" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-white/70 group-hover:text-white truncate transition-colors">{nextTrack.name}</p>
-                    <p className="text-xs text-white/35 truncate">{nextTrack.artistName}</p>
-                  </div>
-                  <svg viewBox="0 0 24 24" className="w-4 h-4 text-white/20 shrink-0" fill="currentColor">
-                    <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
-                  </svg>
-                </button>
-              </motion.div>
-            )}
+            {/* Bottom section: Up Next / Lyrics */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="mt-8 w-full"
+            >
+              {/* Toggle tabs */}
+              <div className="flex items-center justify-center mb-4">
+                <div className="flex bg-white/10 rounded-full p-1">
+                  <button
+                    onClick={() => setShowLyrics(false)}
+                    className={`px-4 py-2 rounded-full text-xs font-medium transition-all ${
+                      !showLyrics
+                        ? 'bg-neon-cyan text-deep-black shadow-[0_0_12px_rgba(0,255,221,0.3)]'
+                        : 'text-white/60 hover:text-white/80'
+                    }`}
+                  >
+                    Up Next
+                  </button>
+                  <button
+                    onClick={() => setShowLyrics(true)}
+                    className={`px-4 py-2 rounded-full text-xs font-medium transition-all ${
+                      showLyrics
+                        ? 'bg-neon-cyan text-deep-black shadow-[0_0_12px_rgba(0,255,221,0.3)]'
+                        : 'text-white/60 hover:text-white/80'
+                    }`}
+                  >
+                    Lyrics
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <AnimatePresence mode="wait">
+                {showLyrics ? (
+                  <motion.div
+                    key="lyrics"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <LyricsView 
+                      trackId={currentTrack.id}
+                      currentTime={currentTime}
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="up-next"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {nextTrack ? (
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.12em] text-white/30 font-mono mb-3">Up Next</p>
+                        <button
+                          onClick={next}
+                          className="w-full flex items-center gap-3 p-2.5 -mx-2.5 rounded-xl hover:bg-white/5 transition-colors group text-left"
+                        >
+                          {nextTrack.imageUrl && (
+                            <img src={nextTrack.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover ring-1 ring-white/10" />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-white/70 group-hover:text-white truncate transition-colors">{nextTrack.name}</p>
+                            <p className="text-xs text-white/35 truncate">{nextTrack.artistName}</p>
+                          </div>
+                          <svg viewBox="0 0 24 24" className="w-4 h-4 text-white/20 shrink-0" fill="currentColor">
+                            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-white/30 text-sm">End of queue</p>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
           </div>
         </motion.div>
       )}

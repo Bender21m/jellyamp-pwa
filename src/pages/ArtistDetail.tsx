@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
 import { fetchAlbums, fetchTracks, getImageUrl, fetchArtistById, toggleFavorite } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
+import { useAlbumColors } from '../hooks/useAlbumColors'
 import AlbumCard from '../components/AlbumCard'
 
 type DiscographySort = 'year-newest' | 'year-oldest' | 'name-asc' | 'name-desc'
@@ -108,6 +109,10 @@ export default function ArtistDetail() {
 
   const filteredAlbums = yearFilter ? albums.filter(a => a.ProductionYear === yearFilter) : albums
   const sortedAlbums = sortAlbums(filteredAlbums, discSort)
+  
+  // Extract colors from artist image or first album
+  const colorSourceUrl = artistImage || backdropUrl
+  const { colors: artistColors } = useAlbumColors(colorSourceUrl || undefined)
 
   if (loading) {
     return (
@@ -148,6 +153,19 @@ export default function ArtistDetail() {
             <img src={backdropUrl} alt="" className="w-full h-full object-cover scale-150 blur-[80px] opacity-15" />
             <div className="absolute inset-0 bg-gradient-to-b from-deep-black/40 to-deep-black" />
           </div>
+        )}
+        
+        {/* Color gradient overlay */}
+        {artistColors && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.1 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: `linear-gradient(135deg, ${artistColors.primary}35 0%, ${artistColors.secondary}25 50%, transparent 100%)`
+            }}
+          />
         )}
 
         <div className="relative px-4 md:px-8 py-8 md:py-10">
