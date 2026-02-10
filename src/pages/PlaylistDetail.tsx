@@ -100,11 +100,11 @@ export default function PlaylistDetail() {
               </div>
             )}
           </div>
-          <div className="flex flex-col justify-end min-w-0">
+          <div className="flex flex-col items-center text-center md:items-start md:text-left justify-end min-w-0">
             <p className="text-xs font-mono uppercase tracking-widest text-text-muted mb-1">Playlist</p>
-            <h1 className="text-2xl md:text-3xl font-extrabold mb-2 truncate tracking-[-0.03em]">{playlist?.name}</h1>
+            <h1 className="text-2xl md:text-3xl font-extrabold mb-2 truncate tracking-[-0.03em] max-w-full">{playlist?.name}</h1>
             <p className="text-[13px] text-text-muted font-mono">{tracks.length} tracks</p>
-            <div className="flex items-center gap-3 mt-4 flex-wrap">
+            <div className="flex items-center gap-3 mt-4 flex-wrap justify-center md:justify-start">
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={() => playAll()}
