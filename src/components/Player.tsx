@@ -18,7 +18,7 @@ export default function Player() {
   const {
     currentTrack, isPlaying, currentTime, duration, volume, muted, shuffle, repeat,
     sleepTimer,
-    play, pause, toggle, next, previous, seek, setVolume, toggleMute, toggleShuffle,
+    pause, toggle, next, previous, seek, setVolume, toggleMute, toggleShuffle,
     cycleRepeat, setCurrentTime, setDuration, setShowNowPlaying, showQueue, setShowQueue,
     clearSleepTimer,
   } = usePlayerStore()
@@ -112,12 +112,9 @@ export default function Player() {
         // Advance the store to the next track
         next()
       },
-      onStateChange: (state) => {
-        if (state === 'playing') {
-          play()
-        } else if (state === 'paused') {
-          pause()
-        }
+      onStateChange: (_state) => {
+        // Engine state is informational only — store drives the engine, not vice versa.
+        // The play/pause sync is handled by the [isPlaying] useEffect below.
       },
       onError: (err) => {
         console.error('[JellyAmp] Audio engine error:', err.message)
@@ -151,6 +148,7 @@ export default function Player() {
     currentTrackIdRef.current = currentTrack.id
 
     const url = getStreamUrl(serverUrl, currentTrack.id, api.accessToken, audioQuality)
+    console.debug('[JellyAmp] Track change:', currentTrack.name, '| engine state:', audioEngine.currentState, '| engine url match:', audioEngine.playingUrl === url)
     audioEngine.play(url)
 
     // Media Session
@@ -179,12 +177,18 @@ export default function Player() {
   // Handle play/pause from store (e.g. toggle button)
   useEffect(() => {
     if (!currentTrack) return
-    if (isPlaying && audioEngine.currentState === 'paused') {
+    const engineState = audioEngine.currentState
+    if (isPlaying && engineState === 'paused') {
       audioEngine.resume()
-    } else if (!isPlaying && audioEngine.currentState === 'playing') {
+    } else if (!isPlaying && engineState === 'playing') {
       audioEngine.pause()
     }
-  }, [isPlaying, currentTrack])
+    // If store says playing but engine is idle (e.g. after error/stop), try to restart
+    if (isPlaying && engineState === 'idle' && serverUrl && api?.accessToken) {
+      const url = getStreamUrl(serverUrl, currentTrack.id, api.accessToken, audioQuality)
+      audioEngine.play(url)
+    }
+  }, [isPlaying, currentTrack?.id])
 
   // Listen for seek events from NowPlaying
   useEffect(() => {
