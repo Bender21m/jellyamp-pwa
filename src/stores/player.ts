@@ -29,6 +29,12 @@ interface PlayerState {
   repeat: RepeatMode
   showNowPlaying: boolean
   showQueue: boolean
+  sleepTimer: {
+    active: boolean
+    endTime: number | null // timestamp when timer should end
+    mode: 'time' | 'track' // time-based or end-of-track
+    originalVolume: number // to restore volume if timer is cancelled
+  }
 
   setTrack: (track: Track, queue?: Track[], index?: number) => void
   play: () => void
@@ -51,6 +57,10 @@ interface PlayerState {
   setDuration: (time: number) => void
   setShowNowPlaying: (show: boolean) => void
   setShowQueue: (show: boolean) => void
+  setSleepTimer: (minutes: number) => void
+  setSleepTimerEndOfTrack: () => void
+  clearSleepTimer: () => void
+  getSleepTimerRemaining: () => number
 }
 
 export const usePlayerStore = create<PlayerState>()((set, get) => ({
@@ -66,6 +76,12 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   repeat: 'off',
   showNowPlaying: false,
   showQueue: false,
+  sleepTimer: {
+    active: false,
+    endTime: null,
+    mode: 'time',
+    originalVolume: 0.8,
+  },
 
   setTrack: (track, queue, index) => {
     set({
@@ -182,4 +198,43 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   setDuration: (time) => set({ duration: time }),
   setShowNowPlaying: (show) => set({ showNowPlaying: show }),
   setShowQueue: (show) => set({ showQueue: show }),
+
+  setSleepTimer: (minutes) => {
+    const { volume } = get()
+    set({
+      sleepTimer: {
+        active: true,
+        endTime: Date.now() + (minutes * 60 * 1000),
+        mode: 'time',
+        originalVolume: volume,
+      }
+    })
+  },
+
+  setSleepTimerEndOfTrack: () => {
+    const { volume } = get()
+    set({
+      sleepTimer: {
+        active: true,
+        endTime: null,
+        mode: 'track',
+        originalVolume: volume,
+      }
+    })
+  },
+
+  clearSleepTimer: () => set({
+    sleepTimer: {
+      active: false,
+      endTime: null,
+      mode: 'time',
+      originalVolume: 0.8,
+    }
+  }),
+
+  getSleepTimerRemaining: () => {
+    const { sleepTimer } = get()
+    if (!sleepTimer.active || !sleepTimer.endTime) return 0
+    return Math.max(0, sleepTimer.endTime - Date.now())
+  },
 }))

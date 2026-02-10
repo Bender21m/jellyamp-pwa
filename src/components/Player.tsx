@@ -8,15 +8,17 @@ import { useUIStore } from '../stores/ui'
 import KeyboardShortcuts from './KeyboardShortcuts'
 import Waveform from './Waveform'
 import Equalizer from './Equalizer'
+import SleepTimer from './SleepTimer'
 import { updateNowPlaying, scrobbleTrack, shouldScrobble } from '../lib/scrobble'
 import { AudioEqualizer, type EQPreset } from '../lib/equalizer'
 
 export default function Player() {
   const {
     currentTrack, isPlaying, currentTime, duration, volume, muted, shuffle, repeat,
-    queue, queueIndex,
+    queue, queueIndex, sleepTimer,
     play, pause, toggle, next, previous, seek, setVolume, toggleMute, toggleShuffle,
     cycleRepeat, setCurrentTime, setDuration, setShowNowPlaying, showQueue, setShowQueue,
+    clearSleepTimer, getSleepTimerRemaining,
   } = usePlayerStore()
   const { serverUrl, api } = useAuthStore()
   const { audioQuality, crossfadeMode, crossfadeDuration, scrobbleSettings, eqGains, eqEnabled, setEQGains, setEQEnabled } = useUIStore()
@@ -29,12 +31,17 @@ export default function Player() {
   const equalizerRef = useRef<AudioEqualizer | null>(null)
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [showEqualizer, setShowEqualizer] = useState(false)
+  const [showSleepTimer, setShowSleepTimer] = useState(false)
+  const [sleepTimerRemaining, setSleepTimerRemaining] = useState(0)
   
   // Scrobbling state
   const scrobbledTracksRef = useRef<Set<string>>(new Set())
   const trackStartTimeRef = useRef<number | null>(null)
   const playedTimeRef = useRef<number>(0)
   const [scrobbleToast, setScrobbleToast] = useState('')
+  
+  // Sleep timer state
+  const sleepFadeRef = useRef<number | null>(null)
 
   // Get next track in queue
   const getNextTrack = useCallback(() => {
@@ -220,7 +227,100 @@ export default function Player() {
     if (scrobbleSettings.enabled) {
       updateNowPlaying(currentTrack, scrobbleSettings).catch(() => {})
     }
-  }, [currentTrack?.id, scrobbleSettings.enabled])
+
+    // Handle sleep timer "end of track" mode
+    if (sleepTimer.active && sleepTimer.mode === 'track') {
+      // Don't start fade immediately, wait for track to actually end naturally
+    }
+  }, [currentTrack?.id, scrobbleSettings.enabled, sleepTimer.active, sleepTimer.mode])
+
+  // Sleep timer logic
+  useEffect(() => {
+    if (!sleepTimer.active || !audioRef.current) return
+
+    const checkTimer = () => {
+      if (sleepTimer.mode === 'time' && sleepTimer.endTime) {
+        const remaining = sleepTimer.endTime - Date.now()
+        setSleepTimerRemaining(remaining)
+
+        // Start fade when 5 seconds remaining
+        if (remaining <= 5000 && remaining > 0 && !sleepFadeRef.current) {
+          const fadeStartVolume = audioRef.current?.volume ?? volume
+          const fadeInterval = 50 // Update every 50ms
+          const steps = 5000 / fadeInterval // 100 steps over 5 seconds
+          let step = 0
+
+          sleepFadeRef.current = window.setInterval(() => {
+            if (!audioRef.current) return
+            
+            step++
+            const progress = step / steps
+            const newVolume = fadeStartVolume * (1 - progress)
+            
+            audioRef.current.volume = Math.max(0, newVolume)
+            
+            if (step >= steps) {
+              // Fade complete, pause and clear timer
+              pause()
+              clearSleepTimer()
+              if (sleepFadeRef.current) {
+                clearInterval(sleepFadeRef.current)
+                sleepFadeRef.current = null
+              }
+              // Restore volume for next time
+              audioRef.current.volume = sleepTimer.originalVolume
+            }
+          }, fadeInterval)
+        }
+
+        // Timer expired
+        if (remaining <= 0) {
+          pause()
+          clearSleepTimer()
+          setSleepTimerRemaining(0)
+          if (sleepFadeRef.current) {
+            clearInterval(sleepFadeRef.current)
+            sleepFadeRef.current = null
+          }
+          // Restore volume
+          if (audioRef.current) {
+            audioRef.current.volume = sleepTimer.originalVolume
+          }
+        }
+      }
+    }
+
+    const interval = setInterval(checkTimer, 1000)
+    checkTimer() // Run immediately
+
+    return () => {
+      clearInterval(interval)
+      if (sleepFadeRef.current) {
+        clearInterval(sleepFadeRef.current)
+        sleepFadeRef.current = null
+      }
+    }
+  }, [sleepTimer, volume, pause, clearSleepTimer])
+
+  // Handle track end for "end of track" sleep timer
+  useEffect(() => {
+    if (!audioRef.current) return
+
+    const handleTrackEnd = () => {
+      if (sleepTimer.active && sleepTimer.mode === 'track') {
+        // Track ended naturally, activate sleep timer
+        pause()
+        clearSleepTimer()
+      }
+    }
+
+    const audio = audioRef.current
+    audio.addEventListener('ended', handleTrackEnd)
+
+    return () => {
+      audio.removeEventListener('ended', handleTrackEnd)
+    }
+  }, [sleepTimer.active, sleepTimer.mode, pause, clearSleepTimer])
 
   // Keyboard shortcuts
   useEffect(() => {

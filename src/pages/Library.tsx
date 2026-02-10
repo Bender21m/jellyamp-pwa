@@ -10,7 +10,7 @@ import FilterPill from '../components/FilterPill'
 import AlbumCard from '../components/AlbumCard'
 import ArtistCard from '../components/ArtistCard'
 import PlaylistCard from '../components/PlaylistCard'
-import EmptyState from '../components/EmptyState'
+import EmptyStateComponent from '../components/EmptyState'
 
 const filters = ['Artists', 'Albums', 'Playlists', 'Recent']
 
@@ -231,7 +231,7 @@ export default function Library() {
           <SkeletonGrid viewMode={viewMode} type={libraryFilter === 'Artists' ? 'artist' : 'album'} />
         ) : libraryFilter === 'Albums' || libraryFilter === 'Recent' ? (
           albums.length === 0 ? (
-            <EmptyState
+            <EmptyStateComponent
               icon={
                 <svg viewBox="0 0 24 24" className="w-16 h-16" fill="currentColor">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z" />
@@ -272,7 +272,7 @@ export default function Library() {
           )
         ) : libraryFilter === 'Artists' ? (
           artists.length === 0 ? (
-            <EmptyState
+            <EmptyStateComponent
               icon={
                 <svg viewBox="0 0 24 24" className="w-16 h-16" fill="currentColor">
                   <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
@@ -309,7 +309,7 @@ export default function Library() {
           )
         ) : libraryFilter === 'Playlists' ? (
           playlists.length === 0 ? (
-            <EmptyState
+            <EmptyStateComponent
               icon={
                 <svg viewBox="0 0 24 24" className="w-16 h-16" fill="currentColor">
                   <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
@@ -425,7 +425,7 @@ function SkeletonGrid({ viewMode, type }: { viewMode: string; type: string }) {
 
 /* ── Empty State ── */
 
-function EmptyState({ text, icon }: { text: string; icon: string }) {
+function LocalEmptyState({ text, icon }: { text: string; icon: string }) {
   const icons: Record<string, string> = {
     album: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z',
     artist: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',
