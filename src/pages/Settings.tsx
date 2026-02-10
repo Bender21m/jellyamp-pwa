@@ -45,12 +45,14 @@ export default function Settings() {
         </section>
 
         {/* Sign Out */}
-        <button
-          onClick={logout}
-          className="w-full py-3.5 rounded-xl bg-neon-pink/10 border border-neon-pink/20 text-neon-pink font-semibold text-sm hover:bg-neon-pink/20 transition-colors min-h-[48px]"
-        >
-          Sign Out
-        </button>
+        <div className="p-px rounded-xl bg-gradient-primary hover:shadow-[0_0_20px_rgba(0,255,221,0.15)] transition-shadow">
+          <button
+            onClick={logout}
+            className="w-full py-3.5 rounded-[11px] bg-deep-black text-gradient font-semibold text-sm hover:bg-card transition-colors min-h-[48px]"
+          >
+            Sign Out
+          </button>
+        </div>
       </div>
     </div>
   )

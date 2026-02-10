@@ -9,24 +9,33 @@ const tabs = [
 export default function MobileNav() {
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/5 bg-card/95 backdrop-blur-xl pb-safe"
-      style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0px)' }}
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-xl"
+      style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}
     >
+      {/* Gradient top line */}
+      <div className="h-px bg-gradient-primary opacity-20" />
       <div className="flex items-stretch">
         {tabs.map((tab) => (
           <NavLink
             key={tab.to}
             to={tab.to}
             className={({ isActive }) =>
-              `flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors ${
+              `flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors relative ${
                 isActive ? 'text-neon-cyan' : 'text-text-muted'
               }`
             }
           >
-            <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
-              <path d={tab.icon} />
-            </svg>
-            <span className="text-[10px] mt-0.5 font-medium">{tab.label}</span>
+            {({ isActive }) => (
+              <>
+                <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+                  <path d={tab.icon} />
+                </svg>
+                <span className="text-[10px] mt-0.5 font-medium">{tab.label}</span>
+                {isActive && (
+                  <span className="absolute top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-neon-cyan shadow-[0_0_4px_rgba(0,255,221,0.6)]" />
+                )}
+              </>
+            )}
           </NavLink>
         ))}
       </div>

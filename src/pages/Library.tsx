@@ -97,7 +97,7 @@ export default function Library() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search library..."
-              className="pl-9 pr-4 py-2.5 bg-surface border border-white/5 rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-neon-cyan/30 focus:ring-1 focus:ring-neon-cyan/10 w-48 transition-all focus:w-64"
+              className="pl-9 pr-4 py-2.5 bg-surface border border-white/5 rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-neon-cyan/30 focus:ring-1 focus:ring-neon-cyan/10 focus:shadow-[0_0_16px_rgba(0,255,221,0.08)] w-48 transition-all focus:w-64"
             />
             <svg viewBox="0 0 24 24" className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" fill="currentColor">
               <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
@@ -128,7 +128,7 @@ export default function Library() {
                 <motion.div
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="absolute right-0 top-full mt-1 bg-card border border-white/10 rounded-lg shadow-2xl py-1 z-30 min-w-[160px]"
+                  className="absolute right-0 top-full mt-1.5 bg-card border border-white/[0.08] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] py-1.5 z-30 min-w-[170px]"
                 >
                   {sortOptions.map((opt) => (
                     <button

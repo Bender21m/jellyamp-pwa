@@ -21,11 +21,8 @@ export default function AlbumCard({ id, name, artistName, imageUrl, year }: Albu
           <img
             src={imageUrl}
             alt={name}
-            className="w-full h-full object-cover transition-transform duration-500"
-            style={{ transform: 'scale(1)' }}
+            className="w-full h-full object-cover transition-transform duration-500 hover-scale"
             loading="lazy"
-            onMouseOver={(e) => { if (window.matchMedia('(hover: hover)').matches) (e.target as HTMLElement).style.transform = 'scale(1.05)' }}
-            onMouseOut={(e) => { (e.target as HTMLElement).style.transform = 'scale(1)' }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-deep-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none hidden md:block" />
           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none hidden md:flex">

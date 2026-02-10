@@ -33,8 +33,8 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.015, 0.3), duration: 0.15 }}
-      className={`flex items-center gap-4 px-3 md:px-4 min-h-[48px] md:min-h-[52px] rounded-lg cursor-pointer group transition-colors ${
-        isActive ? 'bg-neon-cyan/10' : 'hover:bg-surface odd:bg-white/[0.02]'
+      className={`flex items-center gap-4 px-3 md:px-4 h-[52px] rounded-lg cursor-pointer group transition-colors ${
+        isActive ? 'bg-neon-cyan/[0.08] shadow-[inset_0_0_20px_rgba(0,255,221,0.04)]' : 'hover:bg-white/[0.03] odd:bg-white/[0.015]'
       }`}
     >
       {showIndex && (

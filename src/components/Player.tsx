@@ -156,9 +156,9 @@ export default function Player() {
           <div
             onClick={handleSeek}
             onMouseDown={handleSeekDrag}
-            className="h-1 bg-surface cursor-pointer group relative"
+            className="h-[2px] hover:h-1 bg-surface cursor-pointer group relative transition-[height] duration-150"
           >
-            <div className="h-full bg-gradient-primary transition-none shadow-[0_0_8px_rgba(0,255,221,0.3)]" style={{ width: `${progress}%` }} />
+            <div className="h-full bg-gradient-primary transition-none shadow-[0_0_6px_rgba(0,255,221,0.25)]" style={{ width: `${progress}%` }} />
             <div
               className="absolute top-1/2 w-3 h-3 rounded-full bg-neon-cyan opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_6px_rgba(0,255,221,0.5)] hidden md:block"
               style={{ left: `${progress}%`, transform: 'translate(-50%, -50%)' }}
@@ -170,11 +170,11 @@ export default function Player() {
             onClick={() => setShowNowPlaying(true)}
           >
             {currentTrack.imageUrl && (
-              <img src={currentTrack.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover shadow-lg" />
+              <img src={currentTrack.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover" style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.4), 0 0 16px rgba(0,255,221,0.08)' }} />
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold truncate">{currentTrack.name}</p>
-              <p className="text-xs text-text-muted truncate">{currentTrack.artistName}</p>
+              <p className="text-[14px] font-semibold truncate">{currentTrack.name}</p>
+              <p className="text-[13px] text-text-secondary truncate">{currentTrack.artistName}</p>
             </div>
             <button
               onClick={(e) => { e.stopPropagation(); toggle() }}
@@ -198,12 +198,13 @@ export default function Player() {
                   animate={{ scale: 1, opacity: 1 }}
                   src={currentTrack.imageUrl}
                   alt=""
-                  className="w-14 h-14 rounded-lg object-cover shadow-lg"
+                  className="w-14 h-14 rounded-lg object-cover"
+                  style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.4), 0 0 20px rgba(0,255,221,0.08)' }}
                 />
               )}
               <div className="min-w-0">
-                <p className="text-[15px] font-semibold truncate hover:text-neon-cyan transition-colors">{currentTrack.name}</p>
-                <p className="text-[13px] text-text-muted truncate">{currentTrack.artistName}</p>
+                <p className="text-[14px] font-semibold truncate hover:text-neon-cyan transition-colors">{currentTrack.name}</p>
+                <p className="text-[13px] text-text-secondary truncate">{currentTrack.artistName}</p>
               </div>
             </div>
 
