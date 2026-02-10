@@ -5,6 +5,7 @@ import { usePlayerStore } from '../stores/player'
 import { useAuthStore } from '../stores/auth'
 import { useAlbumColors } from '../hooks/useAlbumColors'
 import { toggleFavorite } from '../lib/jellyfin'
+import { formatTime } from '../lib/formatTime'
 import LyricsView from './LyricsView'
 import Waveform from './Waveform'
 
@@ -45,70 +46,10 @@ export default function NowPlaying() {
     }
   }
 
-  // calcProgress removed - handled by Waveform component
-
-  // Removed unused progress handlers - using Waveform component now
-
-  // Mouse drag for desktop (REMOVED - using Waveform component)
-  /*const handleProgressMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!duration) return
-    setIsDraggingProgress(true)
-    const pct = calcProgress(e.clientX)
-    setDragProgress(pct)
-    setCurrentTime(pct * duration)
-    const onMove = (me: MouseEvent) => {
-      const p = calcProgress(me.clientX)
-      setDragProgress(p)
-      setCurrentTime(p * duration)
-    }
-    const onUp = (me: MouseEvent) => {
-      const p = calcProgress(me.clientX)
-      seek(p * duration)
-      setIsDraggingProgress(false)
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }, [duration, seek, setCurrentTime, calcProgress])
-
-  // Touch drag for mobile
-  const handleProgressTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    if (!duration) return
-    e.stopPropagation() // prevent swipe-to-dismiss
-    setIsDraggingProgress(true)
-    const touch = e.touches[0]
-    const pct = calcProgress(touch.clientX)
-    setDragProgress(pct)
-    setCurrentTime(pct * duration)
-  }, [duration, setCurrentTime, calcProgress])
-
-  const handleProgressTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    if (!isDraggingProgress || !duration) return
-    e.stopPropagation()
-    const touch = e.touches[0]
-    const pct = calcProgress(touch.clientX)
-    setDragProgress(pct)
-    setCurrentTime(pct * duration)
-  }, [isDraggingProgress, duration, setCurrentTime, calcProgress])
-
-  const handleProgressTouchEnd = useCallback(() => {
-    if (!isDraggingProgress || !duration) return
-    seek(dragProgress * duration)
-    setIsDraggingProgress(false)
-  }, [isDraggingProgress, dragProgress, duration, seek])*/
-
   function handlePanEnd(_: any, info: PanInfo) {
     if (info.offset.y > 100 || info.velocity.y > 300) {
       setShowNowPlaying(false)
     }
-  }
-
-  function formatTime(s: number) {
-    if (!s || !isFinite(s)) return '0:00'
-    const m = Math.floor(s / 60)
-    const sec = Math.floor(s % 60)
-    return `${m}:${sec.toString().padStart(2, '0')}`
   }
 
   function handleArtistClick(e: React.MouseEvent) {

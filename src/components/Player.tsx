@@ -1,17 +1,21 @@
-import { useEffect, useRef, useCallback, useState } from 'react'
+import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { usePlayerStore } from '../stores/player'
 import { useAuthStore } from '../stores/auth'
-import { getStreamUrl } from '../lib/jellyfin'
 import { useUIStore } from '../stores/ui'
+import { formatTime } from '../lib/formatTime'
+import { type EQPreset } from '../lib/equalizer'
+import { useAudioEngine } from '../hooks/useAudioEngine'
+import { useMediaSession } from '../hooks/useMediaSession'
+import { useScrobbling } from '../hooks/useScrobbling'
+import { useSleepTimer } from '../hooks/useSleepTimer'
+import { usePlayerKeyboard } from '../hooks/usePlayerKeyboard'
+import { useSwipeAction } from '../hooks/useSwipeAction'
 import KeyboardShortcuts from './KeyboardShortcuts'
 import Waveform from './Waveform'
 import Equalizer from './Equalizer'
 import SleepTimer from './SleepTimer'
-import { updateNowPlaying, scrobbleTrack, shouldScrobble } from '../lib/scrobble'
-import { AudioEqualizer, type EQPreset } from '../lib/equalizer'
-import { useSwipeAction } from '../hooks/useSwipeAction'
 
 export default function Player() {
   const {
@@ -24,492 +28,112 @@ export default function Player() {
   const { serverUrl, api } = useAuthStore()
   const { audioQuality, crossfadeMode, crossfadeDuration, scrobbleSettings, eqGains, eqEnabled, setEQGains, setEQEnabled } = useUIStore()
   const navigate = useNavigate()
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const nextAudioRef = useRef<HTMLAudioElement | null>(null)
-  const seekingRef = useRef(false)
-  const crossfadeTimerRef = useRef<number | null>(null)
-  const preloadedTrackIdRef = useRef<string | null>(null)
-  const equalizerRef = useRef<AudioEqualizer | null>(null)
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [showEqualizer, setShowEqualizer] = useState(false)
   const [showSleepTimer, setShowSleepTimer] = useState(false)
-  const [sleepTimerRemaining, setSleepTimerRemaining] = useState(0)
-  
-  // Scrobbling state
-  const scrobbledTracksRef = useRef<Set<string>>(new Set())
-  const trackStartTimeRef = useRef<number | null>(null)
-  const playedTimeRef = useRef<number>(0)
-  const [scrobbleToast, setScrobbleToast] = useState('')
-  
-  // Sleep timer state
-  const sleepFadeRef = useRef<number | null>(null)
-  
-  // Fade-in state
-  const fadeInRef = useRef<number | null>(null)
-  const lastPauseTimeRef = useRef<number>(0)
 
-  // Fade-in helper function
-  const startFadeIn = useCallback((audioElement: HTMLAudioElement, targetVolume: number) => {
-    if (fadeInRef.current) {
-      cancelAnimationFrame(fadeInRef.current)
-      fadeInRef.current = null
-    }
+  // Scrobbling
+  const { scrobbleToast, handleTimeUpdate: scrobbleTimeUpdate } = useScrobbling({
+    track: currentTrack,
+    isPlaying,
+    scrobbleSettings,
+  })
 
-    const fadeDuration = 200 // 200ms fade
-    const startTime = performance.now()
-    audioElement.volume = 0
-
-    const fade = (currentTime: number) => {
-      const elapsed = currentTime - startTime
-      const progress = Math.min(elapsed / fadeDuration, 1)
-      
-      audioElement.volume = targetVolume * progress
-      
-      if (progress < 1) {
-        fadeInRef.current = requestAnimationFrame(fade)
-      } else {
-        fadeInRef.current = null
+  // Audio engine
+  const { audioRef, seekingRef, handleEQGainsChange: applyEQGains, connectEqualizer, disconnectEqualizer } = useAudioEngine({
+    trackId: currentTrack?.id,
+    serverUrl: serverUrl ?? undefined,
+    accessToken: api?.accessToken ?? undefined,
+    audioQuality,
+    isPlaying,
+    volume,
+    muted,
+    crossfadeMode,
+    crossfadeDuration,
+    eqEnabled,
+    eqGains,
+    queue,
+    queueIndex,
+    repeat,
+    onPlay: play,
+    onSetCurrentTime: setCurrentTime,
+    onSetDuration: setDuration,
+    onNext: next,
+    onTimeUpdate: (ct, dur, audioEl) => {
+      if (!seekingRef.current) {
+        scrobbleTimeUpdate(ct, dur, audioEl)
       }
-    }
-    
-    fadeInRef.current = requestAnimationFrame(fade)
-  }, [])
+    },
+  })
 
-  // Get next track in queue
-  const getNextTrack = useCallback(() => {
-    if (queue.length === 0) return null
-    const nextIdx = queueIndex + 1
-    if (nextIdx < queue.length) return queue[nextIdx]
-    if (repeat === 'all') return queue[0]
-    return null
-  }, [queue, queueIndex, repeat])
+  // Media session
+  useMediaSession({
+    track: currentTrack,
+    audioRef,
+    onPlay: () => { audioRef.current?.play(); play() },
+    onPause: () => { audioRef.current?.pause(); pause() },
+    onNext: next,
+    onPrevious: previous,
+    onSeek: (time) => {
+      if (audioRef.current) audioRef.current.currentTime = time
+      seek(time)
+    },
+  })
 
-  // Preload next track for gapless/crossfade
-  const preloadNext = useCallback(() => {
-    if (crossfadeMode === 'off' || !serverUrl || !api?.accessToken) return
-    const nextTrack = getNextTrack()
-    if (!nextTrack || preloadedTrackIdRef.current === nextTrack.id) return
-
-    const nextAudio = new Audio()
-    nextAudio.preload = 'auto'
-    nextAudio.src = getStreamUrl(serverUrl, nextTrack.id, api.accessToken, audioQuality)
-    nextAudio.volume = 0
-    nextAudio.load()
-    nextAudioRef.current = nextAudio
-    preloadedTrackIdRef.current = nextTrack.id
-  }, [crossfadeMode, serverUrl, api?.accessToken, audioQuality, getNextTrack])
-
-  // Create/update audio
-  useEffect(() => {
-    if (!currentTrack || !serverUrl || !api?.accessToken) return
-
-    // If we have a preloaded audio for this track, use it (gapless transition)
-    let audio: HTMLAudioElement
-    if (nextAudioRef.current && preloadedTrackIdRef.current === currentTrack.id) {
-      audio = nextAudioRef.current
-      nextAudioRef.current = null
-      preloadedTrackIdRef.current = null
-    } else {
-      audio = audioRef.current ?? new Audio()
-      const streamUrl = getStreamUrl(serverUrl, currentTrack.id, api.accessToken, audioQuality)
-      audio.src = streamUrl
-      audio.load()
-    }
-
-    // Clean up old audio if different
-    if (audioRef.current && audioRef.current !== audio) {
-      audioRef.current.pause()
-      audioRef.current.src = ''
-    }
-    audioRef.current = audio
-    audio.volume = muted ? 0 : volume
-
-    const onError = (e: Event) => {
-      const a = e.target as HTMLAudioElement
-      console.error('[JellyAmp] Audio error:', a.error?.code, a.error?.message)
-    }
-    const onCanPlay = () => {
-      const targetVolume = muted ? 0 : volume
-      if (crossfadeMode === 'gapless') {
-        // No fade for gapless — instant volume to avoid dip between segued tracks
-        audio.volume = targetVolume
-      } else {
-        startFadeIn(audio, targetVolume)
-      }
-      audio.play().then(() => play()).catch((err) => console.error('[JellyAmp] Play failed:', err))
-    }
-
-    // If audio is already ready (preloaded), play immediately
-    // For gapless mode with preloaded audio: skip fade-in to avoid volume dip between tracks
-    const isGaplessPreloaded = crossfadeMode === 'gapless' && audio.readyState >= 3
-    if (audio.readyState >= 3) {
-      const targetVolume = muted ? 0 : volume
-      if (isGaplessPreloaded) {
-        // Instant start — no fade, no gap
-        audio.volume = targetVolume
-      } else {
-        startFadeIn(audio, targetVolume)
-      }
-      audio.play().then(() => play()).catch(() => {})
-    } else {
-      audio.addEventListener('canplay', onCanPlay, { once: true })
-    }
-    audio.addEventListener('error', onError)
-
-    // Initialize EQ if enabled
-    if (eqEnabled && !equalizerRef.current) {
-      initializeEqualizer(audio)
-    } else if (eqEnabled && equalizerRef.current) {
-      // Reconnect EQ to new audio element
-      equalizerRef.current.connectToAudio(audio).catch(console.error)
-    }
-
-    const onTimeUpdate = () => {
-      if (!seekingRef.current) setCurrentTime(audio.currentTime)
-
-      // Track playing time for scrobbling
-      if (trackStartTimeRef.current && isPlaying && !seekingRef.current) {
-        const now = Date.now()
-        const timeSinceStart = (now - trackStartTimeRef.current) / 1000
-        playedTimeRef.current = Math.min(timeSinceStart, audio.currentTime)
-
-        // Check if we should scrobble this track
-        if (
-          currentTrack && 
-          !scrobbledTracksRef.current.has(currentTrack.id) && 
-          audio.duration && 
-          shouldScrobble(playedTimeRef.current, audio.duration)
-        ) {
-          scrobbledTracksRef.current.add(currentTrack.id)
-          scrobbleTrack(currentTrack, trackStartTimeRef.current, scrobbleSettings)
-            .then((success) => {
-              if (success) {
-                setScrobbleToast('♫ Scrobbled')
-                setTimeout(() => setScrobbleToast(''), 2000)
-              }
-            })
-            .catch(() => {})
-        }
-      }
-
-      // Preload next track when 10 seconds from end
-      if (audio.duration && isFinite(audio.duration) && audio.duration - audio.currentTime < 10) {
-        preloadNext()
-      }
-
-      // Start crossfade when approaching end
-      if (crossfadeMode === 'crossfade' && audio.duration && isFinite(audio.duration)) {
-        const timeLeft = audio.duration - audio.currentTime
-        if (timeLeft <= crossfadeDuration && timeLeft > 0 && nextAudioRef.current) {
-          // Fade out current, fade in next
-          const progress = 1 - (timeLeft / crossfadeDuration)
-          audio.volume = (muted ? 0 : volume) * (1 - progress)
-          nextAudioRef.current.volume = (muted ? 0 : volume) * progress
-          if (nextAudioRef.current.paused) {
-            nextAudioRef.current.play().catch(() => {})
-          }
-        }
-      }
-
-      // Gapless: ensure next audio is fully buffered and ready before current ends
-      // We do NOT start it early or overlap — live recordings segue directly
-      // Instead we just make sure it's preloaded so play() is instant on 'ended'
-      if (crossfadeMode === 'gapless' && audio.duration && isFinite(audio.duration)) {
-        const timeLeft = audio.duration - audio.currentTime
-        // Preload aggressively at 15s, then ensure buffered at 3s
-        if (timeLeft <= 15) preloadNext()
-        if (timeLeft <= 3 && nextAudioRef.current) {
-          // Force the browser to buffer by loading
-          if (nextAudioRef.current.readyState < 3) {
-            nextAudioRef.current.load()
-          }
-        }
-      }
-    }
-    const onDuration = () => { if (audio.duration && isFinite(audio.duration)) setDuration(audio.duration) }
-    const onEnded = () => {
-      // For gapless: the next audio is preloaded, so next() will pick it up
-      // and play() will be near-instant since it's already buffered
-      next()
-    }
-
-    audio.addEventListener('timeupdate', onTimeUpdate)
-    audio.addEventListener('durationchange', onDuration)
-    audio.addEventListener('ended', onEnded)
-
-    // Media Session
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: currentTrack.name,
-        artist: currentTrack.artistName ?? '',
-        album: currentTrack.albumName ?? '',
-        artwork: currentTrack.imageUrl
-          ? [{ src: currentTrack.imageUrl, sizes: '300x300', type: 'image/jpeg' }]
-          : [],
-      })
-      navigator.mediaSession.setActionHandler('play', () => { audio.play(); play() })
-      navigator.mediaSession.setActionHandler('pause', () => { audio.pause(); pause() })
-      navigator.mediaSession.setActionHandler('previoustrack', previous)
-      navigator.mediaSession.setActionHandler('nexttrack', next)
-      navigator.mediaSession.setActionHandler('seekto', (details) => {
-        if (details.seekTime != null) {
-          audio.currentTime = details.seekTime
-          seek(details.seekTime)
-        }
-      })
-    }
-
-    return () => {
-      audio.removeEventListener('timeupdate', onTimeUpdate)
-      audio.removeEventListener('durationchange', onDuration)
-      audio.removeEventListener('ended', onEnded)
-      audio.removeEventListener('error', onError)
-      if (crossfadeTimerRef.current) {
-        cancelAnimationFrame(crossfadeTimerRef.current)
-        crossfadeTimerRef.current = null
-      }
-      if (fadeInRef.current) {
-        cancelAnimationFrame(fadeInRef.current)
-        fadeInRef.current = null
-      }
-    }
-  }, [currentTrack?.id])
-
-  useEffect(() => {
-    if (!audioRef.current) return
-    if (isPlaying) {
-      // Check if this is a resume after brief pause (< 500ms)
-      const timeSinceLastPause = Date.now() - lastPauseTimeRef.current
-      const isShortPause = timeSinceLastPause < 500
-      
-      if (!isShortPause && audioRef.current.currentTime === 0) {
-        // Start of track or long pause - apply fade
-        const targetVolume = muted ? 0 : volume
-        startFadeIn(audioRef.current, targetVolume)
-      }
-      
-      audioRef.current.play().catch(() => {})
-    } else {
-      lastPauseTimeRef.current = Date.now()
-      audioRef.current.pause()
-    }
-  }, [isPlaying, muted, volume, startFadeIn])
-
-  useEffect(() => {
-    if (audioRef.current) audioRef.current.volume = muted ? 0 : volume
-  }, [volume, muted])
-
-  // Listen for seek events from NowPlaying (or any external component)
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const time = (e as CustomEvent).detail?.time
-      if (audioRef.current && typeof time === 'number' && isFinite(time)) {
-        audioRef.current.currentTime = time
-      }
-    }
-    window.addEventListener('jellyamp-seek', handler)
-    return () => window.removeEventListener('jellyamp-seek', handler)
-  }, [])
-
-  // Handle scrobbling track changes and "now playing" updates
-  useEffect(() => {
-    if (!currentTrack) return
-
-    // Reset scrobbling state for new track
-    trackStartTimeRef.current = Date.now()
-    playedTimeRef.current = 0
-
-    // Send "now playing" update to scrobbling services
-    if (scrobbleSettings.enabled) {
-      updateNowPlaying(currentTrack, scrobbleSettings).catch(() => {})
-    }
-
-    // Handle sleep timer "end of track" mode
-    if (sleepTimer.active && sleepTimer.mode === 'track') {
-      // Don't start fade immediately, wait for track to actually end naturally
-    }
-  }, [currentTrack?.id, scrobbleSettings.enabled, sleepTimer.active, sleepTimer.mode])
-
-  // Sleep timer logic
-  useEffect(() => {
-    if (!sleepTimer.active || !audioRef.current) return
-
-    const checkTimer = () => {
-      if (sleepTimer.mode === 'time' && sleepTimer.endTime) {
-        const remaining = sleepTimer.endTime - Date.now()
-        setSleepTimerRemaining(remaining)
-
-        // Start fade when 5 seconds remaining
-        if (remaining <= 5000 && remaining > 0 && !sleepFadeRef.current) {
-          const fadeStartVolume = audioRef.current?.volume ?? volume
-          const fadeInterval = 50 // Update every 50ms
-          const steps = 5000 / fadeInterval // 100 steps over 5 seconds
-          let step = 0
-
-          sleepFadeRef.current = window.setInterval(() => {
-            if (!audioRef.current) return
-            
-            step++
-            const progress = step / steps
-            const newVolume = fadeStartVolume * (1 - progress)
-            
-            audioRef.current.volume = Math.max(0, newVolume)
-            
-            if (step >= steps) {
-              // Fade complete, pause and clear timer
-              pause()
-              clearSleepTimer()
-              if (sleepFadeRef.current) {
-                clearInterval(sleepFadeRef.current)
-                sleepFadeRef.current = null
-              }
-              // Restore volume for next time
-              audioRef.current.volume = sleepTimer.originalVolume
-            }
-          }, fadeInterval)
-        }
-
-        // Timer expired
-        if (remaining <= 0) {
-          pause()
-          clearSleepTimer()
-          setSleepTimerRemaining(0)
-          if (sleepFadeRef.current) {
-            clearInterval(sleepFadeRef.current)
-            sleepFadeRef.current = null
-          }
-          // Restore volume
-          if (audioRef.current) {
-            audioRef.current.volume = sleepTimer.originalVolume
-          }
-        }
-      }
-    }
-
-    const interval = setInterval(checkTimer, 1000)
-    checkTimer() // Run immediately
-
-    return () => {
-      clearInterval(interval)
-      if (sleepFadeRef.current) {
-        clearInterval(sleepFadeRef.current)
-        sleepFadeRef.current = null
-      }
-    }
-  }, [sleepTimer, volume, pause, clearSleepTimer])
-
-  // Handle track end for "end of track" sleep timer
-  useEffect(() => {
-    if (!audioRef.current) return
-
-    const handleTrackEnd = () => {
-      if (sleepTimer.active && sleepTimer.mode === 'track') {
-        // Track ended naturally, activate sleep timer
-        pause()
-        clearSleepTimer()
-      }
-    }
-
-    const audio = audioRef.current
-    audio.addEventListener('ended', handleTrackEnd)
-
-    return () => {
-      audio.removeEventListener('ended', handleTrackEnd)
-    }
-  }, [sleepTimer.active, sleepTimer.mode, pause, clearSleepTimer])
+  // Sleep timer
+  const { sleepTimerRemaining } = useSleepTimer({
+    audioRef,
+    sleepTimer,
+    volume,
+    onPause: pause,
+    onClearTimer: clearSleepTimer,
+    trackId: currentTrack?.id,
+  })
 
   // Keyboard shortcuts
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      switch (true) {
-        case e.code === 'Space': e.preventDefault(); toggle(); break
-        case e.code === 'ArrowRight' && e.shiftKey: next(); break
-        case e.code === 'ArrowLeft' && e.shiftKey: previous(); break
-        case e.code === 'KeyM': toggleMute(); break
-        case e.code === 'ArrowUp' && !e.shiftKey: e.preventDefault(); setVolume(Math.min(1, volume + 0.05)); break
-        case e.code === 'ArrowDown' && !e.shiftKey: e.preventDefault(); setVolume(Math.max(0, volume - 0.05)); break
-        case e.key === '?': e.preventDefault(); setShowShortcuts(s => !s); break
-      }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [volume])
-
-  function formatTime(s: number) {
-    if (!s || !isFinite(s)) return '0:00'
-    const m = Math.floor(s / 60)
-    const sec = Math.floor(s % 60)
-    return `${m}:${sec.toString().padStart(2, '0')}`
-  }
+  usePlayerKeyboard({
+    volume,
+    onToggle: toggle,
+    onNext: next,
+    onPrevious: previous,
+    onMute: toggleMute,
+    onVolumeChange: setVolume,
+    onShowShortcuts: useCallback(() => setShowShortcuts(s => !s), []),
+  })
 
   function handleArtistClick(e: React.MouseEvent) {
     e.stopPropagation()
-    if (currentTrack?.artistId) {
-      navigate(`/artist/${currentTrack.artistId}`)
-    }
+    if (currentTrack?.artistId) navigate(`/artist/${currentTrack.artistId}`)
   }
 
   function handleAlbumClick(e: React.MouseEvent) {
     e.stopPropagation()
-    if (currentTrack?.albumId) {
-      navigate(`/album/${currentTrack.albumId}`)
-    }
+    if (currentTrack?.albumId) navigate(`/album/${currentTrack.albumId}`)
   }
 
-  // Initialize the equalizer
-  async function initializeEqualizer(audioElement: HTMLAudioElement) {
-    try {
-      if (!equalizerRef.current) {
-        equalizerRef.current = new AudioEqualizer()
-      }
-      
-      await equalizerRef.current.connectToAudio(audioElement)
-      
-      // Apply saved EQ settings
-      if (eqGains.length === 5) {
-        equalizerRef.current.setEQGains(eqGains)
-      }
-    } catch (error) {
-      console.error('Failed to initialize equalizer:', error)
-    }
-  }
-
-  // Handle EQ gain changes
   function handleEQGainsChange(gains: number[]) {
     setEQGains(gains)
-    if (equalizerRef.current?.connected) {
-      equalizerRef.current.setEQGains(gains)
-    }
+    applyEQGains(gains)
   }
 
-  // Handle EQ preset application
   function handleEQPresetApply(preset: EQPreset) {
     handleEQGainsChange(preset.gains)
   }
 
-  // Toggle EQ on/off
-  function toggleEqualizer() {
+  function toggleEqualizerEnabled() {
     const newEqEnabled = !eqEnabled
     setEQEnabled(newEqEnabled)
-    
-    if (newEqEnabled && audioRef.current) {
-      // Initialize EQ
-      initializeEqualizer(audioRef.current)
-    } else if (!newEqEnabled && equalizerRef.current) {
-      // Disable EQ
-      equalizerRef.current.disconnect()
-      equalizerRef.current = null
+    if (newEqEnabled) {
+      connectEqualizer()
+    } else {
+      disconnectEqualizer()
     }
   }
 
   // Swipe up to open Now Playing on mobile player bar
   const { touchHandlers: playerSwipeHandlers } = useSwipeAction({
     onSwipeMove: (_deltaX, deltaY) => {
-      // Swipe up (negative deltaY)
-      if (deltaY < -30) {
-        setShowNowPlaying(true)
-      }
+      if (deltaY < -30) setShowNowPlaying(true)
     }
   })
 
@@ -525,7 +149,7 @@ export default function Player() {
             bottom-[56px] md:bottom-0"
           style={{ background: 'linear-gradient(180deg, rgba(10,10,16,0.95) 0%, rgba(5,5,8,0.98) 100%)' }}
         >
-          {/* Mobile grabber pill — hints swipe-up */}
+          {/* Mobile grabber pill */}
           <div className="md:hidden flex justify-center pt-1.5 pb-0">
             <div className="w-8 h-1 rounded-full bg-white/20" />
           </div>
@@ -554,7 +178,7 @@ export default function Player() {
               trackId={currentTrack?.id}
               className="h-full"
               barCount={120}
-              showTooltip={false} // No tooltip on minimal player bar
+              showTooltip={false}
             />
           </div>
 
@@ -697,7 +321,7 @@ export default function Player() {
                 />
               </div>
               <button
-                onClick={toggleEqualizer}
+                onClick={toggleEqualizerEnabled}
                 className={`p-2 rounded transition-colors ${eqEnabled ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
                 title="Equalizer"
               >
