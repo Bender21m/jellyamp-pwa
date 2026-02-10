@@ -134,7 +134,7 @@ export default function AlbumDetail() {
           </motion.div>
 
           {/* Info */}
-          <div className="flex flex-col items-center text-center md:items-start md:text-left min-w-0 gap-1">
+          <div className="flex flex-col items-center text-center md:items-start md:text-left flex-1 min-w-0 gap-1">
             <h1 className="text-xl md:text-3xl font-extrabold tracking-[-0.02em] leading-tight">
               {album.Name}
             </h1>

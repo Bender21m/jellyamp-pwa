@@ -180,7 +180,7 @@ export default function ArtistDetail() {
             </motion.div>
 
             {/* Info */}
-            <div className="flex flex-col items-center md:items-start min-w-0 gap-1">
+            <div className="flex flex-col items-center md:items-start flex-1 min-w-0 gap-1">
               <h1 className="text-2xl md:text-4xl lg:text-[42px] font-black tracking-[-0.03em] leading-tight">
                 {artist.Name}
               </h1>
