@@ -15,7 +15,7 @@ export default function GenreCard({ name, onClick, index }: { name: string; onCl
       onClick={onClick}
       whileHover={{ scale: 1.03 }}
       whileTap={{ scale: 0.97 }}
-      className="relative aspect-[2/1] rounded-xl overflow-hidden cursor-pointer group"
+      className="relative w-full aspect-[2/1] rounded-xl overflow-hidden cursor-pointer group"
       style={{
         background: `linear-gradient(135deg, ${colors[0]}15 0%, ${colors[1]}15 100%)`,
         border: `1px solid ${colors[0]}20`,
