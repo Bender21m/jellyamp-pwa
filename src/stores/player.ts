@@ -12,6 +12,7 @@ export interface Track {
   imageUrl?: string
   isFavorite?: boolean
   playlistItemId?: string // for playlist entry removal
+  normalizationGain?: number // ReplayGain/LUFS normalization gain in dB
 }
 
 type RepeatMode = 'off' | 'one' | 'all'

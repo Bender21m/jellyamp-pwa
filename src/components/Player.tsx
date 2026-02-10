@@ -18,7 +18,7 @@ export default function Player() {
     queue, queueIndex, sleepTimer,
     play, pause, toggle, next, previous, seek, setVolume, toggleMute, toggleShuffle,
     cycleRepeat, setCurrentTime, setDuration, setShowNowPlaying, showQueue, setShowQueue,
-    clearSleepTimer, getSleepTimerRemaining,
+    clearSleepTimer,
   } = usePlayerStore()
   const { serverUrl, api } = useAuthStore()
   const { audioQuality, crossfadeMode, crossfadeDuration, scrobbleSettings, eqGains, eqEnabled, setEQGains, setEQEnabled } = useUIStore()
@@ -548,6 +548,31 @@ export default function Player() {
                   value={muted ? 0 : volume}
                   onChange={(e) => setVolume(parseFloat(e.target.value))}
                   className="w-24 accent-neon-cyan h-1"
+                />
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => setShowSleepTimer(!showSleepTimer)}
+                  className={`p-2 rounded transition-colors relative ${sleepTimer.active ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
+                  title="Sleep Timer"
+                >
+                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+                    <path d="M6 6.9L3.87 4.78l1.41-1.41L7.05 5.14C8.23 4.43 9.57 4 11 4c4.97 0 9 4.03 9 9s-4.03 9-9 9-9-4.03-9-9c0-1.43.43-2.77 1.14-3.95L1.37 7.28l1.41-1.41L6 8.74V6.9zM12 6c-3.87 0-7 3.13-7 7s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm1 3h-2v6h6v-2h-4V9z" />
+                  </svg>
+                  {sleepTimer.active && sleepTimer.mode === 'time' && sleepTimerRemaining > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-neon-cyan text-deep-black text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[20px] leading-tight">
+                      {Math.ceil(sleepTimerRemaining / (1000 * 60))}m
+                    </span>
+                  )}
+                  {sleepTimer.active && sleepTimer.mode === 'track' && (
+                    <span className="absolute -top-1 -right-1 bg-neon-cyan text-deep-black text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[20px] leading-tight">
+                      ♪
+                    </span>
+                  )}
+                </button>
+                <SleepTimer
+                  isOpen={showSleepTimer}
+                  onClose={() => setShowSleepTimer(false)}
                 />
               </div>
               <button

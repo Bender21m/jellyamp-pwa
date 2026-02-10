@@ -32,6 +32,7 @@ interface UIState {
   eqEnabled: boolean
   showMiniPlayer: boolean
   playbackSpeed: number // 0.5x, 0.75x, 1x, 1.25x, 1.5x, 2x
+  volumeNormalization: boolean // Volume normalization on/off
 
   setViewMode: (mode: ViewMode) => void
   setSortOption: (option: SortOption) => void
@@ -44,6 +45,7 @@ interface UIState {
   setEQEnabled: (enabled: boolean) => void
   setShowMiniPlayer: (show: boolean) => void
   setPlaybackSpeed: (speed: number) => void
+  setVolumeNormalization: (enabled: boolean) => void
 }
 
 export const useUIStore = create<UIState>()(
@@ -72,6 +74,7 @@ export const useUIStore = create<UIState>()(
       eqEnabled: false,
       showMiniPlayer: false,
       playbackSpeed: 1,
+      volumeNormalization: false, // Disabled by default
 
       setViewMode: (mode) => set({ viewMode: mode }),
       setSortOption: (option) => set({ sortOption: option }),
@@ -86,6 +89,7 @@ export const useUIStore = create<UIState>()(
       setEQEnabled: (enabled) => set({ eqEnabled: enabled }),
       setShowMiniPlayer: (show) => set({ showMiniPlayer: show }),
       setPlaybackSpeed: (speed) => set({ playbackSpeed: speed }),
+      setVolumeNormalization: (enabled) => set({ volumeNormalization: enabled }),
     }),
     {
       name: 'jellyamp-ui',

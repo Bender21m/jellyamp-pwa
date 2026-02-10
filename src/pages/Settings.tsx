@@ -29,7 +29,7 @@ const SPEED_OPTIONS: { value: number; label: string }[] = [
 
 export default function Settings() {
   const { serverUrl, serverName, username, logout } = useAuthStore()
-  const { audioQuality, setAudioQuality, crossfadeMode, setCrossfadeMode, crossfadeDuration, setCrossfadeDuration, playbackSpeed, setPlaybackSpeed, scrobbleSettings, updateScrobbleSettings } = useUIStore()
+  const { audioQuality, setAudioQuality, crossfadeMode, setCrossfadeMode, crossfadeDuration, setCrossfadeDuration, playbackSpeed, setPlaybackSpeed, scrobbleSettings, updateScrobbleSettings, volumeNormalization, setVolumeNormalization } = useUIStore()
   
   const [lastfmApiKey, setLastfmApiKey] = useState(scrobbleSettings.lastfm.apiKey)
   const [lastfmApiSecret, setLastfmApiSecret] = useState(scrobbleSettings.lastfm.apiSecret)
@@ -254,6 +254,28 @@ export default function Settings() {
           </div>
           <p className="text-xs text-text-muted/60 mt-3 px-1">
             Adjust playback speed. Useful for learning music or speeding through spoken content.
+          </p>
+        </section>
+
+        {/* Volume Normalization */}
+        <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted">Volume Normalization</h2>
+            <button
+              onClick={() => setVolumeNormalization(!volumeNormalization)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                volumeNormalization ? 'bg-neon-cyan' : 'bg-white/20'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  volumeNormalization ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+          <p className="text-xs text-text-muted/60 px-1">
+            Automatically adjusts track volume based on ReplayGain metadata to maintain consistent loudness across songs.
           </p>
         </section>
 
