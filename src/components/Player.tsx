@@ -42,6 +42,37 @@ export default function Player() {
   
   // Sleep timer state
   const sleepFadeRef = useRef<number | null>(null)
+  
+  // Fade-in state
+  const fadeInRef = useRef<number | null>(null)
+  const lastPauseTimeRef = useRef<number>(0)
+
+  // Fade-in helper function
+  const startFadeIn = useCallback((audioElement: HTMLAudioElement, targetVolume: number) => {
+    if (fadeInRef.current) {
+      cancelAnimationFrame(fadeInRef.current)
+      fadeInRef.current = null
+    }
+
+    const fadeDuration = 200 // 200ms fade
+    const startTime = performance.now()
+    audioElement.volume = 0
+
+    const fade = (currentTime: number) => {
+      const elapsed = currentTime - startTime
+      const progress = Math.min(elapsed / fadeDuration, 1)
+      
+      audioElement.volume = targetVolume * progress
+      
+      if (progress < 1) {
+        fadeInRef.current = requestAnimationFrame(fade)
+      } else {
+        fadeInRef.current = null
+      }
+    }
+    
+    fadeInRef.current = requestAnimationFrame(fade)
+  }, [])
 
   // Get next track in queue
   const getNextTrack = useCallback(() => {
@@ -97,12 +128,17 @@ export default function Player() {
       console.error('[JellyAmp] Audio error:', a.error?.code, a.error?.message)
     }
     const onCanPlay = () => {
+      const targetVolume = muted ? 0 : volume
+      // Always fade in on track change (new track starts)
+      startFadeIn(audio, targetVolume)
       audio.play().then(() => play()).catch((err) => console.error('[JellyAmp] Play failed:', err))
     }
 
     // If audio is already ready (preloaded), play immediately
     if (audio.readyState >= 3) {
-      audio.volume = muted ? 0 : volume
+      const targetVolume = muted ? 0 : volume
+      // Always fade in on track change (new track starts)
+      startFadeIn(audio, targetVolume)
       audio.play().then(() => play()).catch(() => {})
     } else {
       audio.addEventListener('canplay', onCanPlay, { once: true })
@@ -202,14 +238,32 @@ export default function Player() {
         cancelAnimationFrame(crossfadeTimerRef.current)
         crossfadeTimerRef.current = null
       }
+      if (fadeInRef.current) {
+        cancelAnimationFrame(fadeInRef.current)
+        fadeInRef.current = null
+      }
     }
   }, [currentTrack?.id])
 
   useEffect(() => {
     if (!audioRef.current) return
-    if (isPlaying) audioRef.current.play().catch(() => {})
-    else audioRef.current.pause()
-  }, [isPlaying])
+    if (isPlaying) {
+      // Check if this is a resume after brief pause (< 500ms)
+      const timeSinceLastPause = Date.now() - lastPauseTimeRef.current
+      const isShortPause = timeSinceLastPause < 500
+      
+      if (!isShortPause && audioRef.current.currentTime === 0) {
+        // Start of track or long pause - apply fade
+        const targetVolume = muted ? 0 : volume
+        startFadeIn(audioRef.current, targetVolume)
+      }
+      
+      audioRef.current.play().catch(() => {})
+    } else {
+      lastPauseTimeRef.current = Date.now()
+      audioRef.current.pause()
+    }
+  }, [isPlaying, muted, volume, startFadeIn])
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = muted ? 0 : volume

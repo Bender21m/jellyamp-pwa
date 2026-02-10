@@ -1,7 +1,10 @@
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { usePlayerStore, type Track } from '../stores/player'
+import { useToastStore } from '../stores/toast'
 import { setDragData } from '../lib/dragdrop'
+import { useSwipeAction } from '../hooks/useSwipeAction'
 
 interface TrackRowProps {
   track: Track
