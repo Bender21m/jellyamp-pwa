@@ -6,6 +6,7 @@ import Connect from './pages/Connect'
 import Library from './pages/Library'
 import Search from './pages/Search'
 import Favorites from './pages/Favorites'
+import History from './pages/History'
 import Playlists from './pages/Playlists'
 import PlaylistDetail from './pages/PlaylistDetail'
 import AlbumDetail from './pages/AlbumDetail'
@@ -34,6 +35,7 @@ function AnimatedRoutes() {
           <Route path="/library" element={<Library />} />
           <Route path="/search" element={<Search />} />
           <Route path="/favorites" element={<Favorites />} />
+          <Route path="/history" element={<History />} />
           <Route path="/playlists" element={<Playlists />} />
           <Route path="/playlist/:id" element={<PlaylistDetail />} />
           <Route path="/album/:id" element={<AlbumDetail />} />

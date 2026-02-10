@@ -298,5 +298,35 @@ export async function fetchSimilarArtists(api: Api, userId: string, artistId: st
   }
 }
 
+export async function fetchRecentlyPlayed(api: Api, userId: string) {
+  const itemsApi = getItemsApi(api)
+  const { data } = await itemsApi.getItems({
+    userId,
+    includeItemTypes: [BaseItemKind.Audio],
+    recursive: true,
+    sortBy: [ItemSortBy.DatePlayed],
+    sortOrder: [SortOrder.Descending],
+    filters: ['IsPlayed' as never],
+    limit: 100,
+    fields: [ItemFields.MediaSources],
+  })
+  return data
+}
+
+export async function fetchMostPlayed(api: Api, userId: string) {
+  const itemsApi = getItemsApi(api)
+  const { data } = await itemsApi.getItems({
+    userId,
+    includeItemTypes: [BaseItemKind.Audio],
+    recursive: true,
+    sortBy: [ItemSortBy.PlayCount],
+    sortOrder: [SortOrder.Descending],
+    filters: ['IsPlayed' as never],
+    limit: 50,
+    fields: [ItemFields.MediaSources],
+  })
+  return data
+}
+
 export { jellyfin, getItemsApi, getArtistsApi, getImageApi, BaseItemKind, SortOrder, ItemSortBy, ItemFields }
 export type { BaseItemDto }
