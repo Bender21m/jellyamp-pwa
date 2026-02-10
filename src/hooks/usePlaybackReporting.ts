@@ -9,6 +9,7 @@ interface UsePlaybackReportingOptions {
   currentTime: number // seconds
   muted: boolean
   volume: number
+  isExternalStream?: boolean // skip reporting for non-Jellyfin tracks
 }
 
 /**
@@ -16,14 +17,14 @@ interface UsePlaybackReportingOptions {
  * play counts, and "last played" timestamps.
  */
 export function usePlaybackReporting(options: UsePlaybackReportingOptions) {
-  const { api, trackId, isPlaying, currentTime, muted, volume } = options
+  const { api, trackId, isPlaying, currentTime, muted, volume, isExternalStream } = options
   const reportedStartRef = useRef<string | null>(null)
   const progressIntervalRef = useRef<number | null>(null)
   const lastReportedTimeRef = useRef(0)
 
   // Report playback start when track changes
   useEffect(() => {
-    if (!api || !trackId) return
+    if (!api || !trackId || isExternalStream) return
 
     // Report start
     const playstateApi = getPlaystateApi(api)
@@ -43,11 +44,11 @@ export function usePlaybackReporting(options: UsePlaybackReportingOptions) {
         reportedStartRef.current = null
       }
     }
-  }, [api, trackId])
+  }, [api, trackId, isExternalStream])
 
   // Report progress every 10 seconds while playing
   useEffect(() => {
-    if (!api || !trackId || !isPlaying) {
+    if (!api || !trackId || !isPlaying || isExternalStream) {
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current)
         progressIntervalRef.current = null

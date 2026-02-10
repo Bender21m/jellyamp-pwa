@@ -43,6 +43,7 @@ export default function Player() {
   // Audio engine
   const { audioRef, seekingRef, handleEQGainsChange: applyEQGains, connectEqualizer, disconnectEqualizer } = useAudioEngine({
     trackId: currentTrack?.id,
+    currentTrack: currentTrack ?? undefined,
     serverUrl: serverUrl ?? undefined,
     accessToken: api?.accessToken ?? undefined,
     audioQuality,
@@ -99,6 +100,7 @@ export default function Player() {
     currentTime,
     muted,
     volume,
+    isExternalStream: !!currentTrack?.streamUrl,
   })
 
   // Keyboard shortcuts

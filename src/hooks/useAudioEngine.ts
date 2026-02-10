@@ -1,9 +1,11 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { getStreamUrl, type StreamQuality } from '../lib/jellyfin'
 import { AudioEqualizer } from '../lib/equalizer'
+import type { Track } from '../stores/player'
 
 interface UseAudioEngineOptions {
   trackId: string | undefined
+  currentTrack: Track | undefined
   serverUrl: string | undefined
   accessToken: string | undefined
   audioQuality: StreamQuality
@@ -27,7 +29,7 @@ interface UseAudioEngineOptions {
 
 export function useAudioEngine(options: UseAudioEngineOptions) {
   const {
-    trackId, serverUrl, accessToken, audioQuality,
+    trackId, currentTrack, serverUrl, accessToken, audioQuality,
     isPlaying, volume, muted, crossfadeMode, crossfadeDuration,
     eqEnabled, eqGains,
     queue, queueIndex, repeat,
@@ -116,7 +118,8 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
 
   // Create/update audio
   useEffect(() => {
-    if (!trackId || !serverUrl || !accessToken) return
+    if (!trackId) return
+    if (!currentTrack?.streamUrl && (!serverUrl || !accessToken)) return
 
     // If we have a preloaded audio for this track, use it (gapless transition)
     let audio: HTMLAudioElement
@@ -126,8 +129,9 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
       preloadedTrackIdRef.current = null
     } else {
       audio = audioRef.current ?? new Audio()
-      const streamUrl = getStreamUrl(serverUrl, trackId, accessToken, audioQuality)
-      audio.src = streamUrl
+      const url = currentTrack?.streamUrl
+        ?? getStreamUrl(serverUrl!, trackId, accessToken!, audioQuality)
+      audio.src = url
       audio.load()
     }
 
@@ -241,7 +245,8 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
       }
     }
   // Re-run when trackId changes OR when auth becomes available (after reload restore)
-  }, [trackId, serverUrl, accessToken])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackId, currentTrack?.streamUrl, serverUrl, accessToken])
 
   // Play/pause sync — only react to isPlaying changes, not volume/muted
   useEffect(() => {

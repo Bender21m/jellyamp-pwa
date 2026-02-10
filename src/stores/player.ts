@@ -14,6 +14,7 @@ export interface Track {
   isFavorite?: boolean
   playlistItemId?: string // for playlist entry removal
   normalizationGain?: number // ReplayGain/LUFS normalization gain in dB
+  streamUrl?: string // direct audio URL (bypasses Jellyfin, used for Archive streams)
 }
 
 type RepeatMode = 'off' | 'one' | 'all'
