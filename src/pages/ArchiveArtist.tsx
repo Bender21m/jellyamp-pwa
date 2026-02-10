@@ -123,9 +123,9 @@ export default function ArchiveArtist() {
   if (artistInfo?.formedYear) metaParts.push(`est. ${artistInfo.formedYear}`)
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Hero */}
-      <div className="relative shrink-0 h-[200px] md:h-[280px] overflow-hidden">
+    <div className="h-full overflow-y-auto pb-48 md:pb-28">
+      {/* Hero — scrolls away with the page */}
+      <div className="relative h-[180px] md:h-[260px] overflow-hidden">
         {/* Background image or gradient fallback */}
         {artistInfo?.fullImageUrl ? (
           <img
@@ -168,75 +168,82 @@ export default function ArchiveArtist() {
           </svg>
         </button>
 
-        {/* Hero content */}
+        {/* Hero content — bottom-aligned */}
         <div className="absolute bottom-0 left-0 right-0 px-4 md:px-8 pb-4">
           <h1
-            className="text-3xl md:text-5xl font-extrabold tracking-[-0.04em]"
+            className="text-2xl md:text-5xl font-extrabold tracking-[-0.04em]"
             style={{ textShadow: '0 2px 12px rgba(0,0,0,0.7)' }}
           >
             {artistName}
           </h1>
 
           {metaParts.length > 0 && (
-            <p className="text-sm text-text-secondary mt-1.5" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
+            <p className="text-sm text-text-secondary mt-1" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
               {metaParts.join(' · ')}
             </p>
           )}
 
           {!loading && (
-            <p className="text-[13px] text-text-muted font-mono mt-1 tracking-wide">
+            <p className="text-[13px] text-text-muted font-mono mt-0.5 tracking-wide">
               {total.toLocaleString()} recording{total !== 1 ? 's' : ''}
             </p>
           )}
+        </div>
+      </div>
 
+      {/* Genre tags + bio — compact, below hero */}
+      {(artistInfo?.genres?.length || artistInfo?.extract) && (
+        <div className="px-4 md:px-8 pt-3 pb-2">
           {/* Genre tags */}
           {artistInfo?.genres && artistInfo.genres.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2.5">
+            <div className="flex flex-wrap gap-1.5 mb-2">
               {artistInfo.genres.map((g) => (
                 <span
                   key={g}
-                  className="px-2.5 py-1 rounded-full text-[11px] bg-white/[0.05] border border-white/[0.08] text-text-secondary"
+                  className="px-2 py-0.5 rounded-full text-[11px] bg-white/[0.04] border border-white/[0.06] text-text-muted"
                 >
                   {g}
                 </span>
               ))}
             </div>
           )}
-        </div>
-      </div>
 
-      {/* Bio extract */}
-      {artistInfo?.extract && (
-        <div className="px-4 md:px-8 pt-3 pb-2 shrink-0">
-          <p className={`text-sm text-text-secondary leading-relaxed ${!bioExpanded ? 'line-clamp-3' : ''}`}>
-            {artistInfo.extract}
-          </p>
-          {artistInfo.extract.length > 200 && (
-            <button
-              onClick={() => setBioExpanded(!bioExpanded)}
-              className="text-xs text-neon-cyan hover:text-neon-cyan/80 mt-1 transition-colors"
-            >
-              {bioExpanded ? 'Show less' : 'Read more'}
-            </button>
-          )}
-          {artistInfo.wikiUrl && (
-            <a
-              href={artistInfo.wikiUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-text-muted hover:text-text-secondary ml-3 transition-colors"
-            >
-              Wikipedia ↗
-            </a>
+          {/* Bio — collapsed by default */}
+          {artistInfo?.extract && (
+            <div>
+              <p className={`text-[13px] text-text-secondary/70 leading-relaxed ${!bioExpanded ? 'line-clamp-2' : ''}`}>
+                {artistInfo.extract}
+              </p>
+              <div className="flex items-center gap-3 mt-1">
+                {artistInfo.extract.length > 150 && (
+                  <button
+                    onClick={() => setBioExpanded(!bioExpanded)}
+                    className="text-[11px] text-neon-cyan/70 hover:text-neon-cyan transition-colors"
+                  >
+                    {bioExpanded ? 'Less' : 'More'}
+                  </button>
+                )}
+                {artistInfo.wikiUrl && (
+                  <a
+                    href={artistInfo.wikiUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] text-text-muted/60 hover:text-text-secondary transition-colors"
+                  >
+                    Wikipedia ↗
+                  </a>
+                )}
+              </div>
+            </div>
           )}
         </div>
       )}
 
-      {/* Filters */}
-      <div className="px-4 md:px-8 pb-3 shrink-0">
+      {/* Sticky filters — stick to top when hero scrolls away */}
+      <div className="sticky top-0 z-10 bg-[#050508]/95 backdrop-blur-md px-4 md:px-8 py-3 border-b border-white/[0.04]">
         {/* Year filter pills */}
         {!yearsLoading && years.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
             <FilterPill
               label={`All (${total})`}
               active={yearFilter === null}
@@ -254,12 +261,12 @@ export default function ArchiveArtist() {
         )}
 
         {/* Sort & Source filter row */}
-        <div className="flex items-center gap-3 mt-3 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
           {/* Sort dropdown */}
           <div className="relative" ref={sortRef}>
             <button
               onClick={() => setSortOpen(!sortOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface border border-white/[0.08] text-text-secondary hover:text-text-primary hover:border-white/15 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white/[0.03] border border-white/[0.08] text-text-secondary hover:text-text-primary hover:border-white/15 transition-all"
             >
               <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor">
                 <path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z" />
@@ -297,7 +304,7 @@ export default function ArchiveArtist() {
                 className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
                   sourceFilter === sf.value
                     ? 'bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30'
-                    : 'bg-surface text-text-muted border border-white/[0.06] hover:text-text-secondary hover:border-white/10'
+                    : 'bg-white/[0.03] text-text-muted border border-white/[0.06] hover:text-text-secondary hover:border-white/10'
                 }`}
               >
                 {sf.label}
@@ -307,15 +314,15 @@ export default function ArchiveArtist() {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28">
+      {/* Show list — flows naturally in the scroll */}
+      <div className="px-4 md:px-8 pt-3">
         {loading ? (
           <div className="space-y-3">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-surface rounded-xl p-4 ring-1 ring-white/5">
-                <div className="flex gap-3">
-                  <div className="w-14 h-14 skeleton rounded-lg shrink-0" />
-                  <div className="flex-1 space-y-2">
+              <div key={i} className="bg-white/[0.02] rounded-2xl p-4 border border-white/[0.04]">
+                <div className="flex gap-4">
+                  <div className="w-[72px] h-[72px] skeleton rounded-xl shrink-0" />
+                  <div className="flex-1 space-y-2.5 py-1">
                     <div className="h-4 skeleton rounded w-1/3" />
                     <div className="h-3 skeleton rounded w-1/2" />
                     <div className="h-3 skeleton rounded w-1/4" />
@@ -361,7 +368,7 @@ export default function ArchiveArtist() {
                   whileTap={{ scale: 0.95 }}
                   onClick={handleLoadMore}
                   disabled={loadingMore}
-                  className="px-6 py-2.5 bg-surface border border-white/5 rounded-full text-sm text-text-secondary hover:text-text-primary hover:border-white/10 transition-all disabled:opacity-50"
+                  className="px-6 py-2.5 bg-white/[0.03] border border-white/[0.06] rounded-full text-sm text-text-secondary hover:text-text-primary hover:border-white/10 transition-all disabled:opacity-50"
                 >
                   {loadingMore ? 'Loading...' : `Load more (${shows.length} of ${total})`}
                 </motion.button>
