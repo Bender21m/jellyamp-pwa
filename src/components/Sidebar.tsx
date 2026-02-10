@@ -6,6 +6,7 @@ import { usePlayerStore } from '../stores/player'
 import { fetchPlaylists, fetchFavorites, fetchTracks, fetchArtistTracks, createPlaylist, deletePlaylist, addToPlaylist, BaseItemKind } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import { getDragData, DRAG_FORMAT } from '../lib/dragdrop'
+import { useArchiveStore } from '../stores/archive'
 import OnThisDay from './OnThisDay'
 import logoSvg from '../assets/logo.svg'
 
@@ -259,6 +260,7 @@ export default function Sidebar() {
     }
   }
 
+  const archiveEnabled = useArchiveStore((s) => s.enabled)
   const displayPlaylists = playlists.slice(0, SIDEBAR_ITEM_LIMIT)
   const displayArtists = favoriteArtists.slice(0, SIDEBAR_ITEM_LIMIT)
 
@@ -286,6 +288,16 @@ export default function Sidebar() {
           {libraryNav.map((item) => (
             <NavItem key={item.to} item={item} collapsed={false} />
           ))}
+          {archiveEnabled && (
+            <NavItem
+              item={{
+                to: '/archive',
+                label: 'Live Archive',
+                icon: 'M20 6H4c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM8 15c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm8 0c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z',
+              }}
+              collapsed={false}
+            />
+          )}
         </nav>
       </div>
 

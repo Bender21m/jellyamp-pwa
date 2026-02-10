@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth'
+import { useArchiveStore } from '../stores/archive'
 import { useUIStore } from '../stores/ui'
 import type { AudioQuality, CrossfadeMode } from '../stores/ui'
 import { validateListenBrainzToken, startLastFmAuth } from '../lib/scrobble'
@@ -29,6 +31,7 @@ const SPEED_OPTIONS: { value: number; label: string }[] = [
 
 export default function Settings() {
   const { serverUrl, serverName, username, logout } = useAuthStore()
+  const { enabled: archiveEnabled, setEnabled: setArchiveEnabled } = useArchiveStore()
   const { audioQuality, setAudioQuality, crossfadeMode, setCrossfadeMode, crossfadeDuration, setCrossfadeDuration, playbackSpeed, setPlaybackSpeed, scrobbleSettings, updateScrobbleSettings, volumeNormalization, setVolumeNormalization } = useUIStore()
   
   const [lastfmApiKey, setLastfmApiKey] = useState(scrobbleSettings.lastfm.apiKey)
@@ -408,6 +411,39 @@ export default function Settings() {
           <p className="text-xs text-text-muted/60 mt-3 px-1">
             Albums downloaded for offline playback are cached locally. Use "Available Offline" on album pages to download tracks.
           </p>
+        </section>
+
+        {/* Live Archive */}
+        <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted">Live Archive</h2>
+            <button
+              onClick={() => setArchiveEnabled(!archiveEnabled)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                archiveEnabled ? 'bg-neon-cyan' : 'bg-white/20'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  archiveEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+          <p className="text-xs text-text-muted/60 px-1">
+            Stream live concert recordings from the Internet Archive. Completely separate from your Jellyfin library.
+          </p>
+          {archiveEnabled && (
+            <Link
+              to="/archive"
+              className="mt-3 inline-flex items-center gap-1.5 text-sm text-neon-cyan hover:underline px-1"
+            >
+              Open Live Archive
+              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+              </svg>
+            </Link>
+          )}
         </section>
 
         {/* About */}

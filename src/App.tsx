@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from './stores/auth'
+import { useArchiveStore } from './stores/archive'
 import Connect from './pages/Connect'
 import Library from './pages/Library'
 import Search from './pages/Search'
@@ -12,6 +13,9 @@ import PlaylistDetail from './pages/PlaylistDetail'
 import AlbumDetail from './pages/AlbumDetail'
 import ArtistDetail from './pages/ArtistDetail'
 import Settings from './pages/Settings'
+import ArchiveHome from './pages/ArchiveHome'
+import ArchiveArtist from './pages/ArchiveArtist'
+import ArchiveShow from './pages/ArchiveShow'
 import Sidebar from './components/Sidebar'
 import Player from './components/Player'
 import QueuePanel from './components/QueuePanel'
@@ -21,6 +25,7 @@ import ToastContainer from './components/Toast'
 
 function AnimatedRoutes() {
   const location = useLocation()
+  const archiveEnabled = useArchiveStore((s) => s.enabled)
 
   return (
     <AnimatePresence mode="wait">
@@ -42,6 +47,13 @@ function AnimatedRoutes() {
           <Route path="/album/:id" element={<AlbumDetail />} />
           <Route path="/artist/:id" element={<ArtistDetail />} />
           <Route path="/settings" element={<Settings />} />
+          {archiveEnabled && (
+            <>
+              <Route path="/archive" element={<ArchiveHome />} />
+              <Route path="/archive/artist/:name" element={<ArchiveArtist />} />
+              <Route path="/archive/show/:id" element={<ArchiveShow />} />
+            </>
+          )}
           <Route path="*" element={<Navigate to="/library" replace />} />
         </Routes>
       </motion.div>
