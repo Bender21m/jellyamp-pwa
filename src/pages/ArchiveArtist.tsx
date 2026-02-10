@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { searchShows, groupShowsByDate } from '../lib/archive'
+import { searchShows, groupShowsByDate, getArtistYears } from '../lib/archive'
 import type { ArchiveShow } from '../lib/archive'
 import { useArchiveStore } from '../stores/archive'
 import ArchiveShowCard from '../components/ArchiveShowCard'
@@ -20,8 +20,20 @@ export default function ArchiveArtist() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [page, setPage] = useState(1)
   const [yearFilter, setYearFilter] = useState<number | null>(null)
+  const [years, setYears] = useState<{ year: number; count: number }[]>([])
+  const [yearsLoading, setYearsLoading] = useState(true)
 
   const isPinned = pinnedArtists.some((a) => a.name === artistName)
+
+  // Load all years on mount
+  useEffect(() => {
+    if (!artistName) return
+    setYearsLoading(true)
+    getArtistYears(artistName).then((y) => {
+      setYears(y)
+      setYearsLoading(false)
+    }).catch(() => setYearsLoading(false))
+  }, [artistName])
 
   const loadShows = useCallback(async (pg: number, year: number | null, append: boolean) => {
     if (!artistName) return
@@ -53,13 +65,7 @@ export default function ArchiveArtist() {
     loadShows(nextPage, yearFilter, true)
   }
 
-  // Extract years from shows
-  const years = [...new Set(shows.map((s) => {
-    const y = parseInt(s.date?.slice(0, 4), 10)
-    return isNaN(y) ? null : y
-  }).filter((y): y is number => y != null))].sort((a, b) => b - a)
-
-  // Group by date
+  // Group shows by date
   const grouped = groupShowsByDate(shows)
 
   return (
@@ -90,7 +96,7 @@ export default function ArchiveArtist() {
           <button
             onClick={() => {
               if (isPinned) unpinArtist(artistName)
-              else pinArtist({ name: artistName, showCount: total, pinnedAt: Date.now() })
+              else pinArtist({ name: artistName, showCount: total, pinnedAt: Date.now(), imageUrl: shows[0]?.imageUrl })
             }}
             className={`shrink-0 w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
               isPinned
@@ -106,19 +112,19 @@ export default function ArchiveArtist() {
         </div>
 
         {/* Year filter pills */}
-        {years.length > 1 && (
+        {!yearsLoading && years.length > 1 && (
           <div className="flex gap-2 overflow-x-auto pb-1 mt-4 scrollbar-hide">
             <FilterPill
               label={`All (${total})`}
               active={yearFilter === null}
               onClick={() => setYearFilter(null)}
             />
-            {years.map((year) => (
+            {years.map((y) => (
               <FilterPill
-                key={year}
-                label={String(year)}
-                active={yearFilter === year}
-                onClick={() => setYearFilter(yearFilter === year ? null : year)}
+                key={y.year}
+                label={`${y.year} (${y.count})`}
+                active={yearFilter === y.year}
+                onClick={() => setYearFilter(yearFilter === y.year ? null : y.year)}
               />
             ))}
           </div>

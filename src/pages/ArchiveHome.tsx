@@ -109,32 +109,45 @@ export default function ArchiveHome() {
               subtitle={`No results for "${query}". Try a different search.`}
             />
           ) : null
-        ) : pinnedArtists.length > 0 ? (
-          <div>
-            <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted mb-3">Pinned Artists</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {pinnedArtists.map((artist, i) => (
-                <motion.button
-                  key={artist.name}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(i * 0.03, 0.3) }}
-                  onClick={() => navigate(`/archive/artist/${encodeURIComponent(artist.name)}`)}
-                  className="text-left bg-surface hover:bg-surface-hover rounded-xl p-5 transition-all duration-200 group ring-1 ring-white/5 hover:ring-neon-cyan/20"
-                >
-                  <p className="text-sm font-semibold text-text-primary group-hover:text-neon-cyan transition-colors truncate">
-                    {artist.name}
-                  </p>
-                  {artist.showCount != null && (
-                    <p className="text-xs text-text-muted font-mono mt-1">
-                      {artist.showCount} show{artist.showCount !== 1 ? 's' : ''}
-                    </p>
-                  )}
-                </motion.button>
-              ))}
-            </div>
-          </div>
         ) : (
+          <>
+            {/* Always show pinned artists above the empty state */}
+            {pinnedArtists.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted mb-3">Your Artists</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {pinnedArtists.map((artist, i) => (
+                    <motion.button
+                      key={artist.name}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: Math.min(i * 0.03, 0.3) }}
+                      onClick={() => navigate(`/archive/artist/${encodeURIComponent(artist.name)}`)}
+                      className="text-left bg-surface hover:bg-surface-hover rounded-xl p-4 transition-all duration-200 group ring-1 ring-white/5 hover:ring-neon-cyan/20"
+                    >
+                      {/* Artist thumbnail from first show */}
+                      {artist.imageUrl && (
+                        <div className="w-full aspect-square rounded-lg overflow-hidden bg-card mb-3 ring-1 ring-white/5">
+                          <img src={artist.imageUrl} alt="" className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                        </div>
+                      )}
+                      <p className="text-sm font-semibold text-text-primary group-hover:text-neon-cyan transition-colors truncate">
+                        {artist.name}
+                      </p>
+                      {artist.showCount != null && (
+                        <p className="text-xs text-text-muted font-mono mt-0.5">
+                          {artist.showCount.toLocaleString()} shows
+                        </p>
+                      )}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+        {/* Empty state only when no pinned artists and no search */}
+        {!query.trim() && pinnedArtists.length === 0 && (
           <EmptyState
             icon={
               <svg viewBox="0 0 24 24" className="w-16 h-16" fill="none" stroke="currentColor" strokeWidth={1}>

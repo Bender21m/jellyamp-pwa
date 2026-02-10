@@ -220,6 +220,46 @@ export async function searchArtists(
   }
 }
 
+/**
+ * Fetch all years an artist has shows, with counts per year.
+ * Uses a lightweight query fetching only date fields.
+ */
+export async function getArtistYears(
+  artist: string
+): Promise<{ year: number; count: number }[]> {
+  // Fetch up to 10000 dates (just the date field, very lightweight)
+  const params = new URLSearchParams({
+    q: `collection:etree AND creator:"${artist}"`,
+    'fl[]': 'date',
+    'sort[]': 'date desc',
+    rows: '10000',
+    output: 'json',
+  })
+
+  try {
+    const res = await fetch(`https://archive.org/advancedsearch.php?${params.toString()}`)
+    if (!res.ok) return []
+    const data = await res.json()
+    const docs: Record<string, unknown>[] = data?.response?.docs ?? []
+
+    const yearCounts = new Map<number, number>()
+    for (const doc of docs) {
+      const dateStr = String(doc.date ?? '')
+      const y = parseInt(dateStr.slice(0, 4), 10)
+      if (!isNaN(y) && y > 1900) {
+        yearCounts.set(y, (yearCounts.get(y) ?? 0) + 1)
+      }
+    }
+
+    return Array.from(yearCounts.entries())
+      .map(([year, count]) => ({ year, count }))
+      .sort((a, b) => b.year - a.year)
+  } catch (err) {
+    console.error('[Archive] getArtistYears error:', err)
+    return []
+  }
+}
+
 export function groupShowsByDate(shows: ArchiveShow[]): Map<string, ArchiveShow[]> {
   const map = new Map<string, ArchiveShow[]>()
   for (const show of shows) {
