@@ -1,6 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
 @import "tailwindcss";
 
+/* Prevent pinch-zoom and double-tap zoom on mobile */
+html {
+  touch-action: manipulation;
+}
+
 @theme {
   --color-deep-black: #050508;
   --color-card: #0A0A10;
