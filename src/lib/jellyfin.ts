@@ -66,6 +66,24 @@ export function getStreamUrl(serverUrl: string, itemId: string, token: string, q
   return `${serverUrl}/Audio/${itemId}/stream?${params}`
 }
 
+export async function getStreamUrlWithCache(serverUrl: string, itemId: string, token: string, quality: StreamQuality = 'original'): Promise<string> {
+  // For offline playback, check cache first (only for original quality)
+  if (quality === 'original' && 'caches' in window) {
+    try {
+      const { getCachedTrackUrl } = await import('./offlineCache')
+      const cachedUrl = await getCachedTrackUrl(itemId, serverUrl)
+      if (cachedUrl) {
+        return cachedUrl
+      }
+    } catch (error) {
+      console.debug('Cache check failed:', error)
+    }
+  }
+
+  // Fall back to regular streaming
+  return getStreamUrl(serverUrl, itemId, token, quality)
+}
+
 export async function fetchAlbums(api: Api, userId: string, opts?: {
   limit?: number, startIndex?: number, sortBy?: ItemSortBy[], sortOrder?: SortOrder[],
   searchTerm?: string, artistIds?: string[], parentId?: string,

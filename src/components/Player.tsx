@@ -6,6 +6,7 @@ import { getStreamUrl } from '../lib/jellyfin'
 import { useUIStore } from '../stores/ui'
 import KeyboardShortcuts from './KeyboardShortcuts'
 import Waveform from './Waveform'
+import MiniPlayer from './MiniPlayer'
 import { updateNowPlaying, scrobbleTrack, shouldScrobble } from '../lib/scrobble'
 
 export default function Player() {
@@ -16,7 +17,7 @@ export default function Player() {
     cycleRepeat, setCurrentTime, setDuration, setShowNowPlaying, showQueue, setShowQueue,
   } = usePlayerStore()
   const { serverUrl, api } = useAuthStore()
-  const { audioQuality, crossfadeMode, crossfadeDuration, scrobbleSettings } = useUIStore()
+  const { audioQuality, crossfadeMode, crossfadeDuration, scrobbleSettings, showMiniPlayer, setShowMiniPlayer } = useUIStore()
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const nextAudioRef = useRef<HTMLAudioElement | null>(null)
   const seekingRef = useRef(false)
@@ -235,7 +236,7 @@ export default function Player() {
 
   return (
     <AnimatePresence>
-      {currentTrack && (
+      {currentTrack && !showMiniPlayer && (
         <motion.div
           initial={{ y: 80, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -349,6 +350,15 @@ export default function Player() {
                 />
               </div>
               <button
+                onClick={() => setShowMiniPlayer(!showMiniPlayer)}
+                className="p-2 rounded transition-colors text-text-muted hover:text-text-primary"
+                title="Mini Player"
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+                  <path d="M19 7h-3V6a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v1H5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zM9 6h6v1H9V6zm9 13H6V8h2v1a1 1 0 0 0 2 0V8h4v1a1 1 0 0 0 2 0V8h2v11z" />
+                </svg>
+              </button>
+              <button
                 onClick={() => setShowQueue(!showQueue)}
                 className={`p-2 rounded transition-colors ${showQueue ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
                 title="Queue"
@@ -361,6 +371,9 @@ export default function Player() {
           </div>
         </motion.div>
       )}
+
+      {/* Mini Player */}
+      {currentTrack && showMiniPlayer && <MiniPlayer />}
       
       {/* Keyboard shortcuts overlay */}
       <KeyboardShortcuts 

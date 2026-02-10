@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthStore } from '../stores/auth'
 import { useUIStore } from '../stores/ui'
 import type { AudioQuality, CrossfadeMode } from '../stores/ui'
 import { validateListenBrainzToken, startLastFmAuth } from '../lib/scrobble'
+import { getCacheSize, clearAllCache, formatCacheSize } from '../lib/offlineCache'
 
 const QUALITY_OPTIONS: { value: AudioQuality; label: string; desc: string }[] = [
   { value: 'original', label: 'Original', desc: 'Lossless / Direct stream' },
@@ -26,6 +27,34 @@ export default function Settings() {
   const [isConnectingLastfm, setIsConnectingLastfm] = useState(false)
   const [lastfmStatus, setLastfmStatus] = useState('')
   const [listenbrainzStatus, setListenbrainzStatus] = useState('')
+  const [cacheSize, setCacheSize] = useState(0)
+  const [clearingCache, setClearingCache] = useState(false)
+
+  // Load cache size on component mount
+  useEffect(() => {
+    loadCacheSize()
+  }, [])
+
+  async function loadCacheSize() {
+    try {
+      const size = await getCacheSize()
+      setCacheSize(size)
+    } catch (error) {
+      console.error('Failed to get cache size:', error)
+    }
+  }
+
+  async function handleClearCache() {
+    setClearingCache(true)
+    try {
+      await clearAllCache()
+      setCacheSize(0)
+    } catch (error) {
+      console.error('Failed to clear cache:', error)
+    } finally {
+      setClearingCache(false)
+    }
+  }
 
   // Handle Last.fm API key and authentication
   const handleLastfmApiKeySubmit = () => {
@@ -271,6 +300,27 @@ export default function Settings() {
 
           <p className="text-xs text-text-muted/60 mt-4 px-1">
             Scrobbling tracks your listening habits to Last.fm and/or ListenBrainz. Tracks are scrobbled after 30 seconds or 50% played (whichever comes first).
+          </p>
+        </section>
+
+        {/* Offline Cache */}
+        <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
+          <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted mb-4">Offline Cache</h2>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center min-h-[44px]">
+              <span className="text-text-secondary text-sm">Cache Size</span>
+              <span className="text-sm font-mono text-neon-cyan">{formatCacheSize(cacheSize)}</span>
+            </div>
+            <button
+              onClick={handleClearCache}
+              disabled={clearingCache || cacheSize === 0}
+              className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {clearingCache ? 'Clearing...' : 'Clear Cache'}
+            </button>
+          </div>
+          <p className="text-xs text-text-muted/60 mt-3 px-1">
+            Albums downloaded for offline playback are cached locally. Use "Available Offline" on album pages to download tracks.
           </p>
         </section>
 

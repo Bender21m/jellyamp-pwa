@@ -27,6 +27,9 @@ interface UIState {
   crossfadeMode: CrossfadeMode
   crossfadeDuration: number // seconds (1-12)
   scrobbleSettings: ScrobbleSettings
+  eqGains: number[] // 5-band EQ gains (-12 to +12dB)
+  eqEnabled: boolean
+  showMiniPlayer: boolean
 
   setViewMode: (mode: ViewMode) => void
   setSortOption: (option: SortOption) => void
@@ -35,6 +38,9 @@ interface UIState {
   setCrossfadeMode: (mode: CrossfadeMode) => void
   setCrossfadeDuration: (seconds: number) => void
   updateScrobbleSettings: (settings: Partial<ScrobbleSettings>) => void
+  setEQGains: (gains: number[]) => void
+  setEQEnabled: (enabled: boolean) => void
+  setShowMiniPlayer: (show: boolean) => void
 }
 
 export const useUIStore = create<UIState>()(
@@ -58,6 +64,9 @@ export const useUIStore = create<UIState>()(
           username: ''
         }
       },
+      eqGains: [0, 0, 0, 0, 0], // Flat EQ by default
+      eqEnabled: false,
+      showMiniPlayer: false,
 
       setViewMode: (mode) => set({ viewMode: mode }),
       setSortOption: (option) => set({ sortOption: option }),
@@ -68,6 +77,9 @@ export const useUIStore = create<UIState>()(
       updateScrobbleSettings: (newSettings) => set((state) => ({
         scrobbleSettings: { ...state.scrobbleSettings, ...newSettings }
       })),
+      setEQGains: (gains) => set({ eqGains: gains }),
+      setEQEnabled: (enabled) => set({ eqEnabled: enabled }),
+      setShowMiniPlayer: (show) => set({ showMiniPlayer: show }),
     }),
     {
       name: 'jellyamp-ui',

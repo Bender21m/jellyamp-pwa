@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
 import { fetchTracks, getImageUrl, toggleFavorite } from '../lib/jellyfin'
@@ -9,6 +9,7 @@ import { useAlbumColors } from '../hooks/useAlbumColors'
 import { parseShowDate, formatShowDate } from '../lib/dateParser'
 import { parseVenue } from '../lib/venueParser'
 import { detectSetBreaks } from '../lib/setBreaks'
+import { cacheAlbumTracks, removeAlbumFromCache, isAlbumCached, type CacheProgress } from '../lib/offlineCache'
 import TrackRow from '../components/TrackRow'
 import TrackContextMenu from '../components/TrackContextMenu'
 import SetBreakIndicator from '../components/SetBreakIndicator'
@@ -24,6 +25,9 @@ export default function AlbumDetail() {
   const [isFav, setIsFav] = useState(false)
   const [contextTrack, setContextTrack] = useState<Track | null>(null)
   const [contextPos, setContextPos] = useState<{ x: number; y: number } | null>(null)
+  const [isAlbumCachedState, setIsAlbumCachedState] = useState(false)
+  const [cacheProgress, setCacheProgress] = useState<CacheProgress | null>(null)
+  const [showCacheProgress, setShowCacheProgress] = useState(false)
 
   useEffect(() => {
     if (!api || !userId || !id) return
@@ -52,6 +56,10 @@ export default function AlbumDetail() {
         isFavorite: t.UserData?.IsFavorite ?? false,
       }))
       setTracks(mapped)
+
+      // Check if album is cached
+      const cached = await isAlbumCached(id)
+      setIsAlbumCachedState(cached)
     } catch (e) {
       console.error('Failed to load album', e)
     }
@@ -76,6 +84,41 @@ export default function AlbumDetail() {
     if (tracks.length === 0) return
     const shuffled = [...tracks].sort(() => Math.random() - 0.5)
     setTrack(shuffled[0], shuffled, 0)
+  }
+
+  async function handleCacheToggle() {
+    if (!id || !serverUrl) return
+
+    if (isAlbumCachedState) {
+      // Remove from cache
+      try {
+        await removeAlbumFromCache(id, serverUrl)
+        setIsAlbumCachedState(false)
+      } catch (error) {
+        console.error('Failed to remove album from cache:', error)
+      }
+    } else {
+      // Add to cache
+      if (tracks.length === 0) return
+      
+      setShowCacheProgress(true)
+      
+      try {
+        await cacheAlbumTracks(
+          tracks, 
+          serverUrl, 
+          id,
+          (progress) => setCacheProgress(progress)
+        )
+        setIsAlbumCachedState(true)
+        setShowCacheProgress(false)
+        setCacheProgress(null)
+      } catch (error) {
+        console.error('Failed to cache album:', error)
+        setShowCacheProgress(false)
+        setCacheProgress(null)
+      }
+    }
   }
 
   const imageUrl = album && serverUrl ? getImageUrl(serverUrl, album.Id!, album.ImageTags?.Primary, 600) : ''
@@ -232,6 +275,29 @@ export default function AlbumDetail() {
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                 </svg>
               </button>
+              <button
+                onClick={handleCacheToggle}
+                disabled={showCacheProgress}
+                className={`h-11 w-11 rounded-full border transition-all flex items-center justify-center ${
+                  isAlbumCachedState
+                    ? 'border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan'
+                    : 'border-white/10 text-text-muted hover:text-neon-cyan hover:border-neon-cyan/30'
+                } ${showCacheProgress ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={isAlbumCachedState ? 'Remove from offline cache' : 'Download for offline playback'}
+              >
+                {showCacheProgress ? (
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 animate-spin" fill="currentColor">
+                    <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8z" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+                    <path d={isAlbumCachedState 
+                      ? "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" // Check mark when cached
+                      : "M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" // Download icon when not cached
+                    } />
+                  </svg>
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -281,6 +347,56 @@ export default function AlbumDetail() {
         position={contextPos}
         onClose={() => { setContextTrack(null); setContextPos(null) }}
       />
+
+      {/* Cache Progress Overlay */}
+      <AnimatePresence>
+        {showCacheProgress && cacheProgress && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-deep-black/60 backdrop-blur-sm flex items-center justify-center z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-card border border-white/10 rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl"
+            >
+              <div className="text-center">
+                <h3 className="text-lg font-bold mb-2">Downloading for Offline</h3>
+                <p className="text-sm text-text-muted mb-4">
+                  {cacheProgress.status === 'downloading' && `${cacheProgress.currentTrack}`}
+                  {cacheProgress.status === 'completed' && 'Download completed!'}
+                  {cacheProgress.status === 'error' && 'Download failed'}
+                </p>
+                
+                {/* Progress Bar */}
+                <div className="w-full bg-white/10 rounded-full h-2 mb-3">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(cacheProgress.completed / cacheProgress.total) * 100}%` }}
+                    className="bg-gradient-primary h-2 rounded-full transition-all duration-300"
+                  />
+                </div>
+                
+                <p className="text-xs text-text-muted font-mono">
+                  {cacheProgress.completed} / {cacheProgress.total} tracks
+                </p>
+                
+                {cacheProgress.status === 'completed' && (
+                  <button
+                    onClick={() => setShowCacheProgress(false)}
+                    className="mt-4 px-4 py-2 bg-gradient-primary text-deep-black rounded-lg font-semibold"
+                  >
+                    Done
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
