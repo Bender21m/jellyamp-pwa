@@ -24,7 +24,7 @@ function StarRating({ rating }: { rating: number }) {
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((i) => (
-        <svg key={i} viewBox="0 0 24 24" className={`w-3.5 h-3.5 ${i <= stars ? 'text-amber-400' : 'text-white/10'}`} fill="currentColor">
+        <svg key={i} viewBox="0 0 24 24" className={`w-3.5 h-3.5 ${i <= stars ? 'text-amber-400' : 'text-white/[0.06]'}`} fill="currentColor">
           <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
         </svg>
       ))}
@@ -38,42 +38,45 @@ export default function ArchiveShowCard({ show, recordingCount, hideArtist, onCl
   return (
     <button
       onClick={onClick}
-      className="w-full text-left bg-surface hover:bg-surface-hover rounded-xl p-4 transition-all duration-200 group ring-1 ring-white/5 hover:ring-neon-cyan/20"
+      className="w-full text-left bg-white/[0.02] hover:bg-white/[0.05] rounded-2xl p-4 transition-all duration-300 group border border-white/[0.04] hover:border-white/[0.08]"
     >
-      <div className="flex gap-4">
-        {/* Thumbnail — bigger, rounder */}
-        <div className="w-16 h-16 rounded-xl overflow-hidden bg-card shrink-0 ring-1 ring-white/5 shadow-lg shadow-black/20">
+      <div className="flex gap-4 items-start">
+        {/* Thumbnail */}
+        <div className="w-[72px] h-[72px] rounded-xl overflow-hidden bg-white/[0.03] shrink-0 ring-1 ring-white/[0.06] shadow-lg shadow-black/40 group-hover:ring-neon-cyan/20 transition-all">
           <img
             src={show.imageUrl}
             alt=""
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+            onError={(e) => {
+              const el = e.target as HTMLImageElement
+              el.style.display = 'none'
+            }}
           />
         </div>
 
         <div className="flex-1 min-w-0 py-0.5">
-          {/* Artist name — prominent */}
+          {/* Artist */}
           {!hideArtist && show.artist && (
-            <p className="text-[13px] font-semibold text-neon-cyan/90 truncate leading-tight">{show.artist}</p>
+            <p className="text-[13px] font-semibold text-neon-cyan/80 truncate leading-tight tracking-tight">{show.artist}</p>
           )}
 
-          {/* Date — large, clear */}
-          <p className="text-[15px] font-bold text-text-primary group-hover:text-neon-cyan transition-colors truncate leading-snug mt-0.5">
+          {/* Date */}
+          <p className="text-[15px] font-bold text-text-primary group-hover:text-white transition-colors truncate leading-snug mt-0.5 tracking-[-0.01em]">
             {formatDate(show.date)}
           </p>
 
-          {/* Venue — readable */}
+          {/* Venue */}
           {show.venue && (
-            <p className="text-[13px] text-text-secondary truncate mt-0.5 leading-snug">{show.venue}</p>
+            <p className="text-[13px] text-text-secondary/80 truncate mt-1 leading-snug">{show.venue}</p>
           )}
 
-          {/* Badges row */}
-          <div className="flex items-center gap-2.5 mt-2 flex-wrap">
+          {/* Badges */}
+          <div className="flex items-center gap-2.5 mt-2.5">
             <ArchiveSourceBadge source={show.source} />
             {show.rating != null && <StarRating rating={show.rating} />}
             {recordingCount != null && recordingCount > 1 && (
-              <span className="text-xs text-text-muted font-mono">{recordingCount} rec</span>
+              <span className="text-[11px] text-text-muted font-mono">{recordingCount} rec</span>
             )}
           </div>
         </div>

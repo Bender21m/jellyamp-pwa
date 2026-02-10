@@ -177,7 +177,7 @@ export default function ArchiveShow() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full md:w-[280px] aspect-square rounded-xl overflow-hidden shadow-2xl shrink-0 ring-1 ring-white/10 bg-card"
+            className="w-full md:w-[300px] aspect-square rounded-2xl overflow-hidden shadow-2xl shadow-black/50 shrink-0 ring-1 ring-white/[0.08] bg-white/[0.03]"
           >
             <img
               src={metadata.imageUrl}
@@ -189,7 +189,7 @@ export default function ArchiveShow() {
 
           {/* Info */}
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-[-0.03em] leading-tight">
+            <h1 className="text-2xl md:text-4xl font-extrabold tracking-[-0.04em] leading-tight">
               {formatDate(metadata.date)}
             </h1>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -264,7 +264,7 @@ export default function ArchiveShow() {
               Source Info
             </button>
             {showSourceInfo && (
-              <div className="mt-2 bg-surface rounded-lg p-3 ring-1 ring-white/5 space-y-1.5">
+              <div className="mt-2 bg-white/[0.02] rounded-xl p-4 border border-white/[0.06] space-y-2">
                 {metadata.source && (
                   <p className="text-xs text-text-muted">
                     <span className="text-text-secondary font-medium">Source:</span> {metadata.source}
@@ -335,10 +335,10 @@ export default function ArchiveShow() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(i * 0.02, 0.4) }}
                     onClick={() => playFrom(i)}
-                    className={`w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-lg transition-colors group text-left ${
+                    className={`w-full flex items-center gap-3 px-3 md:px-4 py-3.5 rounded-xl transition-all duration-200 group text-left ${
                       isCurrentTrack
-                        ? 'bg-neon-cyan/[0.08]'
-                        : 'hover:bg-white/[0.03] odd:bg-white/[0.015]'
+                        ? 'bg-neon-cyan/[0.06] border border-neon-cyan/[0.12]'
+                        : 'hover:bg-white/[0.03] border border-transparent'
                     }`}
                   >
                     {/* Track number column with segue line */}

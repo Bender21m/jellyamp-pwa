@@ -121,9 +121,9 @@ export default function ArchiveArtist() {
 
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-[-0.03em]">{artistName}</h1>
+            <h1 className="text-2xl md:text-4xl font-extrabold tracking-[-0.04em]">{artistName}</h1>
             {!loading && (
-              <p className="text-sm text-text-secondary font-mono mt-1">
+              <p className="text-[13px] text-text-muted font-mono mt-1.5 tracking-wide">
                 {total.toLocaleString()} recording{total !== 1 ? 's' : ''}
               </p>
             )}
