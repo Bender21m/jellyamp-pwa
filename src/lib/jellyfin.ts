@@ -297,7 +297,6 @@ export async function fetchSimilarArtists(api: Api, userId: string, artistId: st
     return []
   }
 }
-
 export async function fetchRecentlyPlayed(api: Api, userId: string) {
   const itemsApi = getItemsApi(api)
   const { data } = await itemsApi.getItems({
@@ -324,6 +323,42 @@ export async function fetchMostPlayed(api: Api, userId: string) {
     filters: ['IsPlayed' as never],
     limit: 50,
     fields: [ItemFields.MediaSources],
+  })
+  return data
+}
+
+export async function fetchGenres(api: Api, userId: string) {
+  const { data } = await api.axiosInstance.get(`${api.basePath}/MusicGenres`, {
+    params: { UserId: userId, SortBy: 'SortName', SortOrder: 'Ascending', Fields: 'PrimaryImageAspectRatio' }
+  })
+  return data as { Items?: BaseItemDto[]; TotalRecordCount?: number }
+}
+
+export async function fetchAlbumsByGenre(api: Api, userId: string, genreId: string) {
+  const itemsApi = getItemsApi(api)
+  const { data } = await itemsApi.getItems({
+    userId,
+    includeItemTypes: [BaseItemKind.MusicAlbum],
+    recursive: true,
+    genreIds: [genreId],
+    sortBy: [ItemSortBy.SortName],
+    sortOrder: [SortOrder.Ascending],
+    fields: [ItemFields.PrimaryImageAspectRatio, ItemFields.MediaSources],
+    limit: 200,
+  })
+  return data
+}
+
+export async function fetchRecentAlbums(api: Api, userId: string, limit = 50) {
+  const itemsApi = getItemsApi(api)
+  const { data } = await itemsApi.getItems({
+    userId,
+    includeItemTypes: [BaseItemKind.MusicAlbum],
+    recursive: true,
+    sortBy: [ItemSortBy.DateCreated],
+    sortOrder: [SortOrder.Descending],
+    limit,
+    fields: [ItemFields.PrimaryImageAspectRatio, ItemFields.DateCreated],
   })
   return data
 }

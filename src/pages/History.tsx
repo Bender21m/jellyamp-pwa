@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
@@ -8,6 +8,8 @@ import { formatRelativeTime } from '../lib/formatTime'
 import TrackRow from '../components/TrackRow'
 import TrackContextMenu from '../components/TrackContextMenu'
 import EmptyState from '../components/EmptyState'
+import { usePullToRefresh } from '../hooks/usePullToRefresh'
+import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 
 type Tab = 'recent' | 'most-played'
 
@@ -82,6 +84,21 @@ export default function History() {
     }
   }
 
+  // Pull to refresh setup
+  const containerRef = useRef<HTMLDivElement>(null)
+  const isTouchDevice = window.matchMedia('(hover: none)').matches
+  const { 
+    containerRef: pullContainerRef, 
+    touchHandlers, 
+    isRefreshing: isPullRefreshing, 
+    isPulling, 
+    shouldTrigger, 
+    progress 
+  } = usePullToRefresh({
+    onRefresh: loadHistory,
+    disabled: !isTouchDevice
+  })
+
   function handleTrackContextMenu(track: Track, e: React.MouseEvent) {
     e.preventDefault()
     setContextMenu({ track, position: { x: e.clientX, y: e.clientY } })
@@ -123,7 +140,21 @@ export default function History() {
   }
 
   return (
-    <div className="h-full overflow-y-auto pb-48 md:pb-28">
+    <div 
+      ref={(el) => {
+        containerRef.current = el
+        pullContainerRef(el)
+      }}
+      className="h-full overflow-y-auto pb-48 md:pb-28 relative"
+      {...touchHandlers}
+    >
+      {/* Pull to refresh indicator */}
+      <PullToRefreshIndicator
+        isVisible={isPulling}
+        isRefreshing={isPullRefreshing}
+        shouldTrigger={shouldTrigger}
+        progress={progress}
+      />
       {/* Header */}
       <div className="px-4 md:px-8 pt-6 md:pt-8 pb-4">
         <div className="flex items-center gap-3 mb-6">

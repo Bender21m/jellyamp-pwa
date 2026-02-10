@@ -63,14 +63,18 @@ export default function Library() {
       }
       const sort = sortMap[sortOption]
 
-      const [albumsRes, artistsRes, playlistsRes] = await Promise.all([
+      const [albumsRes, artistsRes, playlistsRes, genresRes, recentRes] = await Promise.all([
         fetchAlbums(api, userId, { limit: 200, ...sort, searchTerm: search || undefined }),
         fetchArtists(api, userId, { limit: 200, searchTerm: search || undefined }),
         fetchPlaylists(api, userId),
+        fetchGenres(api, userId),
+        fetchRecentAlbums(api, userId, 50),
       ])
       setAlbums(albumsRes.Items ?? [])
       setArtists(artistsRes.Items ?? [])
       setPlaylists(playlistsRes.Items ?? [])
+      setGenres(genresRes.Items ?? [])
+      setRecentAlbums(recentRes.Items ?? [])
     } catch (e) {
       console.error('Library fetch error', e)
     }
@@ -83,6 +87,52 @@ export default function Library() {
     const t = setTimeout(() => loadData(), 300)
     return () => clearTimeout(t)
   }, [search])
+
+  // Genre selection handler
+  const handleGenreClick = useCallback(async (genreId: string, genreName: string) => {
+    if (!api || !userId) return
+    setSelectedGenre({ id: genreId, name: genreName })
+    setLoading(true)
+    try {
+      const res = await fetchAlbumsByGenre(api, userId, genreId)
+      setGenreAlbums(res.Items ?? [])
+    } catch (e) {
+      console.error('Genre albums fetch error', e)
+    }
+    setLoading(false)
+  }, [api, userId])
+
+  // Reset genre selection when switching filters
+  useEffect(() => {
+    setSelectedGenre(null)
+    setGenreAlbums([])
+  }, [libraryFilter])
+
+  // Group recent albums by timeframe
+  const groupRecentAlbums = useCallback((items: BaseItemDto[]) => {
+    const now = new Date()
+    const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0,0,0,0)
+    const startOfLastWeek = new Date(startOfWeek); startOfLastWeek.setDate(startOfLastWeek.getDate() - 7)
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+
+    const groups: { label: string; items: BaseItemDto[] }[] = [
+      { label: 'This Week', items: [] },
+      { label: 'Last Week', items: [] },
+      { label: 'This Month', items: [] },
+      { label: 'Older', items: [] },
+    ]
+
+    // Skip first 20 (shown in horizontal scroll)
+    items.slice(20).forEach(item => {
+      const date = item.DateCreated ? new Date(item.DateCreated) : new Date(0)
+      if (date >= startOfWeek) groups[0].items.push(item)
+      else if (date >= startOfLastWeek) groups[1].items.push(item)
+      else if (date >= startOfMonth) groups[2].items.push(item)
+      else groups[3].items.push(item)
+    })
+
+    return groups.filter(g => g.items.length > 0)
+  }, [])
 
   const imgUrl = (item: BaseItemDto, size = 400) =>
     serverUrl ? getImageUrl(serverUrl, item.Id!, item.ImageTags?.Primary, size) : ''
@@ -240,7 +290,100 @@ export default function Library() {
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28">
         {loading ? (
           <SkeletonGrid viewMode={viewMode} type={libraryFilter === 'Artists' ? 'artist' : 'album'} />
-        ) : libraryFilter === 'Albums' || libraryFilter === 'Recent' ? (
+        ) : libraryFilter === 'Genres' ? (
+          selectedGenre ? (
+            <div>
+              <button
+                onClick={() => { setSelectedGenre(null); setGenreAlbums([]) }}
+                className="flex items-center gap-2 text-sm text-text-secondary hover:text-neon-cyan transition-colors mb-4 group"
+              >
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                  <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+                </svg>
+                <span className="group-hover:underline">Back to Genres</span>
+              </button>
+              <h2 className="text-xl font-bold mb-4">{selectedGenre.name}</h2>
+              {genreAlbums.length === 0 ? (
+                <p className="text-text-muted text-sm">No albums found in this genre.</p>
+              ) : (
+                <div className={gridCols}>
+                  {genreAlbums.map((a, i) => (
+                    <motion.div key={a.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.015, 0.3) }}>
+                      <AlbumCard
+                        id={a.Id!}
+                        name={a.Name ?? 'Unknown'}
+                        artistName={a.AlbumArtist ?? 'Unknown Artist'}
+                        imageUrl={imgUrl(a)}
+                        year={a.ProductionYear ?? undefined}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : genres.length === 0 ? (
+            <EmptyStateComponent
+              icon={<svg viewBox="0 0 24 24" className="w-16 h-16" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" /></svg>}
+              title="No genres found"
+              subtitle="Your Jellyfin server doesn't have any music genres yet."
+            />
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
+              {genres.map((g, i) => (
+                <motion.div key={g.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.015, 0.3) }}>
+                  <GenreCard name={g.Name ?? 'Unknown'} index={i} onClick={() => handleGenreClick(g.Id!, g.Name ?? 'Unknown')} />
+                </motion.div>
+              ))}
+            </div>
+          )
+        ) : libraryFilter === 'Recent' ? (
+          recentAlbums.length === 0 ? (
+            <EmptyStateComponent
+              icon={<svg viewBox="0 0 24 24" className="w-16 h-16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5c-2.49 0-4.5-2.01-4.5-4.5S9.51 7.5 12 7.5s4.5 2.01 4.5 4.5-2.01 4.5-4.5 4.5zm0-5.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z" /></svg>}
+              title="No recent albums"
+              subtitle="Albums you add will appear here."
+            />
+          ) : (
+            <div className="space-y-8">
+              {/* Horizontal scroll of latest 20 */}
+              <div>
+                <h2 className="text-lg font-bold mb-3">Recently Added</h2>
+                <HorizontalScroll>
+                  {recentAlbums.slice(0, 20).map((a, i) => (
+                    <motion.div key={a.Id} className="shrink-0 w-36 md:w-44" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.4) }}>
+                      <AlbumCard
+                        id={a.Id!}
+                        name={a.Name ?? 'Unknown'}
+                        artistName={a.AlbumArtist ?? 'Unknown Artist'}
+                        imageUrl={imgUrl(a)}
+                        year={a.ProductionYear ?? undefined}
+                      />
+                    </motion.div>
+                  ))}
+                </HorizontalScroll>
+              </div>
+              {/* Grouped by timeframe */}
+              {groupRecentAlbums(recentAlbums).map(group => (
+                <div key={group.label}>
+                  <h2 className="text-lg font-bold mb-3 text-text-secondary">{group.label}</h2>
+                  <div className={gridCols}>
+                    {group.items.map((a, i) => (
+                      <motion.div key={a.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.015, 0.3) }}>
+                        <AlbumCard
+                          id={a.Id!}
+                          name={a.Name ?? 'Unknown'}
+                          artistName={a.AlbumArtist ?? 'Unknown Artist'}
+                          imageUrl={imgUrl(a)}
+                          year={a.ProductionYear ?? undefined}
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : libraryFilter === 'Albums' ? (
           albums.length === 0 ? (
             <EmptyStateComponent
               icon={

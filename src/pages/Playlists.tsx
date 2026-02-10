@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { fetchPlaylists, createPlaylist, deletePlaylist, getImageUrl } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import PlaylistCard from '../components/PlaylistCard'
 import EmptyState from '../components/EmptyState'
+import { usePullToRefresh } from '../hooks/usePullToRefresh'
+import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 
 export default function Playlists() {
   const { api, userId, serverUrl } = useAuthStore()
@@ -32,6 +34,21 @@ export default function Playlists() {
     }
     setLoading(false)
   }
+
+  // Pull to refresh setup
+  const containerRef = useRef<HTMLDivElement>(null)
+  const isTouchDevice = window.matchMedia('(hover: none)').matches
+  const { 
+    containerRef: pullContainerRef, 
+    touchHandlers, 
+    isRefreshing: isPullRefreshing, 
+    isPulling, 
+    shouldTrigger, 
+    progress 
+  } = usePullToRefresh({
+    onRefresh: loadPlaylists,
+    disabled: !isTouchDevice
+  })
 
   async function handleCreate() {
     if (!api || !userId || !newName.trim()) return
@@ -108,7 +125,21 @@ export default function Playlists() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28">
+      <div 
+        ref={(el) => {
+          containerRef.current = el
+          pullContainerRef(el)
+        }}
+        className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28 relative"
+        {...touchHandlers}
+      >
+        {/* Pull to refresh indicator */}
+        <PullToRefreshIndicator
+          isVisible={isPulling}
+          isRefreshing={isPullRefreshing}
+          shouldTrigger={shouldTrigger}
+          progress={progress}
+        />
         {loading ? (
           <div className={gridCols}>
             {Array.from({ length: 6 }).map((_, i) => (
