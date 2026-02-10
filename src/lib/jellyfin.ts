@@ -211,6 +211,25 @@ export async function deletePlaylist(api: Api, playlistId: string) {
   await api.axiosInstance.delete(`${api.basePath}/Items/${playlistId}`)
 }
 
+export interface LyricsLine {
+  Start?: number // Start time in ticks (10,000,000 ticks = 1 second)
+  Text: string
+}
+
+export interface LyricsResponse {
+  Lyrics: LyricsLine[]
+}
+
+export async function fetchLyrics(api: Api, trackId: string): Promise<LyricsResponse | null> {
+  try {
+    const { data } = await api.axiosInstance.get(`${api.basePath}/Audio/${trackId}/Lyrics`)
+    return data as LyricsResponse
+  } catch (error) {
+    // Lyrics not available or error
+    return null
+  }
+}
+
 export async function fetchArtistById(api: Api, userId: string, artistId: string): Promise<BaseItemDto | null> {
   // Try multiple approaches — Jellyfin artist items are tricky
   try {
