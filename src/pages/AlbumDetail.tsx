@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
@@ -13,8 +13,11 @@ import { detectSetBreaks } from '../lib/setBreaks'
 import { cacheAlbumTracks, removeAlbumFromCache, isAlbumCached, type CacheProgress } from '../lib/offlineCache'
 import TrackRow from '../components/TrackRow'
 import TrackContextMenu from '../components/TrackContextMenu'
+import SelectionBar from '../components/SelectionBar'
 import SetBreakIndicator from '../components/SetBreakIndicator'
 import EmptyState from '../components/EmptyState'
+import { useTrackSelection } from '../hooks/useTrackSelection'
+import { useTrackKeyboard } from '../hooks/useTrackKeyboard'
 
 export default function AlbumDetail() {
   const { id } = useParams<{ id: string }>()
@@ -34,7 +37,22 @@ export default function AlbumDetail() {
 
   // Scroll restoration
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const trackListRef = useRef<HTMLDivElement>(null)
   useScrollRestore(scrollContainerRef)
+
+  // Multi-select + keyboard nav
+  const trackIds = tracks.map(t => t.id)
+  const selection = useTrackSelection(trackIds)
+  const handlePlayTrack = useCallback((track: Track, index: number) => {
+    setTrack(track, tracks, index)
+  }, [tracks, setTrack])
+  const { focusedIndex } = useTrackKeyboard({
+    tracks,
+    containerRef: trackListRef,
+    selection,
+    onPlay: handlePlayTrack,
+  })
+  const selectedTracks = tracks.filter(t => selection.isSelected(t.id))
 
   useEffect(() => {
     if (!api || !userId || !id) return
@@ -348,7 +366,7 @@ export default function AlbumDetail() {
       </div>
 
       {/* Tracks */}
-      <div className="px-4 md:px-8 pr-6 md:pr-8">
+      <div ref={trackListRef} className="px-4 md:px-8 pr-6 md:pr-8" tabIndex={-1}>
         <div className="border-t border-white/5 pt-4">
           {(() => {
             const setBreaks = detectSetBreaks(tracks)
@@ -371,6 +389,9 @@ export default function AlbumDetail() {
                     index={i}
                     allTracks={tracks}
                     showIndex
+                    isSelected={selection.isSelected(track.id)}
+                    isFocused={focusedIndex === i}
+                    onSelectionClick={selection.handleClick}
                     onContextMenu={(e) => {
                       e.preventDefault()
                       setContextTrack(track)
@@ -385,6 +406,12 @@ export default function AlbumDetail() {
           })()}
         </div>
       </div>
+
+      <SelectionBar
+        selectedCount={selection.selectedIds.size}
+        selectedTracks={selectedTracks}
+        onClear={selection.clearSelection}
+      />
 
       <TrackContextMenu
         track={contextTrack}

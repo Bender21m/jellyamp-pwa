@@ -6,6 +6,7 @@ import { usePlayerStore } from '../stores/player'
 import { fetchPlaylists, fetchFavorites, fetchTracks, fetchArtistTracks, createPlaylist, deletePlaylist, addToPlaylist, BaseItemKind } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import { getDragData, DRAG_FORMAT } from '../lib/dragdrop'
+import OnThisDay from './OnThisDay'
 import logoSvg from '../assets/logo.svg'
 
 const SIDEBAR_ITEM_LIMIT = 8
@@ -373,6 +374,9 @@ export default function Sidebar() {
             )}
           </div>
         )}
+
+        {/* On This Day */}
+        <OnThisDay />
       </div>
 
       {/* Now Playing mini (desktop only) */}

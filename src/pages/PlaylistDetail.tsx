@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
@@ -7,7 +7,10 @@ import { fetchPlaylistTracks, getImageUrl } from '../lib/jellyfin'
 import { detectSetBreaks } from '../lib/setBreaks'
 import TrackRow from '../components/TrackRow'
 import TrackContextMenu from '../components/TrackContextMenu'
+import SelectionBar from '../components/SelectionBar'
 import SetBreakIndicator from '../components/SetBreakIndicator'
+import { useTrackSelection } from '../hooks/useTrackSelection'
+import { useTrackKeyboard } from '../hooks/useTrackKeyboard'
 
 export default function PlaylistDetail() {
   const { id } = useParams<{ id: string }>()
@@ -19,6 +22,21 @@ export default function PlaylistDetail() {
   const [loading, setLoading] = useState(true)
   const [contextTrack, setContextTrack] = useState<Track | null>(null)
   const [contextPos, setContextPos] = useState<{ x: number; y: number } | null>(null)
+  const trackListRef = useRef<HTMLDivElement>(null)
+
+  // Multi-select + keyboard nav
+  const trackIds = tracks.map(t => t.id)
+  const selection = useTrackSelection(trackIds)
+  const handlePlayTrack = useCallback((track: Track, index: number) => {
+    setTrack(track, tracks, index)
+  }, [tracks, setTrack])
+  const { focusedIndex } = useTrackKeyboard({
+    tracks,
+    containerRef: trackListRef,
+    selection,
+    onPlay: handlePlayTrack,
+  })
+  const selectedTracks = tracks.filter(t => selection.isSelected(t.id))
 
   useEffect(() => {
     if (!api || !userId || !id) return
@@ -126,7 +144,7 @@ export default function PlaylistDetail() {
       </div>
 
       {/* Tracks */}
-      <div className="px-4 md:px-8 space-y-0.5">
+      <div ref={trackListRef} className="px-4 md:px-8 space-y-0.5" tabIndex={-1}>
         {(() => {
           const setBreaks = detectSetBreaks(tracks)
           const elements: React.ReactElement[] = []
@@ -149,6 +167,9 @@ export default function PlaylistDetail() {
                 allTracks={tracks}
                 showIndex
                 showArt
+                isSelected={selection.isSelected(track.id)}
+                isFocused={focusedIndex === i}
+                onSelectionClick={selection.handleClick}
                 onContextMenu={(e) => {
                   e.preventDefault()
                   setContextTrack(track)
@@ -161,6 +182,12 @@ export default function PlaylistDetail() {
           return elements
         })()}
       </div>
+
+      <SelectionBar
+        selectedCount={selection.selectedIds.size}
+        selectedTracks={selectedTracks}
+        onClear={selection.clearSelection}
+      />
 
       <TrackContextMenu
         track={contextTrack}

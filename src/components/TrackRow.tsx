@@ -14,9 +14,12 @@ interface TrackRowProps {
   showArt?: boolean
   onPlay?: () => void
   onContextMenu?: (e: React.MouseEvent) => void
+  isSelected?: boolean
+  isFocused?: boolean
+  onSelectionClick?: (id: string, index: number, event: React.MouseEvent) => void
 }
 
-export default function TrackRow({ track, index, allTracks, showIndex = true, showArt = false, onPlay, onContextMenu }: TrackRowProps) {
+export default function TrackRow({ track, index, allTracks, showIndex = true, showArt = false, onPlay, onContextMenu, isSelected = false, isFocused = false, onSelectionClick }: TrackRowProps) {
   const { currentTrack, setTrack, isPlaying, addToQueue, playNext } = usePlayerStore()
   const { addToast } = useToastStore()
   const navigate = useNavigate()
@@ -24,7 +27,12 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
   const [swipeOffset, setSwipeOffset] = useState(0)
   const [swipeAction, setSwipeAction] = useState<'queue' | 'play-next' | null>(null)
 
-  function handleClick() {
+  function handleClick(e: React.MouseEvent) {
+    // Check if this is a selection click (Cmd/Ctrl or Shift)
+    if (onSelectionClick && (e.metaKey || e.ctrlKey || e.shiftKey)) {
+      onSelectionClick(track.id, index, e)
+      return
+    }
     if (onPlay) onPlay()
     else setTrack(track, allTracks, index)
   }
@@ -132,6 +140,7 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
       {/* Track row */}
       <div draggable onDragStart={handleDragStart} className="cursor-grab active:cursor-grabbing">
         <motion.div
+          data-track-index={index}
           onClick={handleClick}
           onContextMenu={onContextMenu}
           initial={{ opacity: 0, y: 4 }}
@@ -149,8 +158,10 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
             stiffness: 300
           }}
           className={`flex items-center gap-4 px-3 md:px-4 h-[52px] rounded-lg cursor-pointer group transition-colors relative z-10 ${
-            isActive ? 'bg-neon-cyan/[0.08] shadow-[inset_0_0_20px_rgba(0,255,221,0.04)]' : 'hover:bg-white/[0.03] odd:bg-white/[0.015]'
-          }`}
+            isSelected
+              ? 'bg-neon-cyan/10'
+              : isActive ? 'bg-neon-cyan/[0.08] shadow-[inset_0_0_20px_rgba(0,255,221,0.04)]' : 'hover:bg-white/[0.03] odd:bg-white/[0.015]'
+          } ${isFocused ? 'ring-1 ring-neon-cyan/40' : ''}`}
           {...swipeProps}
         >
       {showIndex && (
