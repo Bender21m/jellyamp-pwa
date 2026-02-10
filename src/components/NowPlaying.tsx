@@ -123,7 +123,7 @@ export default function NowPlaying() {
           dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={0.2}
           onDragEnd={handlePanEnd}
-          className="fixed inset-0 z-[60] flex flex-col overflow-hidden touch-none"
+          className="fixed inset-0 z-[60] flex flex-col overflow-hidden touch-none bg-deep-black"
         >
           {/* Blurred album art background */}
           <div className="absolute inset-0">
