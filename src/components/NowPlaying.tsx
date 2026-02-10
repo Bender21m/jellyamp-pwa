@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform, type PanInfo } from 'framer-motion'
 import { usePlayerStore } from '../stores/player'
 import { useAuthStore } from '../stores/auth'
@@ -11,13 +11,12 @@ export default function NowPlaying() {
   const {
     currentTrack, isPlaying, currentTime, duration, shuffle, repeat, showNowPlaying,
     queue, queueIndex,
-    toggle, next, previous, seek, toggleShuffle, cycleRepeat, setShowNowPlaying, setShowQueue, setCurrentTime,
+    toggle, next, previous, seek, toggleShuffle, cycleRepeat, setShowNowPlaying, setShowQueue,
   } = usePlayerStore()
   const { api, userId } = useAuthStore()
-  const progressRef = useRef<HTMLDivElement>(null)
+  // progressRef removed - using Waveform component
   const [isFav, setIsFav] = useState(false)
-  const [isDraggingProgress, setIsDraggingProgress] = useState(false)
-  const [dragProgress, setDragProgress] = useState(0)
+  // Drag state moved to Waveform component
   const [showLyrics, setShowLyrics] = useState(false)
 
   const y = useMotionValue(0)
@@ -37,20 +36,12 @@ export default function NowPlaying() {
     } catch { /* ignore */ }
   }
 
-  const calcProgress = useCallback((clientX: number) => {
-    if (!progressRef.current || !duration) return 0
-    const rect = progressRef.current.getBoundingClientRect()
-    return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
-  }, [duration])
+  // calcProgress removed - handled by Waveform component
 
-  const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (isDraggingProgress) return
-    const pct = calcProgress(e.clientX)
-    seek(pct * duration)
-  }, [duration, seek, calcProgress, isDraggingProgress])
+  // Removed unused progress handlers - using Waveform component now
 
-  // Mouse drag for desktop
-  const handleProgressMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  // Mouse drag for desktop (REMOVED - using Waveform component)
+  /*const handleProgressMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!duration) return
     setIsDraggingProgress(true)
     const pct = calcProgress(e.clientX)
@@ -96,10 +87,9 @@ export default function NowPlaying() {
     if (!isDraggingProgress || !duration) return
     seek(dragProgress * duration)
     setIsDraggingProgress(false)
-  }, [isDraggingProgress, dragProgress, duration, seek])
+  }, [isDraggingProgress, dragProgress, duration, seek])*/
 
   function handlePanEnd(_: any, info: PanInfo) {
-    if (isDraggingProgress) return
     if (info.offset.y > 100 || info.velocity.y > 300) {
       setShowNowPlaying(false)
     }
@@ -114,7 +104,7 @@ export default function NowPlaying() {
 
   if (!currentTrack) return null
 
-  const progress = isDraggingProgress ? dragProgress * 100 : (duration > 0 ? (currentTime / duration) * 100 : 0)
+  // Progress calculation moved to Waveform component
   const nextTrack = queue[queueIndex + 1] ?? null
 
   return (
@@ -246,19 +236,15 @@ export default function NowPlaying() {
             <div className="w-full mb-4">
               <div className="h-8 mb-3">
                 <Waveform
-                  currentTime={isDraggingProgress ? dragProgress * duration : currentTime}
+                  currentTime={currentTime}
                   duration={duration}
                   onSeek={(time) => {
                     seek(time)
                   }}
-                  onSeekStart={() => setIsDraggingProgress(true)}
-                  onSeekEnd={() => setIsDraggingProgress(false)}
                   trackId={currentTrack?.id}
                   className="h-full"
                   barCount={90}
                   showTooltip={true}
-                  isDragging={isDraggingProgress}
-                  dragTime={isDraggingProgress ? dragProgress * duration : undefined}
                 />
               </div>
               <div className="flex justify-between text-[11px] text-white/40 font-mono">
