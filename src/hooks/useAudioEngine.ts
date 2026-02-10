@@ -240,7 +240,8 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
         fadeInRef.current = null
       }
     }
-  }, [trackId])
+  // Re-run when trackId changes OR when auth becomes available (after reload restore)
+  }, [trackId, serverUrl, accessToken])
 
   // Play/pause sync — only react to isPlaying changes, not volume/muted
   useEffect(() => {
@@ -251,14 +252,6 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
 
       const timeSinceLastPause = Date.now() - lastPauseTimeRef.current
       const isShortPause = timeSinceLastPause < 500
-
-      // If audio has no src yet (restored from reload but track effect hasn't loaded it),
-      // load it now before trying to play
-      if (!audioRef.current.src && trackId && serverUrl && accessToken) {
-        const streamUrl = getStreamUrl(serverUrl, trackId, accessToken, audioQuality)
-        audioRef.current.src = streamUrl
-        audioRef.current.load()
-      }
       
       if (!isShortPause && audioRef.current.currentTime === 0) {
         const targetVolume = muted ? 0 : volume
