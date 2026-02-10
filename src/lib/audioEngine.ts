@@ -1,9 +1,11 @@
 /**
  * AudioEngine — singleton audio engine for gapless/crossfade playback
  * 
- * Uses two HTMLAudioElements with requestAnimationFrame monitoring
- * for precise gapless transitions. No Web Audio API (avoids CORS issues
- * with Jellyfin servers).
+ * Design principles:
+ * - Event-driven (timeupdate, ended) as PRIMARY — works in background/screen off
+ * - RAF as ENHANCEMENT ONLY for tighter gapless timing when tab is visible
+ * - Reuses persistent audio elements (helps iOS PWA background playback)
+ * - No Web Audio API (avoids CORS issues with Jellyfin)
  */
 
 export type EngineState = 'idle' | 'loading' | 'playing' | 'paused'
@@ -18,8 +20,12 @@ export interface AudioEngineCallbacks {
 }
 
 class AudioEngine {
+  // Two persistent audio elements — reused across tracks
+  private audioA: HTMLAudioElement
+  private audioB: HTMLAudioElement
   private currentAudio: HTMLAudioElement | null = null
   private nextAudio: HTMLAudioElement | null = null
+  
   private currentUrl: string | null = null
   private nextUrl: string | null = null
   
@@ -32,8 +38,32 @@ class AudioEngine {
   private _volume: number = 0.8
   private _muted: boolean = false
   
+  // RAF for enhanced gapless (only when tab visible)
   private rafId: number | null = null
-  private transitionTriggered: boolean = false
+  private gaplessTriggered: boolean = false
+  
+  // Track if we're in a transition to prevent double-advance
+  // @ts-ignore — used for debugging/future guard
+  private _advancing: boolean = false
+
+  constructor() {
+    // Create two persistent audio elements
+    this.audioA = new Audio()
+    this.audioB = new Audio()
+    this.audioA.preload = 'auto'
+    this.audioB.preload = 'auto'
+  }
+
+  /**
+   * Attach the audio elements to the DOM (call once from React).
+   * Helps iOS PWA keep audio alive in background.
+   */
+  attachToDOM(container: HTMLElement): void {
+    this.audioA.style.display = 'none'
+    this.audioB.style.display = 'none'
+    container.appendChild(this.audioA)
+    container.appendChild(this.audioB)
+  }
 
   // --- Public API ---
 
@@ -49,99 +79,74 @@ class AudioEngine {
     this.crossfadeDuration = Math.max(1, Math.min(12, seconds))
   }
 
-  /**
-   * Play a URL. Always works regardless of current state.
-   */
   async play(url: string): Promise<void> {
-    // Already playing this URL (e.g. after gapless transition) — no-op
+    // Already playing this URL — no-op (happens after gapless transition)
     if (this.currentAudio && this.currentUrl === url && !this.currentAudio.paused && !this.currentAudio.ended) {
       this.setState('playing')
-      this.startMonitoring()
       return
     }
+
+    this.stopRAF()
+    this.gaplessTriggered = false
+    this._advancing = false
     
-    this.stopMonitoring()
-    this.transitionTriggered = false
-    
-    // If next audio has this URL preloaded and ready, promote it
+    // Pick which audio element to use
+    // If next has this URL preloaded, promote it
     if (this.nextAudio && this.nextUrl === url && this.nextAudio.readyState >= 3) {
-      this.destroyAudio(this.currentAudio)
+      const oldCurrent = this.currentAudio
+      this.cleanupAudio(oldCurrent)
+      
       this.currentAudio = this.nextAudio
-      this.currentUrl = this.nextUrl
+      this.currentUrl = url
       this.nextAudio = null
       this.nextUrl = null
       
+      this.bindCurrentEvents()
       this.currentAudio.volume = this.effectiveVolume
+      
       try {
         await this.currentAudio.play()
         this.setState('playing')
         this.emitDuration()
-        this.startMonitoring()
+        this.startRAF()
       } catch (err) {
         this.callbacks.onError?.(err instanceof Error ? err : new Error(String(err)))
         this.setState('idle')
       }
       return
     }
-    
-    // Clean up
-    this.destroyAudio(this.nextAudio)
+
+    // Clean up both
+    this.cleanupAudio(this.currentAudio)
+    this.cleanupAudio(this.nextAudio)
     this.nextAudio = null
     this.nextUrl = null
-    this.destroyAudio(this.currentAudio)
     
-    // Create fresh audio
+    // Use whichever element isn't the current one (or audioA if both free)
+    const audio = this.currentAudio === this.audioA ? this.audioB : this.audioA
+    
     this.setState('loading')
-    const audio = new Audio()
-    audio.preload = 'auto'
     audio.src = url
     audio.volume = this.effectiveVolume
+    audio.load()
     this.currentAudio = audio
     this.currentUrl = url
     
-    // Set up ended handler as fallback (RAF should catch it first for gapless)
-    audio.addEventListener('ended', this.handleEnded)
+    this.bindCurrentEvents()
     
-    if (audio.readyState >= 3) {
-      try {
-        await audio.play()
-        this.setState('playing')
-        this.emitDuration()
-        this.startMonitoring()
-      } catch (err) {
+    try {
+      await this.waitForCanPlay(audio)
+      // Verify still current (play() might have been called again)
+      if (this.currentAudio !== audio) return
+      
+      await audio.play()
+      this.setState('playing')
+      this.emitDuration()
+      this.startRAF()
+    } catch (err) {
+      if (this.currentAudio === audio) {
         this.callbacks.onError?.(err instanceof Error ? err : new Error(String(err)))
         this.setState('idle')
-      }
-    } else {
-      try {
-        await new Promise<void>((resolve, reject) => {
-          const onCanPlay = () => {
-            audio.removeEventListener('error', onError)
-            resolve()
-          }
-          const onError = () => {
-            audio.removeEventListener('canplay', onCanPlay)
-            reject(new Error(`Failed to load: ${url}`))
-          }
-          audio.addEventListener('canplay', onCanPlay, { once: true })
-          audio.addEventListener('error', onError, { once: true })
-        })
-        
-        // Verify we're still the current audio (play() might have been called again)
-        if (this.currentAudio !== audio) {
-          this.destroyAudio(audio)
-          return
-        }
-        
-        await audio.play()
-        this.setState('playing')
-        this.emitDuration()
-        this.startMonitoring()
-      } catch (err) {
-        if (this.currentAudio === audio) {
-          this.callbacks.onError?.(err instanceof Error ? err : new Error(String(err)))
-          this.setState('idle')
-        }
       }
     }
   }
@@ -150,6 +155,7 @@ class AudioEngine {
     if (this.currentAudio && this.state === 'playing') {
       this.currentAudio.pause()
       this.setState('paused')
+      this.stopRAF()
     }
   }
 
@@ -157,7 +163,7 @@ class AudioEngine {
     if (this.currentAudio && this.state === 'paused') {
       this.currentAudio.play().then(() => {
         this.setState('playing')
-        this.startMonitoring()
+        this.startRAF()
       }).catch((err) => {
         this.callbacks.onError?.(err instanceof Error ? err : new Error(String(err)))
       })
@@ -165,7 +171,7 @@ class AudioEngine {
   }
 
   seek(time: number): void {
-    if (this.currentAudio) {
+    if (this.currentAudio && isFinite(time)) {
       this.currentAudio.currentTime = time
     }
   }
@@ -190,39 +196,39 @@ class AudioEngine {
   get currentState(): EngineState { return this.state }
   get playingUrl(): string | null { return this.currentUrl }
 
-  /**
-   * Preload next track for gapless/crossfade.
-   */
   preloadNext(url: string): void {
     if (this.crossfadeMode === 'off') return
     if (this.nextUrl === url) return
     
-    this.destroyAudio(this.nextAudio)
+    // Use the OTHER audio element
+    const audio = this.currentAudio === this.audioA ? this.audioB : this.audioA
     
-    const audio = new Audio()
-    audio.preload = 'auto'
+    // Don't preload into the currently playing element
+    if (audio === this.currentAudio) return
+    
+    this.cleanupAudio(this.nextAudio)
+    
     audio.src = url
     audio.volume = 0
+    audio.preload = 'auto'
     audio.load()
     this.nextAudio = audio
     this.nextUrl = url
   }
 
   stop(): void {
-    this.stopMonitoring()
-    this.transitionTriggered = false
-    this.destroyAudio(this.currentAudio)
+    this.stopRAF()
+    this.gaplessTriggered = false
+    this._advancing = false
+    this.cleanupAudio(this.currentAudio)
+    this.cleanupAudio(this.nextAudio)
     this.currentAudio = null
     this.currentUrl = null
-    this.destroyAudio(this.nextAudio)
     this.nextAudio = null
     this.nextUrl = null
     this.setState('idle')
   }
 
-  /**
-   * Get current audio element (for EQ, visualizations, etc.)
-   */
   getCurrentElement(): HTMLAudioElement | null {
     return this.currentAudio
   }
@@ -239,22 +245,106 @@ class AudioEngine {
     }
   }
 
-  private handleEnded = (): void => {
-    // Fallback: if RAF didn't catch the transition, handle it here
-    if (!this.transitionTriggered) {
-      this.transitionTriggered = true
-      this.stopMonitoring()
-      this.setState('idle')
-      this.callbacks.onTrackEnd?.()
+  private waitForCanPlay(audio: HTMLAudioElement): Promise<void> {
+    if (audio.readyState >= 3) return Promise.resolve()
+    return new Promise((resolve, reject) => {
+      const onCanPlay = () => {
+        audio.removeEventListener('error', onError)
+        resolve()
+      }
+      const onError = () => {
+        audio.removeEventListener('canplay', onCanPlay)
+        reject(new Error(`Failed to load audio`))
+      }
+      audio.addEventListener('canplay', onCanPlay, { once: true })
+      audio.addEventListener('error', onError, { once: true })
+    })
+  }
+
+  // Event handlers bound to current audio
+  private boundTimeUpdate = this.onTimeUpdate.bind(this)
+  private boundDurationChange = this.onDurationChange.bind(this)
+  private boundEnded = this.onEnded.bind(this)
+  private boundError = this.onError.bind(this)
+
+  private bindCurrentEvents(): void {
+    if (!this.currentAudio) return
+    // Remove from both first to avoid duplicates
+    this.audioA.removeEventListener('timeupdate', this.boundTimeUpdate)
+    this.audioA.removeEventListener('durationchange', this.boundDurationChange)
+    this.audioA.removeEventListener('ended', this.boundEnded)
+    this.audioA.removeEventListener('error', this.boundError)
+    this.audioB.removeEventListener('timeupdate', this.boundTimeUpdate)
+    this.audioB.removeEventListener('durationchange', this.boundDurationChange)
+    this.audioB.removeEventListener('ended', this.boundEnded)
+    this.audioB.removeEventListener('error', this.boundError)
+    
+    // Bind to current
+    this.currentAudio.addEventListener('timeupdate', this.boundTimeUpdate)
+    this.currentAudio.addEventListener('durationchange', this.boundDurationChange)
+    this.currentAudio.addEventListener('ended', this.boundEnded)
+    this.currentAudio.addEventListener('error', this.boundError)
+  }
+
+  private onTimeUpdate(): void {
+    if (!this.currentAudio) return
+    const time = this.currentAudio.currentTime
+    this.callbacks.onTimeUpdate?.(time)
+    
+    const dur = this.currentAudio.duration
+    if (!dur || !isFinite(dur)) return
+    
+    const remaining = dur - time
+    
+    // Preload trigger (handled by Player.tsx via onTimeUpdate callback)
+    
+    // Crossfade handling (works in background via timeupdate events)
+    if (this.crossfadeMode === 'crossfade' && !this.gaplessTriggered) {
+      this.handleCrossfade(remaining)
+    }
+    
+    // Gapless: timeupdate fires ~4x/sec, so use it as fallback
+    // RAF provides tighter timing when tab is visible
+    if (this.crossfadeMode === 'gapless' && !this.gaplessTriggered && remaining <= 0.3 && remaining > 0) {
+      if (this.nextAudio && this.nextAudio.readyState >= 3) {
+        this.executeGaplessTransition()
+      }
     }
   }
 
-  private destroyAudio(audio: HTMLAudioElement | null): void {
+  private onDurationChange(): void {
+    this.emitDuration()
+  }
+
+  private onEnded(): void {
+    // If gapless/crossfade already handled the transition, ignore
+    if (this.gaplessTriggered) return
+    
+    // Normal track end — advance to next
+    this._advancing = true
+    this.stopRAF()
+    this.setState('idle')
+    this.callbacks.onTrackEnd?.()
+    this._advancing = false
+  }
+
+  private onError(): void {
+    const audio = this.currentAudio
+    if (audio) {
+      console.error('[AudioEngine] Error:', audio.error?.code, audio.error?.message)
+      this.callbacks.onError?.(new Error(audio.error?.message ?? 'Audio error'))
+    }
+  }
+
+  private cleanupAudio(audio: HTMLAudioElement | null): void {
     if (!audio) return
-    audio.removeEventListener('ended', this.handleEnded)
     audio.pause()
+    audio.removeEventListener('timeupdate', this.boundTimeUpdate)
+    audio.removeEventListener('durationchange', this.boundDurationChange)
+    audio.removeEventListener('ended', this.boundEnded)
+    audio.removeEventListener('error', this.boundError)
     audio.removeAttribute('src')
-    audio.load()
+    audio.load() // Reset
   }
 
   private setState(state: EngineState): void {
@@ -266,123 +356,113 @@ class AudioEngine {
 
   private emitDuration(): void {
     const d = this.duration
-    if (d > 0) {
-      this.callbacks.onDurationChange?.(d)
-    }
+    if (d > 0) this.callbacks.onDurationChange?.(d)
   }
 
-  private startMonitoring(): void {
-    if (this.rafId !== null) return
+  // --- RAF for enhanced gapless (tab visible only) ---
+  
+  private startRAF(): void {
+    if (this.rafId !== null || this.crossfadeMode !== 'gapless') return
     
     const tick = () => {
-      if (!this.currentAudio || this.state === 'idle') {
+      if (!this.currentAudio || this.state !== 'playing' || this.gaplessTriggered) {
         this.rafId = null
         return
       }
       
-      const audio = this.currentAudio
-      
-      // Time update
-      this.callbacks.onTimeUpdate?.(audio.currentTime)
-      
-      // Duration
-      if (audio.duration && isFinite(audio.duration)) {
-        this.emitDuration()
-      }
-      
-      // End-of-track handling
-      if (audio.duration && isFinite(audio.duration) && !audio.paused && !audio.ended) {
-        const remaining = audio.duration - audio.currentTime
+      const dur = this.currentAudio.duration
+      if (dur && isFinite(dur)) {
+        const remaining = dur - this.currentAudio.currentTime
         
-        if (this.crossfadeMode === 'gapless' && !this.transitionTriggered) {
-          // At ~50ms before end, start next track for seamless transition
-          if (remaining <= 0.05 && remaining > 0 && this.nextAudio && this.nextAudio.readyState >= 3) {
-            this.transitionTriggered = true
-            this.executeGaplessTransition()
-            return
-          }
-        } else if (this.crossfadeMode === 'crossfade') {
-          this.handleCrossfade(remaining)
+        // Tight gapless at 50ms
+        if (remaining <= 0.05 && remaining > 0 && this.nextAudio && this.nextAudio.readyState >= 3) {
+          this.executeGaplessTransition()
+          return
         }
-      }
-      
-      // Check if ended (RAF fallback for ended event)
-      if (audio.ended && !this.transitionTriggered) {
-        this.transitionTriggered = true
-        this.rafId = null
-        this.setState('idle')
-        this.callbacks.onTrackEnd?.()
-        return
       }
       
       this.rafId = requestAnimationFrame(tick)
     }
-    
     this.rafId = requestAnimationFrame(tick)
   }
 
-  private stopMonitoring(): void {
+  private stopRAF(): void {
     if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId)
       this.rafId = null
     }
   }
 
+  // --- Transitions ---
+
   private executeGaplessTransition(): void {
-    if (!this.nextAudio) return
+    if (!this.nextAudio || this.gaplessTriggered) return
+    this.gaplessTriggered = true
+    this.stopRAF()
     
-    // Start next track immediately
+    // Start next track
     this.nextAudio.volume = this.effectiveVolume
     this.nextAudio.play().catch(() => {})
     
-    // Swap: destroy current, promote next
-    this.destroyAudio(this.currentAudio)
+    // Swap
+    const oldAudio = this.currentAudio
+    this.cleanupAudio(oldAudio)
+    
     this.currentAudio = this.nextAudio
     this.currentUrl = this.nextUrl
-    this.currentAudio.addEventListener('ended', this.handleEnded)
     this.nextAudio = null
     this.nextUrl = null
-    this.transitionTriggered = false // Reset for next transition
     
+    this.bindCurrentEvents()
     this.emitDuration()
-    this.callbacks.onTrackEnd?.()
     
-    // Continue monitoring the new current track
-    // (don't stop/restart — just let the RAF loop pick up the new currentAudio)
+    // Notify store to advance (will trigger play(newUrl) which will no-op)
+    this._advancing = true
+    this.callbacks.onTrackEnd?.()
+    this._advancing = false
+    this.gaplessTriggered = false
+    
+    // Continue monitoring new track
+    this.startRAF()
   }
 
   private handleCrossfade(remaining: number): void {
     if (!this.nextAudio || this.nextAudio.readyState < 3) return
+    if (remaining > this.crossfadeDuration || remaining <= 0) return
     
-    if (remaining <= this.crossfadeDuration && remaining > 0) {
-      const progress = 1 - (remaining / this.crossfadeDuration)
+    const progress = 1 - (remaining / this.crossfadeDuration)
+    
+    // Start next if needed
+    if (this.nextAudio.paused) {
+      this.nextAudio.play().catch(() => {})
+    }
+    
+    // Fade volumes
+    if (this.currentAudio) {
+      this.currentAudio.volume = this.effectiveVolume * (1 - progress)
+    }
+    this.nextAudio.volume = this.effectiveVolume * progress
+    
+    // Complete at end
+    if (remaining <= 0.15) {
+      this.gaplessTriggered = true
       
-      // Start next if not playing yet
-      if (this.nextAudio.paused) {
-        this.nextAudio.play().catch(() => {})
-      }
+      const oldAudio = this.currentAudio
+      this.cleanupAudio(oldAudio)
       
-      // Crossfade volumes
-      if (this.currentAudio) {
-        this.currentAudio.volume = this.effectiveVolume * (1 - progress)
-      }
-      this.nextAudio.volume = this.effectiveVolume * progress
+      this.currentAudio = this.nextAudio
+      this.currentUrl = this.nextUrl
+      this.currentAudio.volume = this.effectiveVolume
+      this.nextAudio = null
+      this.nextUrl = null
       
-      // Complete transition at end
-      if (remaining <= 0.05) {
-        this.transitionTriggered = true
-        this.destroyAudio(this.currentAudio)
-        this.currentAudio = this.nextAudio
-        this.currentUrl = this.nextUrl
-        this.currentAudio.addEventListener('ended', this.handleEnded)
-        this.currentAudio.volume = this.effectiveVolume
-        this.nextAudio = null
-        this.nextUrl = null
-        this.transitionTriggered = false
-        
-        this.emitDuration()
-        this.callbacks.onTrackEnd?.()
-      }
+      this.bindCurrentEvents()
+      this.emitDuration()
+      
+      this._advancing = true
+      this.callbacks.onTrackEnd?.()
+      this._advancing = false
+      this.gaplessTriggered = false
     }
   }
 }

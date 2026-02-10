@@ -43,6 +43,14 @@ export default function Player() {
   
   // Track the current track id to detect changes
   const currentTrackIdRef = useRef<string | null>(null)
+  const audioContainerRef = useRef<HTMLDivElement | null>(null)
+
+  // Attach audio elements to DOM for iOS background playback
+  useEffect(() => {
+    if (audioContainerRef.current) {
+      audioEngine.attachToDOM(audioContainerRef.current)
+    }
+  }, [])
 
   // Configure engine crossfade settings
   useEffect(() => {
@@ -365,6 +373,9 @@ export default function Player() {
   })
 
   return (
+    <>
+    {/* Hidden container for persistent audio elements (iOS background playback) */}
+    <div ref={audioContainerRef} style={{ display: 'none' }} />
     <AnimatePresence>
       {currentTrack && (
         <motion.div
@@ -608,6 +619,7 @@ export default function Player() {
         )}
       </AnimatePresence>
     </AnimatePresence>
+    </>
   )
 }
 
