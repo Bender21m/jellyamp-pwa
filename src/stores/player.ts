@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 export interface Track {
   id: string
@@ -64,7 +65,9 @@ interface PlayerState {
   getSleepTimerRemaining: () => number
 }
 
-export const usePlayerStore = create<PlayerState>()((set, get) => ({
+export const usePlayerStore = create<PlayerState>()(
+  persist(
+    (set, get) => ({
   currentTrack: null,
   queue: [],
   queueIndex: -1,
@@ -238,4 +241,18 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     if (!sleepTimer.active || !sleepTimer.endTime) return 0
     return Math.max(0, sleepTimer.endTime - Date.now())
   },
-}))
+}),
+    {
+      name: 'jellyamp-player',
+      partialize: (state) => ({
+        queue: state.queue,
+        queueIndex: state.queueIndex,
+        currentTrack: state.currentTrack,
+        volume: state.volume,
+        muted: state.muted,
+        shuffle: state.shuffle,
+        repeat: state.repeat,
+      }),
+    }
+  )
+)
