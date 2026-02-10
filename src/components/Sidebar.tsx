@@ -149,6 +149,7 @@ export default function Sidebar() {
   const [newPlaylistName, setNewPlaylistName] = useState('')
   const [creatingPlaylist, setCreatingPlaylist] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null)
+  const [deleteError, setDeleteError] = useState('')
 
   async function loadPlaylists() {
     if (!api || !userId) return
@@ -179,11 +180,19 @@ export default function Sidebar() {
 
   async function handleDeletePlaylist() {
     if (!api || !confirmDelete) return
+    setDeleteError('')
     try {
       await deletePlaylist(api, confirmDelete.id)
       setConfirmDelete(null)
       await loadPlaylists()
-    } catch { /* ignore */ }
+    } catch (e: any) {
+      const status = e?.response?.status
+      if (status === 401 || status === 403) {
+        setDeleteError('Your account doesn\'t have permission to delete playlists on this server.')
+      } else {
+        setDeleteError('Failed to delete playlist. Try again.')
+      }
+    }
   }
 
   const displayPlaylists = playlists.slice(0, SIDEBAR_ITEM_LIMIT)
@@ -360,22 +369,27 @@ export default function Sidebar() {
               className="bg-card border border-white/10 rounded-2xl p-6 mx-4 max-w-sm w-full shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
             >
               <h3 className="text-lg font-bold mb-2">Delete Playlist</h3>
-              <p className="text-sm text-text-secondary mb-5">
+              <p className="text-sm text-text-secondary mb-3">
                 Delete <span className="text-text-primary font-medium">"{confirmDelete.name}"</span>? This can't be undone.
               </p>
+              {deleteError && (
+                <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2 mb-3">{deleteError}</p>
+              )}
               <div className="flex gap-3">
                 <button
-                  onClick={() => setConfirmDelete(null)}
+                  onClick={() => { setConfirmDelete(null); setDeleteError('') }}
                   className="flex-1 py-2.5 rounded-lg bg-surface border border-white/5 text-sm text-text-secondary hover:text-text-primary transition-colors"
                 >
-                  Cancel
+                  {deleteError ? 'Close' : 'Cancel'}
                 </button>
-                <button
-                  onClick={handleDeletePlaylist}
-                  className="flex-1 py-2.5 rounded-lg bg-red-500/20 border border-red-500/20 text-sm text-red-400 font-semibold hover:bg-red-500/30 transition-colors"
-                >
-                  Delete
-                </button>
+                {!deleteError && (
+                  <button
+                    onClick={handleDeletePlaylist}
+                    className="flex-1 py-2.5 rounded-lg bg-red-500/20 border border-red-500/20 text-sm text-red-400 font-semibold hover:bg-red-500/30 transition-colors"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             </motion.div>
           </motion.div>
