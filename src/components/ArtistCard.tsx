@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { setDragData } from '../lib/dragdrop'
 
@@ -16,10 +15,8 @@ export default function ArtistCard({ id, name, imageUrl }: ArtistCardProps) {
   return (
     <div draggable onDragStart={handleDragStart}>
     <Link to={`/artist/${id}`} draggable={false}>
-      <motion.div
-        whileHover={{ y: -2 }}
-        transition={{ duration: 0.2 }}
-        className="group cursor-pointer flex flex-col items-center"
+      <div
+        className="group cursor-pointer flex flex-col items-center hover:-translate-y-0.5 transition-transform duration-200"
       >
         <div className="relative w-full aspect-square mb-3 rounded-xl overflow-hidden bg-card ring-1 ring-white/5 group-hover:ring-neon-cyan/30 transition-all duration-300 group-hover:shadow-[0_0_20px_rgba(0,255,221,0.12)]">
           {imageUrl ? (
@@ -51,7 +48,7 @@ export default function ArtistCard({ id, name, imageUrl }: ArtistCardProps) {
         <h3 className="text-sm font-semibold text-center truncate w-full group-hover:text-neon-cyan transition-colors tracking-[-0.01em]">
           {name}
         </h3>
-      </motion.div>
+      </div>
     </Link>
     </div>
   )

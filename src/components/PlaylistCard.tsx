@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 
 interface PlaylistCardProps {
@@ -19,10 +18,8 @@ export default function PlaylistCard({ id, name, imageUrl, trackCount, onDelete 
         onDelete(id, name)
       }}
     >
-      <motion.div
-        whileHover={{ y: -4 }}
-        transition={{ duration: 0.2 }}
-        className="group cursor-pointer relative"
+      <div
+        className="group cursor-pointer relative hover:-translate-y-1 transition-transform duration-200"
       >
         <div className="relative aspect-square rounded-xl overflow-hidden mb-3 bg-card ring-1 ring-white/5 group-hover:ring-purple/30 transition-all duration-300">
           {imageUrl ? (
@@ -44,7 +41,7 @@ export default function PlaylistCard({ id, name, imageUrl, trackCount, onDelete 
         {trackCount !== undefined && (
           <p className="text-xs text-text-muted">{trackCount} track{trackCount !== 1 ? 's' : ''}</p>
         )}
-      </motion.div>
+      </div>
     </Link>
   )
 }

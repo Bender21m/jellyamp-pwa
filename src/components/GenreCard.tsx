@@ -1,5 +1,3 @@
-import { motion } from 'framer-motion'
-
 const GENRE_COLORS = [
   ['#00FFDD', '#8B5CF6'],
   ['#FF2D78', '#8B5CF6'],
@@ -11,11 +9,9 @@ const GENRE_COLORS = [
 export default function GenreCard({ name, onClick, index }: { name: string; onClick: () => void; index: number }) {
   const colors = GENRE_COLORS[index % GENRE_COLORS.length]
   return (
-    <motion.button
+    <button
       onClick={onClick}
-      whileHover={{ scale: 1.03 }}
-      whileTap={{ scale: 0.97 }}
-      className="relative w-full aspect-[2/1] rounded-xl overflow-hidden cursor-pointer group"
+      className="relative w-full aspect-[2/1] rounded-xl overflow-hidden cursor-pointer group active:scale-[0.97] hover:scale-[1.03] transition-transform duration-200"
       style={{
         background: `linear-gradient(135deg, ${colors[0]}15 0%, ${colors[1]}15 100%)`,
         border: `1px solid ${colors[0]}20`,
@@ -29,6 +25,6 @@ export default function GenreCard({ name, onClick, index }: { name: string; onCl
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
         style={{ background: `linear-gradient(135deg, ${colors[0]}10 0%, ${colors[1]}10 100%)` }}
       />
-    </motion.button>
+    </button>
   )
 }

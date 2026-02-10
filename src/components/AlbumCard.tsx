@@ -1,7 +1,7 @@
-import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { setDragData } from '../lib/dragdrop'
 import { parseShowDate, formatShowDate } from '../lib/dateParser'
+import JellyImage from './JellyImage'
 
 interface AlbumCardProps {
   id: string
@@ -19,10 +19,8 @@ export default function AlbumCard({ id, name, artistName, imageUrl, year }: Albu
   return (
     <div draggable onDragStart={handleDragStart}>
     <Link to={`/album/${id}`} draggable={false}>
-      <motion.div
-        whileHover={{ y: -2 }}
-        transition={{ duration: 0.2 }}
-        className="group cursor-pointer"
+      <div
+        className="group cursor-pointer hover:-translate-y-0.5 transition-transform duration-200"
       >
         <div className="relative aspect-square rounded-xl overflow-hidden mb-3 bg-card ring-1 ring-white/5 group-hover:ring-neon-cyan/40 transition-all duration-300 group-hover:shadow-[0_0_20px_rgba(0,255,221,0.12)]">
           <img
@@ -61,7 +59,7 @@ export default function AlbumCard({ id, name, artistName, imageUrl, year }: Albu
             </p>
           );
         })()}
-      </motion.div>
+      </div>
     </Link>
     </div>
   )

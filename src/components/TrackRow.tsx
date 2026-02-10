@@ -1,9 +1,9 @@
-import { motion } from 'framer-motion'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { usePlayerStore, type Track } from '../stores/player'
 import { useToastStore } from '../stores/toast'
 import { setDragData } from '../lib/dragdrop'
 import { useSwipeAction } from '../hooks/useSwipeAction'
+import JellyImage from './JellyImage'
 
 interface TrackRowProps {
   track: Track
@@ -18,8 +18,12 @@ interface TrackRowProps {
   onSelectionClick?: (id: string, index: number, event: React.MouseEvent) => void
 }
 
-export default function TrackRow({ track, index, allTracks, showIndex = true, showArt = false, onPlay, onContextMenu, isSelected = false, isFocused = false, onSelectionClick }: TrackRowProps) {
-  const { currentTrack, setTrack, isPlaying, addToQueue, playNext } = usePlayerStore()
+const TrackRow = React.memo(function TrackRow({ track, index, allTracks, showIndex = true, showArt = false, onPlay, onContextMenu, isSelected = false, isFocused = false, onSelectionClick }: TrackRowProps) {
+  const currentTrack = usePlayerStore(s => s.currentTrack)
+  const setTrack = usePlayerStore(s => s.setTrack)
+  const isPlaying = usePlayerStore(s => s.isPlaying)
+  const addToQueue = usePlayerStore(s => s.addToQueue)
+  const playNext = usePlayerStore(s => s.playNext)
   const { addToast } = useToastStore()
   const isActive = currentTrack?.id === track.id
   const [swipeOffset, setSwipeOffset] = useState(0)
@@ -123,23 +127,13 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
 
       {/* Track row */}
       <div draggable onDragStart={handleDragStart} className="cursor-grab active:cursor-grabbing">
-        <motion.div
+        <div
           data-track-index={index}
           onClick={handleClick}
           onContextMenu={onContextMenu}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ 
-            opacity: 1, 
-            y: 0,
-            x: swipeAction ? (swipeAction === 'queue' ? -10 : 10) : swipeOffset,
-            scale: swipeAction ? 0.98 : 1
-          }}
-          transition={{ 
-            delay: Math.min(index * 0.015, 0.3), 
-            duration: swipeAction ? 0.2 : 0.15,
-            type: swipeAction ? 'spring' : 'tween',
-            damping: 25,
-            stiffness: 300
+          style={{
+            transform: swipeAction ? `translateX(${swipeAction === 'queue' ? -10 : 10}px) scale(0.98)` : swipeOffset ? `translateX(${swipeOffset}px)` : undefined,
+            transition: 'transform 0.2s ease',
           }}
           className={`flex items-center gap-4 px-3 md:px-4 h-[52px] rounded-lg cursor-pointer group transition-colors relative z-10 ${
             isSelected
@@ -171,7 +165,7 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
         </span>
       )}
       {showArt && track.imageUrl && (
-        <img src={track.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" loading="lazy" />
+        <JellyImage src={track.imageUrl} width={40} height={40} maxWidth={80} className="rounded-lg shrink-0" />
       )}
       <div className="flex-1 min-w-0">
         <p className={`text-sm md:text-[15px] truncate transition-colors ${isActive ? 'text-neon-cyan font-semibold' : 'text-text-primary group-hover:text-neon-cyan'}`}>
@@ -198,7 +192,7 @@ export default function TrackRow({ track, index, allTracks, showIndex = true, sh
           </svg>
         </button>
       )}
-        </motion.div>
+        </div>
       </div>
     </div>
   )
