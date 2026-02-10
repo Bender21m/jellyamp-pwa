@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { searchArtists } from '../lib/archive'
+import { searchArtists, searchShows } from '../lib/archive'
 import { useArchiveStore } from '../stores/archive'
 import type { FavoriteShowDetails } from '../stores/archive'
 import type { ArchiveShow } from '../lib/archive'
@@ -28,6 +28,9 @@ export default function ArchiveHome() {
   const [searched, setSearched] = useState(false)
   const [inputFocused, setInputFocused] = useState(false)
   const [favShows, setFavShows] = useState<ArchiveShow[]>([])
+  const [topShows, setTopShows] = useState<ArchiveShow[]>([])
+  const [discoverOpen, setDiscoverOpen] = useState(true)
+  const [discoverLoading, setDiscoverLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const doSearch = useCallback(async (q: string) => {
@@ -51,6 +54,15 @@ export default function ArchiveHome() {
     const t = setTimeout(() => doSearch(query), 300)
     return () => clearTimeout(t)
   }, [query, doSearch])
+
+  // Fetch top-rated shows for Discover section
+  useEffect(() => {
+    setDiscoverLoading(true)
+    searchShows('', { rows: 12, sort: 'avg_rating desc' })
+      .then((res) => setTopShows(res.shows.filter(s => s.rating && s.rating >= 4)))
+      .catch(() => {})
+      .finally(() => setDiscoverLoading(false))
+  }, [])
 
   // Fetch favorite show metadata
   useEffect(() => {
@@ -285,10 +297,64 @@ export default function ArchiveHome() {
               </div>
             )}
 
-            {/* Popular artists — only when no pinned and no recent searches */}
-            {pinnedArtists.length === 0 && recentSearches.length === 0 && (
+            {/* Discover — top rated shows, collapsible */}
+            {topShows.length > 0 && (
               <div className="mb-8">
-                <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted mb-3">Popular on Live Archive</h2>
+                <button
+                  onClick={() => setDiscoverOpen(!discoverOpen)}
+                  className="flex items-center gap-2 text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted hover:text-text-primary transition-colors mb-3"
+                >
+                  <svg viewBox="0 0 24 24" className={`w-3.5 h-3.5 transition-transform ${discoverOpen ? 'rotate-90' : ''}`} fill="currentColor">
+                    <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+                  </svg>
+                  Top Rated Shows
+                </button>
+                {discoverOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+                  >
+                    {topShows.map((show, i) => (
+                      <motion.div
+                        key={show.identifier}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(i * 0.03, 0.3) }}
+                      >
+                        <ArchiveShowCard
+                          show={show}
+                          onClick={() => navigate(`/archive/show/${encodeURIComponent(show.identifier)}`)}
+                        />
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )}
+              </div>
+            )}
+            {discoverLoading && (
+              <div className="mb-8">
+                <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted mb-3">Top Rated Shows</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="bg-surface rounded-xl p-4 ring-1 ring-white/5">
+                      <div className="flex gap-3">
+                        <div className="w-14 h-14 skeleton rounded-lg shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 skeleton rounded w-2/3" />
+                          <div className="h-3 skeleton rounded w-1/2" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Popular artists — show when no pinned artists */}
+            {pinnedArtists.length === 0 && (
+              <div className="mb-8">
+                <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted mb-3">Popular Artists</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                   {POPULAR_ARTISTS.map((name, i) => (
                     <motion.button

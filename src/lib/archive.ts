@@ -80,7 +80,8 @@ export async function searchShows(
   options?: { year?: number; page?: number; rows?: number; sort?: string }
 ): Promise<{ shows: ArchiveShow[]; total: number }> {
   const { year, page = 1, rows = 50, sort = 'date desc' } = options ?? {}
-  let q = `collection:etree AND creator:"${artist}"`
+  let q = `collection:etree`
+  if (artist) q += ` AND creator:"${artist}"`
   if (year) q += ` AND date:${year}*`
 
   const params = new URLSearchParams({
