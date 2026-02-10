@@ -11,6 +11,7 @@ import { useMediaSession } from '../hooks/useMediaSession'
 import { useScrobbling } from '../hooks/useScrobbling'
 import { useSleepTimer } from '../hooks/useSleepTimer'
 import { usePlayerKeyboard } from '../hooks/usePlayerKeyboard'
+import { usePlaybackReporting } from '../hooks/usePlaybackReporting'
 import { useSwipeAction } from '../hooks/useSwipeAction'
 import KeyboardShortcuts from './KeyboardShortcuts'
 import Waveform from './Waveform'
@@ -88,6 +89,16 @@ export default function Player() {
     onPause: pause,
     onClearTimer: clearSleepTimer,
     trackId: currentTrack?.id,
+  })
+
+  // Playback reporting to Jellyfin (enables play history, play counts)
+  usePlaybackReporting({
+    api: api ?? undefined,
+    trackId: currentTrack?.id,
+    isPlaying,
+    currentTime,
+    muted,
+    volume,
   })
 
   // Keyboard shortcuts
