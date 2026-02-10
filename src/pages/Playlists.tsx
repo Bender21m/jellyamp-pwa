@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
-import { fetchPlaylists, createPlaylist, getImageUrl } from '../lib/jellyfin'
+import { fetchPlaylists, createPlaylist, deletePlaylist, getImageUrl } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import PlaylistCard from '../components/PlaylistCard'
 
@@ -12,6 +12,7 @@ export default function Playlists() {
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState('')
   const [creating, setCreating] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null)
 
   useEffect(() => {
     if (!api || !userId) return
@@ -42,6 +43,17 @@ export default function Playlists() {
       console.error('Create playlist failed', e)
     }
     setCreating(false)
+  }
+
+  async function handleDelete() {
+    if (!api || !confirmDelete) return
+    try {
+      await deletePlaylist(api, confirmDelete.id)
+      setConfirmDelete(null)
+      await loadPlaylists()
+    } catch (e) {
+      console.error('Delete playlist failed', e)
+    }
   }
 
   const imgUrl = (item: BaseItemDto) =>
@@ -115,12 +127,53 @@ export default function Playlists() {
                   name={p.Name ?? 'Untitled'}
                   imageUrl={p.ImageTags?.Primary ? imgUrl(p) : undefined}
                   trackCount={p.ChildCount ?? undefined}
+                  onDelete={(id, name) => setConfirmDelete({ id, name })}
                 />
               </motion.div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      <AnimatePresence>
+        {confirmDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => setConfirmDelete(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card border border-white/10 rounded-2xl p-6 mx-4 max-w-sm w-full shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
+            >
+              <h3 className="text-lg font-bold mb-2">Delete Playlist</h3>
+              <p className="text-sm text-text-secondary mb-5">
+                Delete <span className="text-text-primary font-medium">"{confirmDelete.name}"</span>? This can't be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmDelete(null)}
+                  className="flex-1 py-2.5 rounded-lg bg-surface border border-white/5 text-sm text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="flex-1 py-2.5 rounded-lg bg-red-500/20 border border-red-500/20 text-sm text-red-400 font-semibold hover:bg-red-500/30 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

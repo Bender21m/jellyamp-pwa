@@ -6,15 +6,23 @@ interface PlaylistCardProps {
   name: string
   imageUrl?: string
   trackCount?: number
+  onDelete?: (id: string, name: string) => void
 }
 
-export default function PlaylistCard({ id, name, imageUrl, trackCount }: PlaylistCardProps) {
+export default function PlaylistCard({ id, name, imageUrl, trackCount, onDelete }: PlaylistCardProps) {
   return (
-    <Link to={`/playlist/${id}`}>
+    <Link
+      to={`/playlist/${id}`}
+      onContextMenu={(e) => {
+        if (!onDelete) return
+        e.preventDefault()
+        onDelete(id, name)
+      }}
+    >
       <motion.div
         whileHover={{ y: -4 }}
         transition={{ duration: 0.2 }}
-        className="group cursor-pointer"
+        className="group cursor-pointer relative"
       >
         <div className="relative aspect-square rounded-xl overflow-hidden mb-3 bg-card ring-1 ring-white/5 group-hover:ring-purple/30 transition-all duration-300">
           {imageUrl ? (

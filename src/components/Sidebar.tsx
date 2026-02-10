@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
-import { NavLink, Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { useEffect, useState, useRef, useCallback } from 'react'
+import { NavLink, Link, useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore } from '../stores/player'
-import { fetchPlaylists, fetchFavorites, BaseItemKind } from '../lib/jellyfin'
+import { fetchPlaylists, fetchFavorites, createPlaylist, deletePlaylist, BaseItemKind } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import logoSvg from '../assets/logo.svg'
 
@@ -53,27 +53,65 @@ function NavItem({ item, collapsed }: { item: typeof libraryNav[0]; collapsed: b
   )
 }
 
-function SidebarPlaylistItem({ playlist }: { playlist: BaseItemDto }) {
+function SidebarPlaylistItem({ playlist, onDelete }: { playlist: BaseItemDto; onDelete: (id: string, name: string) => void }) {
+  const [showCtx, setShowCtx] = useState(false)
+  const [ctxPos, setCtxPos] = useState({ x: 0, y: 0 })
+  const ctxRef = useRef<HTMLDivElement>(null)
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setCtxPos({ x: e.clientX, y: e.clientY })
+    setShowCtx(true)
+  }, [])
+
+  useEffect(() => {
+    if (!showCtx) return
+    const close = () => setShowCtx(false)
+    window.addEventListener('click', close)
+    return () => window.removeEventListener('click', close)
+  }, [showCtx])
+
   return (
-    <NavLink
-      to={`/playlist/${playlist.Id}`}
-      className={({ isActive }) =>
-        `relative block text-sm truncate py-1.5 px-4 rounded-md transition-all duration-200
-        ${isActive
-          ? 'text-neon-cyan bg-neon-cyan/5'
-          : 'text-text-muted hover:text-text-primary hover:bg-white/5'
-        }`
-      }
-    >
-      {({ isActive }) => (
-        <>
-          {isActive && (
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full bg-neon-cyan shadow-[0_0_6px_rgba(0,255,221,0.4)]" />
-          )}
-          <span className="truncate block">{playlist.Name ?? 'Untitled'}</span>
-        </>
+    <>
+      <NavLink
+        to={`/playlist/${playlist.Id}`}
+        onContextMenu={handleContextMenu}
+        className={({ isActive }) =>
+          `relative block text-sm truncate py-1.5 px-4 rounded-md transition-all duration-200
+          ${isActive
+            ? 'text-neon-cyan bg-neon-cyan/5'
+            : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+          }`
+        }
+      >
+        {({ isActive }) => (
+          <>
+            {isActive && (
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full bg-neon-cyan shadow-[0_0_6px_rgba(0,255,221,0.4)]" />
+            )}
+            <span className="truncate block">{playlist.Name ?? 'Untitled'}</span>
+          </>
+        )}
+      </NavLink>
+      {showCtx && (
+        <div
+          ref={ctxRef}
+          className="fixed z-50 bg-card border border-white/10 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] py-1.5 min-w-[160px]"
+          style={{ left: ctxPos.x, top: ctxPos.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => { setShowCtx(false); onDelete(playlist.Id!, playlist.Name ?? 'Untitled') }}
+            className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"
+          >
+            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+            </svg>
+            Delete Playlist
+          </button>
+        </div>
       )}
-    </NavLink>
+    </>
   )
 }
 
@@ -104,14 +142,49 @@ function SidebarArtistItem({ artist }: { artist: BaseItemDto }) {
 export default function Sidebar() {
   const { username, api, userId } = useAuthStore()
   const { currentTrack, setShowNowPlaying } = usePlayerStore()
+  const navigate = useNavigate()
   const [playlists, setPlaylists] = useState<BaseItemDto[]>([])
   const [favoriteArtists, setFavoriteArtists] = useState<BaseItemDto[]>([])
+  const [showCreatePlaylist, setShowCreatePlaylist] = useState(false)
+  const [newPlaylistName, setNewPlaylistName] = useState('')
+  const [creatingPlaylist, setCreatingPlaylist] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null)
+
+  async function loadPlaylists() {
+    if (!api || !userId) return
+    try {
+      const res = await fetchPlaylists(api, userId)
+      setPlaylists(res.Items ?? [])
+    } catch { /* ignore */ }
+  }
 
   useEffect(() => {
     if (!api || !userId) return
-    fetchPlaylists(api, userId).then(res => setPlaylists(res.Items ?? [])).catch(() => {})
+    loadPlaylists()
     fetchFavorites(api, userId, [BaseItemKind.MusicArtist]).then(res => setFavoriteArtists(res.Items ?? [])).catch(() => {})
   }, [api, userId])
+
+  async function handleCreatePlaylist() {
+    if (!api || !userId || !newPlaylistName.trim()) return
+    setCreatingPlaylist(true)
+    try {
+      const result = await createPlaylist(api, userId, newPlaylistName.trim())
+      setNewPlaylistName('')
+      setShowCreatePlaylist(false)
+      await loadPlaylists()
+      if (result?.Id) navigate(`/playlist/${result.Id}`)
+    } catch { /* ignore */ }
+    setCreatingPlaylist(false)
+  }
+
+  async function handleDeletePlaylist() {
+    if (!api || !confirmDelete) return
+    try {
+      await deletePlaylist(api, confirmDelete.id)
+      setConfirmDelete(null)
+      await loadPlaylists()
+    } catch { /* ignore */ }
+  }
 
   const displayPlaylists = playlists.slice(0, SIDEBAR_ITEM_LIMIT)
   const displayArtists = favoriteArtists.slice(0, SIDEBAR_ITEM_LIMIT)
@@ -146,25 +219,68 @@ export default function Sidebar() {
       {/* Scrollable middle section for playlists + favorites */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
         {/* Playlists section */}
-        {displayPlaylists.length > 0 && (
-          <div className="hidden lg:block px-3 pt-5">
-            <div className="mx-1 mb-2 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
-            <p className="text-[11px] font-mono uppercase tracking-widest text-text-muted/60 px-4 mb-2">Playlists</p>
+        <div className="hidden lg:block px-3 pt-5">
+          <div className="mx-1 mb-2 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+          <div className="flex items-center justify-between px-4 mb-2">
+            <p className="text-[11px] font-mono uppercase tracking-widest text-text-muted/60">Playlists</p>
+            <button
+              onClick={() => setShowCreatePlaylist(!showCreatePlaylist)}
+              className="text-text-muted/50 hover:text-neon-cyan transition-colors p-0.5"
+              title="New Playlist"
+            >
+              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+              </svg>
+            </button>
+          </div>
+          <AnimatePresence>
+            {showCreatePlaylist && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="px-4 mb-2 overflow-hidden"
+              >
+                <div className="flex gap-1.5">
+                  <input
+                    type="text"
+                    value={newPlaylistName}
+                    onChange={(e) => setNewPlaylistName(e.target.value)}
+                    placeholder="Name..."
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCreatePlaylist()
+                      if (e.key === 'Escape') { setShowCreatePlaylist(false); setNewPlaylistName('') }
+                    }}
+                    className="flex-1 min-w-0 px-2.5 py-1.5 bg-surface border border-white/10 rounded-md text-xs text-text-primary placeholder:text-text-muted/40 focus:outline-none focus:border-neon-cyan/30"
+                  />
+                  <button
+                    onClick={handleCreatePlaylist}
+                    disabled={creatingPlaylist || !newPlaylistName.trim()}
+                    className="px-2.5 py-1.5 rounded-md bg-neon-cyan/20 text-neon-cyan text-xs font-semibold disabled:opacity-40 hover:bg-neon-cyan/30 transition-colors shrink-0"
+                  >
+                    {creatingPlaylist ? '...' : '✓'}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {displayPlaylists.length > 0 && (
             <nav className="space-y-0.5">
               {displayPlaylists.map((p) => (
-                <SidebarPlaylistItem key={p.Id} playlist={p} />
+                <SidebarPlaylistItem key={p.Id} playlist={p} onDelete={(id, name) => setConfirmDelete({ id, name })} />
               ))}
             </nav>
-            {playlists.length > SIDEBAR_ITEM_LIMIT && (
-              <Link
-                to="/playlists"
-                className="block text-xs text-text-muted/50 hover:text-neon-cyan px-4 pt-2 transition-colors"
-              >
-                Show all ({playlists.length})
-              </Link>
-            )}
-          </div>
-        )}
+          )}
+          {playlists.length > SIDEBAR_ITEM_LIMIT && (
+            <Link
+              to="/playlists"
+              className="block text-xs text-text-muted/50 hover:text-neon-cyan px-4 pt-2 transition-colors"
+            >
+              Show all ({playlists.length})
+            </Link>
+          )}
+        </div>
 
         {/* Favorite Artists section */}
         {displayArtists.length > 0 && (
@@ -226,6 +342,45 @@ export default function Sidebar() {
           </span>
         </div>
       </div>
+      {/* Delete confirmation modal */}
+      <AnimatePresence>
+        {confirmDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => setConfirmDelete(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card border border-white/10 rounded-2xl p-6 mx-4 max-w-sm w-full shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
+            >
+              <h3 className="text-lg font-bold mb-2">Delete Playlist</h3>
+              <p className="text-sm text-text-secondary mb-5">
+                Delete <span className="text-text-primary font-medium">"{confirmDelete.name}"</span>? This can't be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmDelete(null)}
+                  className="flex-1 py-2.5 rounded-lg bg-surface border border-white/5 text-sm text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeletePlaylist}
+                  className="flex-1 py-2.5 rounded-lg bg-red-500/20 border border-red-500/20 text-sm text-red-400 font-semibold hover:bg-red-500/30 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </aside>
   )
 }

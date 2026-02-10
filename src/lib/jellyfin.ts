@@ -182,6 +182,10 @@ export async function removeFromPlaylist(api: Api, playlistId: string, entryIds:
   })
 }
 
+export async function deletePlaylist(api: Api, playlistId: string) {
+  await api.axiosInstance.delete(`${api.basePath}/Items/${playlistId}`)
+}
+
 export async function fetchArtistById(api: Api, userId: string, artistId: string): Promise<BaseItemDto | null> {
   // Try multiple approaches — Jellyfin artist items are tricky
   try {
