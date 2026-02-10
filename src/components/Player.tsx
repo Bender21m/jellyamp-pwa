@@ -47,6 +47,10 @@ export default function Player() {
   // Fade-in state
   const fadeInRef = useRef<number | null>(null)
   const lastPauseTimeRef = useRef<number>(0)
+  
+  // Gapless RAF loop ref
+  const gaplessRafRef = useRef<number | null>(null)
+  const gaplessTriggeredRef = useRef(false)
 
   // Fade-in helper function
   const startFadeIn = useCallback((audioElement: HTMLAudioElement, targetVolume: number) => {
@@ -74,6 +78,39 @@ export default function Player() {
     
     fadeInRef.current = requestAnimationFrame(fade)
   }, [])
+
+  // Gapless: tight RAF loop that checks currentTime at ~60fps for precise transition
+  const startGaplessTransition = useCallback((audio: HTMLAudioElement) => {
+    if (gaplessRafRef.current) return
+    gaplessTriggeredRef.current = false
+
+    const tick = () => {
+      if (!audio || audio.paused || gaplessTriggeredRef.current) {
+        gaplessRafRef.current = null
+        return
+      }
+      const remaining = audio.duration - audio.currentTime
+      // Trigger at ~50ms before end — tight enough to be imperceptible,
+      // but gives the browser time to start the next audio
+      if (remaining <= 0.05 && remaining > 0 && nextAudioRef.current && nextAudioRef.current.readyState >= 3) {
+        gaplessTriggeredRef.current = true
+        gaplessRafRef.current = null
+        const targetVolume = muted ? 0 : volume
+        nextAudioRef.current.volume = targetVolume
+        nextAudioRef.current.play().catch(() => {})
+        // Advance store to next track
+        next()
+        return
+      }
+      // Track ended naturally before we could trigger (shouldn't happen often)
+      if (audio.ended) {
+        gaplessRafRef.current = null
+        return
+      }
+      gaplessRafRef.current = requestAnimationFrame(tick)
+    }
+    gaplessRafRef.current = requestAnimationFrame(tick)
+  }, [muted, volume, next])
 
   // Get next track in queue
   const getNextTrack = useCallback(() => {
@@ -211,32 +248,26 @@ export default function Player() {
         }
       }
 
-      // Gapless: preload aggressively, then start next track slightly before current ends
-      // to eliminate the gap caused by event loop delay on 'ended'
+      // Gapless: preload aggressively
       if (crossfadeMode === 'gapless' && audio.duration && isFinite(audio.duration)) {
         const timeLeft = audio.duration - audio.currentTime
-        // Preload aggressively at 15s
         if (timeLeft <= 15) preloadNext()
-        // Force buffer at 3s
-        if (timeLeft <= 3 && nextAudioRef.current) {
-          if (nextAudioRef.current.readyState < 3) {
-            nextAudioRef.current.load()
-          }
+        if (timeLeft <= 3 && nextAudioRef.current && nextAudioRef.current.readyState < 3) {
+          nextAudioRef.current.load()
         }
-        // Start next track ~150ms before current ends for seamless transition
-        if (timeLeft <= 0.15 && timeLeft > 0 && nextAudioRef.current && nextAudioRef.current.paused && nextAudioRef.current.readyState >= 3) {
-          const targetVolume = muted ? 0 : volume
-          nextAudioRef.current.volume = targetVolume
-          nextAudioRef.current.play().catch(() => {})
-          // Advance to next track in the store
-          next()
+        // When we're within 2 seconds, start the tight RAF loop for precise transition
+        if (timeLeft <= 2 && timeLeft > 0 && !gaplessRafRef.current) {
+          startGaplessTransition(audio)
         }
       }
     }
     const onDuration = () => { if (audio.duration && isFinite(audio.duration)) setDuration(audio.duration) }
     const onEnded = () => {
-      // For gapless: the next audio is preloaded, so next() will pick it up
-      // and play() will be near-instant since it's already buffered
+      // If gapless already triggered the transition, don't double-advance
+      if (gaplessTriggeredRef.current) {
+        gaplessTriggeredRef.current = false
+        return
+      }
       next()
     }
 
@@ -279,6 +310,11 @@ export default function Player() {
         cancelAnimationFrame(fadeInRef.current)
         fadeInRef.current = null
       }
+      if (gaplessRafRef.current) {
+        cancelAnimationFrame(gaplessRafRef.current)
+        gaplessRafRef.current = null
+      }
+      gaplessTriggeredRef.current = false
     }
   }, [currentTrack?.id])
 

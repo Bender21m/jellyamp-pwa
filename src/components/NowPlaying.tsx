@@ -16,26 +16,36 @@ export default function NowPlaying() {
   } = usePlayerStore()
   const { api, userId } = useAuthStore()
   const navigate = useNavigate()
-  // progressRef removed - using Waveform component
-  const [isFav, setIsFav] = useState(false)
-  // Drag state moved to Waveform component
   const [showLyrics, setShowLyrics] = useState(false)
 
   const y = useMotionValue(0)
   const opacity = useTransform(y, [0, 300], [1, 0])
 
-  // Track favorite state from currentTrack
-  const trackIsFav = currentTrack?.isFavorite ?? isFav
+  // Track favorite state — sync from currentTrack, allow local optimistic toggle
+  const [localFavOverride, setLocalFavOverride] = useState<{ trackId: string; isFav: boolean } | null>(null)
+  const trackIsFav = localFavOverride?.trackId === currentTrack?.id
+    ? localFavOverride.isFav
+    : (currentTrack?.isFavorite ?? false)
   
   // Extract colors from current track album art
   const { colors: trackColors } = useAlbumColors(currentTrack?.imageUrl)
 
   async function handleFavorite() {
     if (!api || !userId || !currentTrack) return
+    const newFav = !trackIsFav
+    // Optimistic update
+    setLocalFavOverride({ trackId: currentTrack.id, isFav: newFav })
     try {
       await toggleFavorite(api, userId, currentTrack.id, trackIsFav)
-      setIsFav(!trackIsFav)
-    } catch { /* ignore */ }
+      // Also update the track in the player store queue so it persists
+      const { queue, queueIndex } = usePlayerStore.getState()
+      const updatedQueue = queue.map(t => t.id === currentTrack.id ? { ...t, isFavorite: newFav } : t)
+      const updatedTrack = { ...currentTrack, isFavorite: newFav }
+      usePlayerStore.setState({ queue: updatedQueue, currentTrack: updatedTrack })
+    } catch {
+      // Revert on error
+      setLocalFavOverride({ trackId: currentTrack.id, isFav: trackIsFav })
+    }
   }
 
   // calcProgress removed - handled by Waveform component
