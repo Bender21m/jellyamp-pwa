@@ -171,6 +171,43 @@ h1, h2, h3 {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* PWA Standalone Mode */
+@media (display-mode: standalone) {
+  /* Hide any browser-specific UI when running as installed PWA */
+  html {
+    overflow-y: auto; /* Allow scrolling in standalone mode */
+  }
+  
+  body {
+    /* Ensure full utilization of screen space */
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+  
+  /* Optional: Different styling for standalone mode */
+  .standalone-only {
+    display: block;
+  }
+}
+
+/* iOS PWA detection */
+@media all and (display-mode: browser) {
+  .standalone-only {
+    display: none;
+  }
+}
+
+/* iOS Safari PWA mode (using -webkit-touch-callout as proxy) */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: browser) {
+    html.ios-standalone {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+  }
+}
+
 /* Skeleton shimmer */
 @keyframes shimmer {
   0% { background-position: -200% 0; }

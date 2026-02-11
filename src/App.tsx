@@ -5,6 +5,7 @@ import { useAuthStore } from './stores/auth'
 import { useArchiveStore } from './stores/archive'
 import ErrorBoundary from './components/ErrorBoundary'
 import PageSkeleton from './components/PageSkeleton'
+import Onboarding, { useOnboarding } from './components/Onboarding'
 
 // Core shell — loaded eagerly (always visible)
 import Sidebar from './components/Sidebar'
@@ -13,6 +14,8 @@ import QueuePanel from './components/QueuePanel'
 import NowPlaying from './components/NowPlaying'
 import MobileNav from './components/MobileNav'
 import ToastContainer from './components/Toast'
+import InstallPrompt from './components/InstallPrompt'
+import UpdateNotification from './components/UpdateNotification'
 import Connect from './pages/Connect'
 
 // Pages — lazy loaded (only fetched when route is visited)
@@ -74,6 +77,8 @@ function AnimatedRoutes() {
 }
 
 function AppLayout() {
+  const { showOnboarding, dismissOnboarding } = useOnboarding()
+
   return (
     <div className="h-full flex flex-col relative">
       <div className="noise absolute inset-0 pointer-events-none z-50" />
@@ -91,6 +96,9 @@ function AppLayout() {
       <MobileNav />
       <NowPlaying />
       <ToastContainer />
+      <InstallPrompt />
+      <UpdateNotification />
+      <Onboarding isVisible={showOnboarding} onDismiss={dismissOnboarding} />
     </div>
   )
 }

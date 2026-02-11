@@ -8,6 +8,7 @@ import type { ArchiveShow } from '../lib/archive'
 import { getArtistInfo } from '../lib/artistInfo'
 import ArchiveShowCard from '../components/ArchiveShowCard'
 import EmptyState from '../components/EmptyState'
+import FeatureHint from '../components/FeatureHint'
 
 const POPULAR_ARTISTS = [
   'Grateful Dead', 'Phish', 'Disco Biscuits', 'Widespread Panic',
@@ -333,6 +334,14 @@ export default function ArchiveHome() {
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-[-0.04em]">Live Archive</h1>
         </div>
         <p className="text-[13px] text-text-muted tracking-wide">200,000+ live recordings from the Internet Archive</p>
+
+        {/* Feature Hint */}
+        <FeatureHint
+          hintKey="archive-intro"
+          title="Welcome to the Live Archive!"
+          description="Discover 250,000+ live recordings from legendary artists like Grateful Dead, Phish, and more. All free from archive.org."
+          className="mt-4"
+        />
 
         {/* Search */}
         <form onSubmit={handleSearchSubmit} className="relative mt-4">

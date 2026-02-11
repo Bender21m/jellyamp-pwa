@@ -8,6 +8,7 @@ import { toggleFavorite } from '../lib/jellyfin'
 import { formatTime } from '../lib/formatTime'
 import LyricsView from './LyricsView'
 import Waveform from './Waveform'
+import FeatureHint from './FeatureHint'
 
 export default function NowPlaying() {
   const {
@@ -334,6 +335,13 @@ export default function NowPlaying() {
           <div className="md:hidden relative z-10 flex-1 flex flex-col items-center px-6 w-full overflow-y-auto overscroll-contain pt-4 pb-8">
             <div className="w-[60vw] max-w-[320px]">{albumArt}</div>
             <div className="w-full mt-6 mb-6">{trackInfo}</div>
+            <FeatureHint
+              hintKey="now-playing-swipe"
+              title="Swipe down to close"
+              description="On mobile, swipe down anywhere on this screen to go back to your library."
+              className="w-full mb-4"
+              delay={1500}
+            />
             <div className="w-full mb-4">{waveformProgress}</div>
             {controls}
             {radioButton}
