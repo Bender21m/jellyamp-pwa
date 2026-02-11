@@ -285,7 +285,7 @@ function VirtualHistoryList({ tab, recentTracks, mostPlayedTracks, scrollRef, on
             }}
           >
             <div className="flex items-center">
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <TrackRow
                   track={track}
                   index={index}
