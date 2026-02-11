@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useCallback } from 'react'
 import FilterPill from '../FilterPill'
 import SortDropdown from './SortDropdown'
 import ViewModeToggle from './ViewModeToggle'
@@ -48,6 +48,19 @@ export default function LibraryHeader({
     }
   }, [showMobileSearch])
 
+  const toggleMobileSearch = useCallback(() => {
+    setShowMobileSearch(!showMobileSearch)
+  }, [showMobileSearch, setShowMobileSearch])
+
+  const clearSearchAndClose = useCallback(() => {
+    setSearch('')
+    setShowMobileSearch(false)
+  }, [setSearch, setShowMobileSearch])
+
+  const handleFilterClick = useCallback((filter: string) => {
+    setLibraryFilter(filter)
+  }, [setLibraryFilter])
+
   return (
     <div className="px-4 md:px-8 pt-5 md:pt-8 pb-4 md:pb-5 space-y-4 shrink-0">
       <div className="flex items-end justify-between gap-4">
@@ -77,11 +90,11 @@ export default function LibraryHeader({
       {/* Filters */}
       <div className="flex items-center gap-2 md:gap-3 overflow-x-auto pb-1 -mx-1 px-1">
         {filters.map((f) => (
-          <FilterPill key={f} label={f} active={libraryFilter === f} onClick={() => setLibraryFilter(f)} />
+          <FilterPill key={f} label={f} active={libraryFilter === f} onClick={() => handleFilterClick(f)} />
         ))}
         {/* Mobile search toggle */}
         <button
-          onClick={() => setShowMobileSearch(!showMobileSearch)}
+          onClick={toggleMobileSearch}
           className={`flex md:hidden items-center justify-center w-9 h-9 rounded-lg border transition-all ml-2 ${
             showMobileSearch || search ? 'border-neon-cyan/30 bg-neon-cyan/5 text-neon-cyan' : 'border-white/5 text-text-muted hover:text-text-primary'
           }`}
@@ -119,7 +132,7 @@ export default function LibraryHeader({
             </svg>
             {search && (
               <button
-                onClick={() => { setSearch(''); setShowMobileSearch(false) }}
+                onClick={clearSearchAndClose}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
               >
                 <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">

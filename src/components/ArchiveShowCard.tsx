@@ -1,3 +1,4 @@
+import React from 'react'
 import type { ArchiveShow } from '../lib/archive'
 import ArchiveSourceBadge from './ArchiveSourceBadge'
 
@@ -34,7 +35,7 @@ function StarRating({ rating }: { rating: number }) {
 
 export { StarRating, formatDate }
 
-export default function ArchiveShowCard({ show, recordingCount, hideArtist, onClick }: ArchiveShowCardProps) {
+const ArchiveShowCard = React.memo(function ArchiveShowCard({ show, recordingCount, hideArtist, onClick }: ArchiveShowCardProps) {
   return (
     <button
       onClick={onClick}
@@ -83,4 +84,6 @@ export default function ArchiveShowCard({ show, recordingCount, hideArtist, onCl
       </div>
     </button>
   )
-}
+})
+
+export default ArchiveShowCard

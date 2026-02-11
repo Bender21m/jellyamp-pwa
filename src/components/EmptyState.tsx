@@ -1,3 +1,4 @@
+import React from 'react'
 import { motion } from 'framer-motion'
 
 interface EmptyStateProps {
@@ -10,7 +11,7 @@ interface EmptyStateProps {
   }
 }
 
-export default function EmptyState({ icon, title, subtitle, action }: EmptyStateProps) {
+const EmptyState = React.memo(function EmptyState({ icon, title, subtitle, action }: EmptyStateProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -43,4 +44,6 @@ export default function EmptyState({ icon, title, subtitle, action }: EmptyState
       )}
     </motion.div>
   )
-}
+})
+
+export default EmptyState

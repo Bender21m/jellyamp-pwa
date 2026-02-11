@@ -55,6 +55,18 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'animation-vendor': ['framer-motion'],
+          'jellyfin-vendor': ['@jellyfin/sdk'],
+          'utils-vendor': ['zustand', '@tanstack/react-virtual'],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
   },
