@@ -207,10 +207,13 @@ export default function Player() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="fixed z-50 left-0 right-0 border-t border-white/5 backdrop-blur-xl
+          className="fixed z-50 left-0 right-0 backdrop-blur-xl
             bottom-[56px] md:bottom-0"
-          style={{ background: 'linear-gradient(180deg, rgba(10,10,16,0.95) 0%, rgba(5,5,8,0.98) 100%)' }}
+          style={{ background: 'linear-gradient(180deg, rgba(10,10,16,0.85) 0%, rgba(5,5,8,0.92) 100%)' }}
         >
+          {/* Gradient accent line at top (mobile only) */}
+          <div className="md:hidden h-px bg-gradient-primary opacity-40" />
+
           {/* Mobile grabber pill */}
           <div className="md:hidden flex justify-center pt-1.5 pb-0">
             <div className="w-8 h-1 rounded-full bg-white/20" />

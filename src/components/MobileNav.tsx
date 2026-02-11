@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useArchiveStore } from '../stores/archive'
+import { usePlayerStore } from '../stores/player'
 const baseTabs = [
   { to: '/library', label: 'Library', icon: 'M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z' },
   { to: '/search', label: 'Search', icon: 'M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z' },
@@ -9,6 +10,9 @@ const baseTabs = [
 
 export default function MobileNav() {
   const archiveEnabled = useArchiveStore((s) => s.enabled)
+  const currentTrack = usePlayerStore((s) => s.currentTrack)
+  const showNowPlaying = usePlayerStore((s) => s.showNowPlaying)
+  const playerBarVisible = !!currentTrack && !showNowPlaying
   
   // Add Archive tab after History (before Settings) when enabled
   const tabs = [...baseTabs]
@@ -21,11 +25,13 @@ export default function MobileNav() {
   }
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-xl border-t border-white/10"
+      className={`md:hidden fixed bottom-0 left-0 right-0 z-40 backdrop-blur-xl ${
+        playerBarVisible ? 'bg-card/90' : 'bg-card/95 border-t border-white/10'
+      }`}
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}
     >
-      {/* Stronger gradient top line */}
-      <div className="h-px bg-gradient-primary opacity-40" />
+      {/* Gradient top line — only when player bar is NOT above */}
+      {!playerBarVisible && <div className="h-px bg-gradient-primary opacity-40" />}
       <div className="flex items-stretch">
         {tabs.map((tab) => (
           <NavLink
