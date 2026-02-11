@@ -10,18 +10,20 @@ import ArchiveShowCard from '../components/ArchiveShowCard'
 import EmptyState from '../components/EmptyState'
 import FeatureHint from '../components/FeatureHint'
 
+// Only artists verified to have substantial catalogs on archive.org/etree
 const POPULAR_ARTISTS = [
-  'Grateful Dead', 'Phish', 'Disco Biscuits', 'Widespread Panic',
-  'String Cheese Incident', 'moe.', "Umphrey's McGee", 'Medeski Martin & Wood',
-  'Trey Anastasio', 'STS9', 'Lotus', 'Galactic', "Gov't Mule",
-  'Dark Star Orchestra', 'Leftover Salmon',
+  'Grateful Dead', 'Disco Biscuits', 'Widespread Panic',
+  'String Cheese Incident', 'moe.', 'Phil Lesh', 'Max Creek',
+  'Yonder Mountain String Band', 'Railroad Earth', 'Dark Star Orchestra',
+  'Leftover Salmon', 'Keller Williams', 'Tedeschi Trucks Band',
+  'Lotus', 'Galactic', 'New Riders of the Purple Sage',
+  'Bob Weir', 'Pigeons Playing Ping Pong', 'Assembly of Dust',
 ]
 
 // Fallback images for popular artists to avoid initial API calls
 // @ts-ignore - Used in useEffect below
 const ARTIST_FALLBACK_IMAGES: Record<string, string> = {
   'Grateful Dead': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Grateful_Dead_-_American_Beauty.jpg/300px-Grateful_Dead_-_American_Beauty.jpg',
-  'Phish': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Phish_2009.jpg/300px-Phish_2009.jpg',
   'Disco Biscuits': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/The_Disco_Biscuits_2017.jpg/300px-The_Disco_Biscuits_2017.jpg',
   'String Cheese Incident': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/String_cheese_incident_red_rocks_2005.jpg/300px-String_cheese_incident_red_rocks_2005.jpg',
   'Widespread Panic': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Widespread_Panic_2016.jpg/300px-Widespread_Panic_2016.jpg',
@@ -345,7 +347,7 @@ export default function ArchiveHome() {
         <FeatureHint
           hintKey="archive-intro"
           title="Welcome to the Live Archive!"
-          description="Discover 250,000+ live recordings from legendary artists like Grateful Dead, Phish, and more. All free from archive.org."
+          description="Discover 250,000+ live recordings from legendary artists like Grateful Dead, Widespread Panic, and more. All free from archive.org."
           className="mt-4"
         />
 
