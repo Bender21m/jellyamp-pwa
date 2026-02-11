@@ -304,8 +304,7 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
 
   function disconnectEqualizer() {
     if (equalizerRef.current) {
-      equalizerRef.current.disconnect()
-      equalizerRef.current = null
+      equalizerRef.current.bypass()
     }
   }
 

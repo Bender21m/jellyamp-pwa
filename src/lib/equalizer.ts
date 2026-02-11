@@ -43,7 +43,8 @@ export class AudioEqualizer {
 
   /**
    * Initialize the equalizer and connect it to an audio element
-   * IMPORTANT: createMediaElementSource can only be called ONCE per audio element
+   * IMPORTANT: createMediaElementSource can only be called ONCE per audio element.
+   * We track which elements already have source nodes to avoid double-connecting.
    */
   async connectToAudio(audioElement: HTMLAudioElement): Promise<void> {
     if (this.audioElement === audioElement && this.isConnected) {
@@ -51,8 +52,12 @@ export class AudioEqualizer {
       return
     }
 
-    // Disconnect from previous audio if any
-    this.disconnect()
+    // If we already have a source for a DIFFERENT element, disconnect filters only
+    // (source nodes can't be re-created, so we leave the old one for GC)
+    if (this.sourceNode && this.audioElement !== audioElement) {
+      this.disconnectFilters()
+      this.sourceNode = null
+    }
 
     try {
       // Create AudioContext if needed
@@ -65,8 +70,10 @@ export class AudioEqualizer {
         await this.audioContext.resume()
       }
 
-      // Create source node (can only be called once per audio element)
-      this.sourceNode = this.audioContext.createMediaElementSource(audioElement)
+      // Create source node only if this element doesn't have one yet
+      if (!this.sourceNode || this.audioElement !== audioElement) {
+        this.sourceNode = this.audioContext.createMediaElementSource(audioElement)
+      }
       this.audioElement = audioElement
 
       // Create filter chain
@@ -183,16 +190,37 @@ export class AudioEqualizer {
   }
 
   /**
-   * Disconnect the equalizer and clean up resources
+   * Disconnect filters only (keeps source node alive since it can't be re-created)
+   */
+  private disconnectFilters(): void {
+    this.filters.forEach(filter => filter.disconnect())
+    this.filters = []
+  }
+
+  /**
+   * Bypass the EQ — route source directly to destination, keeping source node alive.
+   * Use this instead of disconnect() when you want to re-enable later.
+   */
+  bypass(): void {
+    if (!this.sourceNode || !this.audioContext) return
+    this.disconnectFilters()
+    this.sourceNode.disconnect()
+    this.sourceNode.connect(this.audioContext.destination)
+    this.isConnected = false
+  }
+
+  /**
+   * Disconnect the equalizer and clean up resources.
+   * WARNING: After calling this, the same audio element cannot be reconnected
+   * (createMediaElementSource is one-shot per element).
    */
   disconnect(): void {
+    this.disconnectFilters()
+
     if (this.sourceNode) {
       this.sourceNode.disconnect()
       this.sourceNode = null
     }
-
-    this.filters.forEach(filter => filter.disconnect())
-    this.filters = []
 
     this.audioElement = null
     this.isConnected = false
