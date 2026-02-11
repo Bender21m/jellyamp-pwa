@@ -235,6 +235,13 @@ button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"]) {
   @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-inset;
 }
 
+/* Mini player bar positioning — accounts for nav safe area on mobile */
+@media (max-width: 767px) {
+  .mini-player-bar {
+    bottom: calc(56px + 4px + max(env(safe-area-inset-bottom, 0px), 8px));
+  }
+}
+
 /* Skip to content link */
 .skip-link {
   @apply absolute left-4 top-4 z-[100] px-4 py-2 bg-neon-cyan text-deep-black font-semibold rounded-lg transform -translate-y-16 transition-transform focus:translate-y-0;

@@ -232,7 +232,7 @@ export default function Player() {
           exit={{ y: 80, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           className="fixed z-50 left-0 right-0 backdrop-blur-2xl
-            bottom-[56px] md:bottom-0 md:backdrop-blur-xl"
+            md:bottom-0 md:backdrop-blur-xl mini-player-bar"
           style={{ background: 'rgba(12,12,18,0.88)' }}
         >
           {/* Mobile mini player — collapsed mode */}
