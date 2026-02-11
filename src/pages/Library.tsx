@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
-import { useVirtualizer } from '@tanstack/react-virtual'
+// virtualization removed from Library — small item counts don't benefit
 import { useAuthStore } from '../stores/auth'
 import { useUIStore } from '../stores/ui'
 import JellyImage from '../components/JellyImage'
@@ -33,21 +33,7 @@ const sortLabels: Record<SortOption, string> = {
 
 const sortOptions: SortOption[] = ['name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'year-newest', 'year-oldest', 'date-added']
 
-function getColumnCount() {
-  const w = window.innerWidth
-  if (w >= 1536) return 6
-  if (w >= 1280) return 5
-  if (w >= 1024) return 4
-  if (w >= 640) return 3
-  return 2
-}
-
-function getGridGap() {
-  const w = window.innerWidth
-  if (w >= 1024) return 28
-  if (w >= 768) return 24
-  return 20
-}
+// grid helpers removed (virtualization reverted)
 
 export default function Library() {
   const { api, userId, serverUrl } = useAuthStore()
@@ -443,12 +429,10 @@ export default function Library() {
               subtitle="Add some music to your Jellyfin server to get started."
             />
           ) : viewMode === 'list' ? (
-            <VirtualList
-              items={albums}
-              scrollRef={scrollContainerRef}
-              estimateSize={64}
-              renderItem={(a) => (
+            <div className="space-y-1">
+              {albums.map((a) => (
                 <AlbumListRow
+                  key={a.Id}
                   id={a.Id!}
                   name={a.Name ?? 'Unknown'}
                   artistName={a.AlbumArtist ?? 'Unknown Artist'}
@@ -456,22 +440,21 @@ export default function Library() {
                   year={a.ProductionYear ?? undefined}
                   trackCount={a.ChildCount ?? undefined}
                 />
-              )}
-            />
+              ))}
+            </div>
           ) : (
-            <VirtualGrid
-              items={albums}
-              scrollRef={scrollContainerRef}
-              renderItem={(a) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-5 md:gap-7">
+              {albums.map((a) => (
                 <AlbumCard
+                  key={a.Id}
                   id={a.Id!}
                   name={a.Name ?? 'Unknown'}
                   artistName={a.AlbumArtist ?? 'Unknown Artist'}
                   imageUrl={imgUrl(a)}
                   year={a.ProductionYear ?? undefined}
                 />
-              )}
-            />
+              ))}
+            </div>
           )
         ) : libraryFilter === 'Artists' ? (
           artists.length === 0 ? (
@@ -485,31 +468,28 @@ export default function Library() {
               subtitle="Add some music to your Jellyfin server to get started."
             />
           ) : viewMode === 'list' ? (
-            <VirtualList
-              items={artists}
-              scrollRef={scrollContainerRef}
-              estimateSize={56}
-              renderItem={(a) => (
+            <div className="space-y-1">
+              {artists.map((a) => (
                 <ArtistListRow
+                  key={a.Id}
                   id={a.Id!}
                   name={a.Name ?? 'Unknown'}
                   imageUrl={a.ImageTags?.Primary ? imgUrl(a, 120) : undefined}
                   albumCount={(a as Record<string, unknown>).AlbumCount as number | undefined}
                 />
-              )}
-            />
+              ))}
+            </div>
           ) : (
-            <VirtualGrid
-              items={artists}
-              scrollRef={scrollContainerRef}
-              renderItem={(a) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-5 md:gap-7">
+              {artists.map((a) => (
                 <ArtistCard
+                  key={a.Id}
                   id={a.Id!}
                   name={a.Name ?? 'Unknown'}
                   imageUrl={a.ImageTags?.Primary ? imgUrl(a) : undefined}
                 />
-              )}
-            />
+              ))}
+            </div>
           )
         ) : libraryFilter === 'Playlists' ? (
           playlists.length === 0 ? (
@@ -542,101 +522,6 @@ export default function Library() {
           )
         ) : null}
       </div>
-    </div>
-  )
-}
-
-/* ── Virtualized Grid ── */
-
-function VirtualGrid({ items, scrollRef, renderItem }: {
-  items: BaseItemDto[]
-  scrollRef: React.RefObject<HTMLDivElement | null>
-  renderItem: (item: BaseItemDto) => React.ReactNode
-}) {
-  const [cols, setCols] = useState(getColumnCount)
-  const [gap, setGap] = useState(getGridGap)
-
-  useEffect(() => {
-    const update = () => {
-      setCols(getColumnCount())
-      setGap(getGridGap())
-    }
-    window.addEventListener('resize', update)
-    return () => window.removeEventListener('resize', update)
-  }, [])
-
-  const rows = useMemo(() => {
-    const r: BaseItemDto[][] = []
-    for (let i = 0; i < items.length; i += cols) r.push(items.slice(i, i + cols))
-    return r
-  }, [items, cols])
-
-  const virtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => 280,
-    overscan: 3,
-  })
-
-  return (
-    <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-      {virtualizer.getVirtualItems().map(vRow => (
-        <div
-          key={vRow.key}
-          data-index={vRow.index}
-          ref={virtualizer.measureElement}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            transform: `translateY(${vRow.start}px)`,
-          }}
-        >
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap, paddingBottom: gap }}>
-            {rows[vRow.index].map(item => (
-              <div key={item.Id}>{renderItem(item)}</div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-/* ── Virtualized List ── */
-
-function VirtualList({ items, scrollRef, estimateSize, renderItem }: {
-  items: BaseItemDto[]
-  scrollRef: React.RefObject<HTMLDivElement | null>
-  estimateSize: number
-  renderItem: (item: BaseItemDto) => React.ReactNode
-}) {
-  const virtualizer = useVirtualizer({
-    count: items.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => estimateSize,
-    overscan: 8,
-  })
-
-  return (
-    <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-      {virtualizer.getVirtualItems().map(vRow => (
-        <div
-          key={vRow.key}
-          data-index={vRow.index}
-          ref={virtualizer.measureElement}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            transform: `translateY(${vRow.start}px)`,
-          }}
-        >
-          {renderItem(items[vRow.index])}
-        </div>
-      ))}
     </div>
   )
 }
