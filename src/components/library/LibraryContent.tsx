@@ -10,13 +10,25 @@ import SkeletonGrid from './SkeletonGrid'
 import ArtistListRow from './ArtistListRow'
 import AlbumListRow from './AlbumListRow'
 import type { BaseItemDto } from '../../lib/jellyfin'
-import type { ViewMode } from '../../stores/ui'
+import type { ViewMode, GridDensity } from '../../stores/ui'
 import { getImageUrl } from '../../lib/jellyfin'
+
+export function getGridCols(density: GridDensity = 'normal'): string {
+  switch (density) {
+    case 'compact':
+      return 'grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3 md:gap-4 lg:gap-5'
+    case 'dense':
+      return 'grid grid-cols-4 sm:grid-cols-5 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-2 md:gap-3'
+    default:
+      return 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 md:gap-6 lg:gap-7'
+  }
+}
 
 interface LibraryContentProps {
   loading: boolean
   libraryFilter: string
   viewMode: ViewMode
+  gridDensity: GridDensity
   serverUrl: string | null
   // Data
   albums: BaseItemDto[]
@@ -36,6 +48,7 @@ export default function LibraryContent({
   loading,
   libraryFilter,
   viewMode,
+  gridDensity,
   serverUrl,
   albums,
   artists,
@@ -53,8 +66,7 @@ export default function LibraryContent({
   const imgUrl = (item: BaseItemDto, size = 400) =>
     serverUrl ? getImageUrl(serverUrl, item.Id!, item.ImageTags?.Primary, size) : ''
 
-  // Responsive grid: larger minimum card sizes
-  const gridCols = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 md:gap-6 lg:gap-7'
+  const gridCols = getGridCols(gridDensity)
 
   // Group recent albums by timeframe
   const groupRecentAlbums = useCallback((items: BaseItemDto[]) => {

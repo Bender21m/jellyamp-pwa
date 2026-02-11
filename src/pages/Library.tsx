@@ -190,6 +190,7 @@ export default function Library() {
           loading={loading}
           libraryFilter={libraryFilter}
           viewMode={viewMode}
+          gridDensity={gridDensity}
           serverUrl={serverUrl}
           albums={albums}
           artists={artists}

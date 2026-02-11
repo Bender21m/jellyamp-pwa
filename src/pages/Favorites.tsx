@@ -14,6 +14,7 @@ import TrackContextMenu from '../components/TrackContextMenu'
 import EmptyState from '../components/EmptyState'
 import FilterPill from '../components/FilterPill'
 import ViewModeToggle from '../components/library/ViewModeToggle'
+import { getGridCols } from '../components/library/LibraryContent'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
 import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 
@@ -87,8 +88,7 @@ export default function Favorites() {
   const tracks = items.filter(i => i.Type === BaseItemKind.Audio)
   const trackObjects = serverUrl ? tracks.map(t => createTrack(t, serverUrl)) : []
 
-  // Grid classes
-  const gridCols = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 md:gap-6 lg:gap-7'
+  const gridCols = getGridCols(gridDensity)
 
   // Show view toggle for filters that have grid-able content
   const showViewToggle = favoritesFilter === 'All' || favoritesFilter === 'Albums' || favoritesFilter === 'Artists'
