@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
 import JellyImage from '../components/JellyImage'
-import { fetchAlbums, fetchTracks, getImageUrl, fetchArtistById, toggleFavorite, fetchSimilarArtists, getInstantMix } from '../lib/jellyfin'
+import { fetchAlbums, fetchArtistTracks, getImageUrl, fetchArtistById, toggleFavorite, fetchSimilarArtists, getInstantMix } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import { useAlbumColors } from '../hooks/useAlbumColors'
 import { useScrollRestore } from '../hooks/useScrollRestore'
@@ -83,22 +83,22 @@ export default function ArtistDetail() {
   }
 
   async function playAll(shuffle = false) {
-    if (!api || !userId || !serverUrl || albums.length === 0) return
+    if (!api || !userId || !serverUrl || !id || albums.length === 0) return
     try {
-      const allTracks: Track[] = []
-      for (const album of sortedAlbums) {
-        const tracksRes = await fetchTracks(api, userId, album.Id!)
-        const mapped = (tracksRes.Items ?? []).map((t) => ({
-          id: t.Id!,
-          name: t.Name ?? 'Unknown',
-          albumId: album.Id!,
-          albumName: album.Name ?? '',
-          artistName: artist?.Name ?? '',
-          duration: (t.RunTimeTicks ?? 0) / 10000000,
-          imageUrl: getImageUrl(serverUrl, album.Id!, album.ImageTags?.Primary),
-        }))
-        allTracks.push(...mapped)
-      }
+      // Fetch all tracks for the artist in a single API call instead of sequential album fetches
+      const tracksRes = await fetchArtistTracks(api, userId, id)
+      const allTracks: Track[] = (tracksRes.Items ?? []).map((t) => ({
+        id: t.Id!,
+        name: t.Name ?? 'Unknown',
+        albumId: t.AlbumId ?? undefined,
+        albumName: t.Album ?? '',
+        artistName: t.AlbumArtist ?? artist?.Name ?? '',
+        duration: (t.RunTimeTicks ?? 0) / 10000000,
+        imageUrl: t.AlbumId 
+          ? getImageUrl(serverUrl, t.AlbumId, t.AlbumPrimaryImageTag)
+          : undefined,
+      }))
+      
       if (allTracks.length > 0) {
         if (shuffle) {
           const shuffled = [...allTracks].sort(() => Math.random() - 0.5)

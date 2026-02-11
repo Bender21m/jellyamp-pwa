@@ -256,14 +256,50 @@ export const usePlayerStore = create<PlayerState>()(
     {
       name: 'jellyamp-player',
       partialize: (state) => ({
-        queue: state.queue,
-        queueIndex: state.queueIndex,
+        // Exclude queue to prevent localStorage overflow with large queues
+        // Only persist current track and playback settings
         currentTrack: state.currentTrack,
         volume: state.volume,
         muted: state.muted,
         shuffle: state.shuffle,
         repeat: state.repeat,
+        radioMode: state.radioMode,
+        radioSeedId: state.radioSeedId,
       }),
+      storage: {
+        getItem: (name) => {
+          try {
+            const item = localStorage.getItem(name)
+            return item ? JSON.parse(item) : null
+          } catch (error) {
+            console.error('[Player Store] Failed to read from localStorage:', error)
+            return null
+          }
+        },
+        setItem: (name, value) => {
+          try {
+            localStorage.setItem(name, JSON.stringify(value))
+          } catch (error) {
+            console.error('[Player Store] Failed to write to localStorage:', error)
+            // Try to clear some space and retry once
+            if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+              try {
+                localStorage.removeItem(name)
+                localStorage.setItem(name, JSON.stringify(value))
+              } catch (retryError) {
+                console.error('[Player Store] Failed to write even after cleanup:', retryError)
+              }
+            }
+          }
+        },
+        removeItem: (name) => {
+          try {
+            localStorage.removeItem(name)
+          } catch (error) {
+            console.error('[Player Store] Failed to remove from localStorage:', error)
+          }
+        },
+      },
     }
   )
 )

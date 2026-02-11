@@ -28,9 +28,11 @@ function mapToTrack(item: BaseItemDto, serverUrl: string): Track {
  */
 export function useRadioMode() {
   const fetchingRef = useRef(false)
+  const lastFailureRef = useRef<number>(0)
+  const retryCountRef = useRef<number>(0)
 
   const radioMode = usePlayerStore(s => s.radioMode)
-  const queue = usePlayerStore(s => s.queue)
+  const queueLength = usePlayerStore(s => s.queue.length)
   const queueIndex = usePlayerStore(s => s.queueIndex)
   const currentTrack = usePlayerStore(s => s.currentTrack)
   const addToQueue = usePlayerStore(s => s.addToQueue)
@@ -41,24 +43,47 @@ export function useRadioMode() {
     if (!radioMode || !serverUrl || !accessToken || !userId || !currentTrack) return
     if (fetchingRef.current) return
 
-    const remaining = queue.length - queueIndex - 1
+    const remaining = queueLength - queueIndex - 1
     if (remaining > 2) return // still have enough tracks
+
+    // Cooldown period: don't retry for 30 seconds after a failure
+    const now = Date.now()
+    const timeSinceFailure = now - lastFailureRef.current
+    if (timeSinceFailure < 30000 && retryCountRef.current >= 3) return
+
+    // Reset retry count if enough time has passed
+    if (timeSinceFailure > 60000) {
+      retryCountRef.current = 0
+    }
 
     fetchingRef.current = true
     const seedId = currentTrack.id
 
     getInstantMix(serverUrl, seedId, accessToken, userId, 20)
       .then(items => {
-        const existingIds = new Set(queue.map(t => t.id))
+        // Get fresh queue data to avoid stale closure
+        const currentQueue = usePlayerStore.getState().queue
+        const existingIds = new Set(currentQueue.map(t => t.id))
         const newTracks = items
           .filter(item => item.Id && !existingIds.has(item.Id))
           .map(item => mapToTrack(item, serverUrl))
 
         if (newTracks.length > 0) {
           addToQueue(newTracks)
+          retryCountRef.current = 0 // Reset on success
+        } else {
+          // No new tracks found (all duplicates), increment retry count
+          retryCountRef.current++
+          lastFailureRef.current = now
         }
       })
-      .catch(err => console.error('[Radio] InstantMix failed:', err))
-      .finally(() => { fetchingRef.current = false })
-  }, [radioMode, queueIndex, queue.length, currentTrack?.id, serverUrl, accessToken, userId, addToQueue, queue])
+      .catch(err => {
+        console.error('[Radio] InstantMix failed:', err)
+        retryCountRef.current++
+        lastFailureRef.current = now
+      })
+      .finally(() => { 
+        fetchingRef.current = false 
+      })
+  }, [radioMode, queueIndex, queueLength, currentTrack?.id, serverUrl, accessToken, userId, addToQueue])
 }

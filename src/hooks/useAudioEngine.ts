@@ -47,6 +47,24 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
   const lastPauseTimeRef = useRef<number>(0)
   const userInitiatedRef = useRef(false) // tracks whether playback was user-initiated vs restore from reload
 
+  // Refs for values accessed in event handlers to prevent stale closures
+  const volumeRef = useRef(volume)
+  const mutedRef = useRef(muted)
+  const crossfadeModeRef = useRef(crossfadeMode)
+  const crossfadeDurationRef = useRef(crossfadeDuration)
+  const onSetCurrentTimeRef = useRef(onSetCurrentTime)
+  const onTimeUpdateRef = useRef(onTimeUpdate)
+  const onNextRef = useRef(onNext)
+
+  // Keep refs in sync with current values
+  volumeRef.current = volume
+  mutedRef.current = muted
+  crossfadeModeRef.current = crossfadeMode
+  crossfadeDurationRef.current = crossfadeDuration
+  onSetCurrentTimeRef.current = onSetCurrentTime
+  onTimeUpdateRef.current = onTimeUpdate
+  onNextRef.current = onNext
+
   // Fade-in helper function
   const startFadeIn = useCallback((audioElement: HTMLAudioElement, targetVolume: number) => {
     if (fadeInRef.current) {
@@ -85,7 +103,7 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
 
   // Preload next track for gapless/crossfade
   const preloadNext = useCallback(() => {
-    if (crossfadeMode === 'off' || !serverUrl || !accessToken) return
+    if (crossfadeModeRef.current === 'off' || !serverUrl || !accessToken) return
     const nextTrack = getNextTrack()
     if (!nextTrack || preloadedTrackIdRef.current === nextTrack.id) return
 
@@ -96,7 +114,7 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
     nextAudio.load()
     nextAudioRef.current = nextAudio
     preloadedTrackIdRef.current = nextTrack.id
-  }, [crossfadeMode, serverUrl, accessToken, audioQuality, getNextTrack])
+  }, [serverUrl, accessToken, audioQuality, getNextTrack])
 
   // Initialize the equalizer
   async function initializeEqualizer(audioElement: HTMLAudioElement) {
@@ -141,7 +159,7 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
       audioRef.current.src = ''
     }
     audioRef.current = audio
-    audio.volume = muted ? 0 : volume
+    audio.volume = mutedRef.current ? 0 : volumeRef.current
 
     const onError = (e: Event) => {
       const a = e.target as HTMLAudioElement
@@ -153,8 +171,8 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
 
     if (shouldAutoPlay) {
       const onCanPlay = () => {
-        const targetVolume = muted ? 0 : volume
-        if (crossfadeMode === 'gapless') {
+        const targetVolume = mutedRef.current ? 0 : volumeRef.current
+        if (crossfadeModeRef.current === 'gapless') {
           audio.volume = targetVolume
         } else {
           startFadeIn(audio, targetVolume)
@@ -162,9 +180,9 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
         audio.play().then(() => onPlay()).catch((err) => console.error('[JellyAmp] Play failed:', err))
       }
 
-      const isGaplessPreloaded = crossfadeMode === 'gapless' && audio.readyState >= 3
+      const isGaplessPreloaded = crossfadeModeRef.current === 'gapless' && audio.readyState >= 3
       if (audio.readyState >= 3) {
-        const targetVolume = muted ? 0 : volume
+        const targetVolume = mutedRef.current ? 0 : volumeRef.current
         if (isGaplessPreloaded) {
           audio.volume = targetVolume
         } else {
@@ -185,11 +203,11 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
     }
 
     const handleTimeUpdate = () => {
-      if (!seekingRef.current) onSetCurrentTime(audio.currentTime)
+      if (!seekingRef.current) onSetCurrentTimeRef.current(audio.currentTime)
 
       // Notify external listeners (scrobbling, etc.)
-      if (onTimeUpdate) {
-        onTimeUpdate(audio.currentTime, audio.duration, audio)
+      if (onTimeUpdateRef.current) {
+        onTimeUpdateRef.current(audio.currentTime, audio.duration, audio)
       }
 
       // Preload next track when 10 seconds from end
@@ -198,12 +216,12 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
       }
 
       // Start crossfade when approaching end
-      if (crossfadeMode === 'crossfade' && audio.duration && isFinite(audio.duration)) {
+      if (crossfadeModeRef.current === 'crossfade' && audio.duration && isFinite(audio.duration)) {
         const timeLeft = audio.duration - audio.currentTime
-        if (timeLeft <= crossfadeDuration && timeLeft > 0 && nextAudioRef.current) {
-          const progress = 1 - (timeLeft / crossfadeDuration)
-          audio.volume = (muted ? 0 : volume) * (1 - progress)
-          nextAudioRef.current.volume = (muted ? 0 : volume) * progress
+        if (timeLeft <= crossfadeDurationRef.current && timeLeft > 0 && nextAudioRef.current) {
+          const progress = 1 - (timeLeft / crossfadeDurationRef.current)
+          audio.volume = (mutedRef.current ? 0 : volumeRef.current) * (1 - progress)
+          nextAudioRef.current.volume = (mutedRef.current ? 0 : volumeRef.current) * progress
           if (nextAudioRef.current.paused) {
             nextAudioRef.current.play().catch(() => {})
           }
@@ -211,7 +229,7 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
       }
 
       // Gapless: ensure next audio is fully buffered
-      if (crossfadeMode === 'gapless' && audio.duration && isFinite(audio.duration)) {
+      if (crossfadeModeRef.current === 'gapless' && audio.duration && isFinite(audio.duration)) {
         const timeLeft = audio.duration - audio.currentTime
         if (timeLeft <= 15) preloadNext()
         if (timeLeft <= 3 && nextAudioRef.current) {
@@ -223,7 +241,7 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
     }
     const onDuration = () => { if (audio.duration && isFinite(audio.duration)) onSetDuration(audio.duration) }
     const onEnded = () => {
-      onNext()
+      onNextRef.current()
     }
 
     audio.addEventListener('timeupdate', handleTimeUpdate)
@@ -259,7 +277,7 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
       const isShortPause = timeSinceLastPause < 500
       
       if (!isShortPause && audioRef.current.currentTime === 0) {
-        const targetVolume = muted ? 0 : volume
+        const targetVolume = mutedRef.current ? 0 : volumeRef.current
         startFadeIn(audioRef.current, targetVolume)
       }
       
