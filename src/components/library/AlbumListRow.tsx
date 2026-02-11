@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
 import JellyImage from '../JellyImage'
+import AlbumPlaceholder from '../AlbumPlaceholder'
+import { useAlbumImage } from '../../hooks/useAlbumImage'
 
 interface AlbumListRowProps {
   id: string
@@ -11,10 +13,18 @@ interface AlbumListRowProps {
 }
 
 export default function AlbumListRow({ id, name, artistName, imageUrl, year, trackCount }: AlbumListRowProps) {
+  const hasJellyfinImage = !!imageUrl
+  const coverArtUrl = useAlbumImage(name, artistName, hasJellyfinImage)
+  const displayImageUrl = imageUrl || coverArtUrl || ''
+
   return (
     <Link to={`/album/${id}`} className="flex items-center gap-4 px-4 py-2.5 min-h-[64px] rounded-lg hover:bg-surface transition-colors group cursor-pointer">
       <div className="w-14 h-14 rounded-xl overflow-hidden bg-card shrink-0 ring-1 ring-white/5 group-hover:ring-neon-cyan/30 transition-all">
-        <JellyImage src={imageUrl} width={56} height={56} maxWidth={80} alt={name} className="w-14 h-14" />
+        {displayImageUrl ? (
+          <JellyImage src={displayImageUrl} width={56} height={56} maxWidth={80} alt={name} className="w-14 h-14" />
+        ) : (
+          <AlbumPlaceholder albumName={name} artistName={artistName} className="w-14 h-14 rounded-xl" />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[15px] font-semibold truncate group-hover:text-neon-cyan transition-colors">{name}</p>
