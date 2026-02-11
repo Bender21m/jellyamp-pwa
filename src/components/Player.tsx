@@ -23,10 +23,10 @@ import SleepTimer from './SleepTimer'
 export default function Player() {
   const {
     currentTrack, isPlaying, currentTime, duration, volume, muted, playbackRate, shuffle, repeat,
-    queue, queueIndex, sleepTimer, showNowPlaying,
+    queue, queueIndex, sleepTimer, showNowPlaying, miniPlayerCollapsed,
     play, pause, toggle, next, previous, seek, setVolume, toggleMute, toggleShuffle,
     cycleRepeat, setCurrentTime, setDuration, setShowNowPlaying, showQueue, setShowQueue,
-    clearSleepTimer,
+    clearSleepTimer, setMiniPlayerCollapsed,
   } = usePlayerStore()
   const { serverUrl, api } = useAuthStore()
   const { audioQuality, crossfadeMode, crossfadeDuration, scrobbleSettings, eqGains, eqEnabled, setEQGains, setEQEnabled } = useUIStore()
@@ -192,8 +192,16 @@ export default function Player() {
     }
   }
 
-  // Swipe up to open Now Playing on mobile player bar
-  const { touchHandlers: playerSwipeHandlers } = useSwipeAction({
+  // Swipe handlers for full mini player
+  const { touchHandlers: fullPlayerSwipeHandlers } = useSwipeAction({
+    onSwipeMove: (_deltaX, deltaY) => {
+      if (deltaY < -30) setShowNowPlaying(true)
+      if (deltaY > 30) setMiniPlayerCollapsed(true)
+    }
+  })
+
+  // Swipe handlers for collapsed mini player
+  const { touchHandlers: collapsedPlayerSwipeHandlers } = useSwipeAction({
     onSwipeMove: (_deltaX, deltaY) => {
       if (deltaY < -30) setShowNowPlaying(true)
     }
@@ -207,25 +215,84 @@ export default function Player() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="fixed z-50 left-0 right-0 backdrop-blur-xl
-            bottom-[56px] md:bottom-0"
-          style={{ background: 'linear-gradient(180deg, rgba(10,10,16,0.85) 0%, rgba(5,5,8,0.92) 100%)' }}
+          className="fixed z-50 left-0 right-0 backdrop-blur-2xl
+            bottom-[56px] md:bottom-0 md:backdrop-blur-xl"
+          style={{ background: 'rgba(12,12,18,0.88)' }}
         >
-          {/* Gradient accent line at top (mobile only) */}
-          <div className="md:hidden h-px bg-gradient-primary opacity-40" />
-
-          {/* Mobile grabber pill */}
-          <div className="md:hidden flex justify-center pt-1.5 pb-0">
-            <div className="w-8 h-1 rounded-full bg-white/20" />
-          </div>
-
-          {/* Mobile progress line */}
-          <div className="md:hidden h-0.5 w-full bg-white/10">
-            <div 
-              className="h-full bg-gradient-to-r from-neon-cyan to-neon-pink transition-all duration-300 ease-out"
-              style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
-            />
-          </div>
+          {/* Mobile mini player — collapsed mode */}
+          <AnimatePresence mode="wait">
+            {miniPlayerCollapsed ? (
+              <motion.div
+                key="collapsed"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 12, opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+                className="md:hidden relative bg-white/5 cursor-pointer overflow-hidden"
+                onClick={() => setMiniPlayerCollapsed(false)}
+                {...collapsedPlayerSwipeHandlers}
+              >
+                {/* Progress bar */}
+                <div className="absolute inset-0">
+                  <div 
+                    className="h-full bg-gradient-to-r from-neon-cyan to-neon-pink opacity-80"
+                    style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
+                  />
+                </div>
+                {/* Tiny play/pause icon centered */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" className="w-3 h-3 text-white/60" fill="currentColor">
+                    {isPlaying
+                      ? <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                      : <path d="M8 5v14l11-7z" />}
+                  </svg>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="full"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+                className="md:hidden overflow-hidden"
+              >
+                {/* Progress bar at top */}
+                <div className="h-[2px] w-full bg-white/10">
+                  <div 
+                    className="h-full bg-gradient-to-r from-neon-cyan to-neon-pink transition-all duration-300 ease-out"
+                    style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
+                  />
+                </div>
+                {/* Track info + controls */}
+                <div 
+                  className="flex items-center gap-3 px-3 py-2 min-h-[56px] cursor-pointer active:bg-white/5 transition-colors"
+                  onClick={() => setShowNowPlaying(true)}
+                  {...fullPlayerSwipeHandlers}
+                >
+                  {currentTrack.imageUrl && (
+                    <img src={currentTrack.imageUrl} alt="" className="w-11 h-11 rounded-lg object-cover" style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.4), 0 0 16px rgba(0,255,221,0.08)' }} />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-semibold truncate">{currentTrack.name}</p>
+                    <button
+                      onClick={handleArtistClick}
+                      className="text-[13px] text-text-secondary hover:text-neon-cyan transition-colors cursor-pointer truncate block"
+                      title={`Go to ${currentTrack.artistName}`}
+                    >
+                      {currentTrack.artistName}
+                    </button>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggle() }}
+                    className="w-11 h-11 rounded-full bg-gradient-primary flex items-center justify-center text-deep-black shrink-0"
+                  >
+                    {isPlaying ? <PauseIcon /> : <PlayIcon />}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Desktop waveform progress */}
           <div className="hidden md:block h-[2px] hover:h-2 transition-[height] duration-150">
@@ -245,33 +312,6 @@ export default function Player() {
               barCount={120}
               showTooltip={false}
             />
-          </div>
-
-          {/* Mobile: simplified player bar */}
-          <div 
-            className="flex md:hidden items-center gap-3 px-4 py-2.5 min-h-[64px] cursor-pointer active:bg-white/5 transition-colors"
-            onClick={() => setShowNowPlaying(true)}
-            {...playerSwipeHandlers}
-          >
-            {currentTrack.imageUrl && (
-              <img src={currentTrack.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover" style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.4), 0 0 16px rgba(0,255,221,0.08)' }} />
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-[14px] font-semibold truncate">{currentTrack.name}</p>
-              <button
-                onClick={handleArtistClick}
-                className="text-[13px] text-text-secondary hover:text-neon-cyan transition-colors cursor-pointer truncate block"
-                title={`Go to ${currentTrack.artistName}`}
-              >
-                {currentTrack.artistName}
-              </button>
-            </div>
-            <button
-              onClick={(e) => { e.stopPropagation(); toggle() }}
-              className="w-11 h-11 rounded-full bg-gradient-primary flex items-center justify-center text-deep-black shrink-0"
-            >
-              {isPlaying ? <PauseIcon /> : <PlayIcon />}
-            </button>
           </div>
 
           {/* Desktop: full player bar */}

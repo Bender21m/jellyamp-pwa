@@ -124,6 +124,7 @@ interface PlayerState {
   queueOpenedFromNowPlaying: boolean // Track if queue was opened from Now Playing
   radioMode: boolean
   radioSeedId: string | null // the item ID used to seed radio mode
+  miniPlayerCollapsed: boolean
   sleepTimer: {
     active: boolean
     endTime: number | null // timestamp when timer should end
@@ -131,6 +132,7 @@ interface PlayerState {
     originalVolume: number // to restore volume if timer is cancelled
   }
 
+  setMiniPlayerCollapsed: (collapsed: boolean) => void
   setRadioMode: (enabled: boolean, seedId?: string | null) => void
   setTrack: (track: Track, queue?: Track[], index?: number) => void
   play: () => void
@@ -179,6 +181,7 @@ export const usePlayerStore = create<PlayerState>()(
         shuffle: false,
         repeat: 'off',
         playbackRate: 1.0,
+        miniPlayerCollapsed: false,
         radioMode: false,
         radioSeedId: null,
         showNowPlaying: false,
@@ -190,6 +193,8 @@ export const usePlayerStore = create<PlayerState>()(
           mode: 'time',
           originalVolume: 0.8,
         },
+
+  setMiniPlayerCollapsed: (collapsed) => set({ miniPlayerCollapsed: collapsed }),
 
   setRadioMode: (enabled, seedId) => set({
     radioMode: enabled,
