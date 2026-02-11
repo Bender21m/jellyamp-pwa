@@ -15,7 +15,7 @@ export default function NowPlaying() {
   const {
     currentTrack, isPlaying, currentTime, duration, shuffle, repeat, playbackRate, showNowPlaying,
     queue, queueIndex,
-    toggle, next, previous, seek, toggleShuffle, cycleRepeat, setPlaybackRate, setShowNowPlaying, setShowQueue,
+    toggle, next, previous, seek, toggleShuffle, cycleRepeat, setPlaybackRate, setShowNowPlaying, setShowQueueFromNowPlaying,
     radioMode, setRadioMode,
   } = usePlayerStore()
   const { api, userId } = useAuthStore()
@@ -351,7 +351,7 @@ export default function NowPlaying() {
             <div className="text-center">
               <p className="text-[11px] uppercase tracking-[0.15em] text-white/40 font-mono">Now Playing</p>
             </div>
-            <button onClick={() => { setShowNowPlaying(false); setShowQueue(true) }} className="p-2 -mr-2 text-white/60 hover:text-white transition-colors">
+            <button onClick={() => setShowQueueFromNowPlaying(true)} className="p-2 -mr-2 text-white/60 hover:text-white transition-colors">
               <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" /></svg>
             </button>
           </motion.div>

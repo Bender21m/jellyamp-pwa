@@ -215,7 +215,7 @@ export default function Search() {
 
       <div
         ref={(el) => pullContainerRef(el)}
-        className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28 relative"
+        className="flex-1 scroll-container px-4 md:px-8 pb-48 md:pb-28 relative"
         {...pullTouchHandlers}
       >
         {/* Pull to refresh indicator */}

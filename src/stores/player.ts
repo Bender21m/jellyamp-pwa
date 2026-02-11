@@ -121,6 +121,7 @@ interface PlayerState {
   playbackRate: number // 0.5x, 0.75x, 1x, 1.25x, 1.5x, 2x
   showNowPlaying: boolean
   showQueue: boolean
+  queueOpenedFromNowPlaying: boolean // Track if queue was opened from Now Playing
   radioMode: boolean
   radioSeedId: string | null // the item ID used to seed radio mode
   sleepTimer: {
@@ -153,6 +154,7 @@ interface PlayerState {
   setDuration: (time: number) => void
   setShowNowPlaying: (show: boolean) => void
   setShowQueue: (show: boolean) => void
+  setShowQueueFromNowPlaying: (show: boolean) => void // New action to open queue from Now Playing
   setSleepTimer: (minutes: number) => void
   setSleepTimerEndOfTrack: () => void
   clearSleepTimer: () => void
@@ -181,6 +183,7 @@ export const usePlayerStore = create<PlayerState>()(
         radioSeedId: null,
         showNowPlaying: false,
         showQueue: false,
+        queueOpenedFromNowPlaying: false,
         sleepTimer: {
           active: false,
           endTime: null,
@@ -328,7 +331,22 @@ export const usePlayerStore = create<PlayerState>()(
   setCurrentTime: (time) => set({ currentTime: time }),
   setDuration: (time) => set({ duration: time }),
   setShowNowPlaying: (show) => set({ showNowPlaying: show }),
-  setShowQueue: (show) => set({ showQueue: show }),
+  setShowQueue: (show) => {
+    const state = get()
+    // If closing queue and it was opened from Now Playing, restore Now Playing
+    if (!show && state.queueOpenedFromNowPlaying) {
+      set({ showQueue: false, queueOpenedFromNowPlaying: false, showNowPlaying: true })
+    } else {
+      set({ showQueue: show })
+      // Reset flag when opening queue from elsewhere
+      if (show) set({ queueOpenedFromNowPlaying: false })
+    }
+  },
+  setShowQueueFromNowPlaying: (show) => set({ 
+    showQueue: show, 
+    showNowPlaying: !show, // Close Now Playing when opening queue
+    queueOpenedFromNowPlaying: show // Remember it was opened from Now Playing
+  }),
 
   setSleepTimer: (minutes) => {
     const { volume } = get()
