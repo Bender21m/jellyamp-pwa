@@ -1,20 +1,30 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth'
+import { useUIStore } from '../stores/ui'
 import { fetchFavorites, getImageUrl, BaseItemKind } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import AlbumCard from '../components/AlbumCard'
 import ArtistCard from '../components/ArtistCard'
+import TrackRow from '../components/TrackRow'
 import EmptyState from '../components/EmptyState'
+import FilterPill from '../components/FilterPill'
+import ViewModeToggle from '../components/library/ViewModeToggle'
+import ArtistListRow from '../components/library/ArtistListRow'
+import AlbumListRow from '../components/library/AlbumListRow'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
 import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 
+const filters = ['All', 'Artists', 'Albums', 'Tracks']
+
 export default function Favorites() {
   const { api, userId, serverUrl } = useAuthStore()
+  const { viewMode, setViewMode } = useUIStore()
   const navigate = useNavigate()
   const [items, setItems] = useState<BaseItemDto[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [favoritesFilter, setFavoritesFilter] = useState('All')
 
   useEffect(() => {
     if (!api || !userId) return
@@ -26,7 +36,7 @@ export default function Favorites() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetchFavorites(api, userId, [BaseItemKind.MusicAlbum, BaseItemKind.MusicArtist])
+      const res = await fetchFavorites(api, userId, [BaseItemKind.MusicAlbum, BaseItemKind.MusicArtist, BaseItemKind.Audio])
       setItems(res.Items ?? [])
     } catch (e) {
       console.error('Favorites fetch failed', e)
@@ -51,18 +61,80 @@ export default function Favorites() {
     disabled: !isTouchDevice
   })
 
-  const imgUrl = (item: BaseItemDto) =>
-    serverUrl ? getImageUrl(serverUrl, item.Id!, item.ImageTags?.Primary, 400) : ''
+  const imgUrl = (item: BaseItemDto, size = 400) =>
+    serverUrl ? getImageUrl(serverUrl, item.Id!, item.ImageTags?.Primary, size) : ''
 
+  // Filter items by type
   const artists = items.filter(i => i.Type === BaseItemKind.MusicArtist)
-  const albums = items.filter(i => i.Type === BaseItemKind.MusicAlbum)
+  const albums = items.filter(i => i.Type === BaseItemKind.MusicAlbum)  
+  const tracks = items.filter(i => i.Type === BaseItemKind.Audio)
+
+  // Get filtered items based on current filter
+  const getFilteredItems = () => {
+    switch (favoritesFilter) {
+      case 'Artists': return artists
+      case 'Albums': return albums
+      case 'Tracks': return tracks
+      case 'All': 
+      default: return items
+    }
+  }
+
+  const filteredItems = getFilteredItems()
+
+  // Convert tracks to Track format for TrackRow component
+  const convertTracks = (trackItems: BaseItemDto[]) => 
+    trackItems.map(item => ({
+      id: item.Id!,
+      name: item.Name ?? 'Unknown Track',
+      artist: item.Artists?.[0] ?? 'Unknown Artist',
+      album: item.Album ?? 'Unknown Album',
+      duration: item.RunTimeTicks ? Math.round(item.RunTimeTicks / 10000000) : 0,
+      imageUrl: imgUrl(item),
+      albumId: item.ParentId ?? undefined
+    }))
 
   const gridCols = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 md:gap-6 lg:gap-7'
 
   return (
     <div className="h-full flex flex-col">
-      <div className="px-4 md:px-8 pt-5 md:pt-8 pb-4 shrink-0">
-        <h1 className="text-2xl md:text-3xl font-extrabold tracking-[-0.03em]">Favorites</h1>
+      <div className="px-4 md:px-8 pt-5 md:pt-8 pb-4 md:pb-5 space-y-4 shrink-0">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-[-0.03em]">Favorites</h1>
+            {!loading && items.length > 0 && (
+              <p className="text-sm text-text-secondary mt-1 font-mono">
+                {artists.length} artists · {albums.length} albums · {tracks.length} tracks
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="flex items-center gap-2 md:gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+          {filters.map((f) => (
+            <FilterPill 
+              key={f} 
+              label={f} 
+              active={favoritesFilter === f} 
+              onClick={() => setFavoritesFilter(f)} 
+            />
+          ))}
+          {/* View toggle — inline on desktop, only show for Albums/Artists/All */}
+          {(favoritesFilter === 'All' || favoritesFilter === 'Albums' || favoritesFilter === 'Artists') && (
+            <div className="hidden md:flex items-center gap-2 ml-auto">
+              <ViewModeToggle viewMode={viewMode} setViewMode={setViewMode} />
+            </div>
+          )}
+        </div>
+
+        {/* View toggle — second row on mobile, only show for Albums/Artists/All */}
+        {(favoritesFilter === 'All' || favoritesFilter === 'Albums' || favoritesFilter === 'Artists') && (
+          <div className="flex md:hidden items-center gap-2 mt-1">
+            <div className="flex-1" />
+            <ViewModeToggle viewMode={viewMode} setViewMode={setViewMode} />
+          </div>
+        )}
       </div>
 
       <div 
@@ -104,53 +176,184 @@ export default function Favorites() {
               onClick: () => loadFavorites()
             }}
           />
-        ) : items.length === 0 ? (
+        ) : filteredItems.length === 0 ? (
           <EmptyState
             icon={
               <svg viewBox="0 0 24 24" className="w-16 h-16" fill="currentColor">
                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
               </svg>
             }
-            title="No favorites yet"
-            subtitle="Tap the heart on albums and artists to add them to your favorites."
+            title={favoritesFilter === 'All' ? 'No favorites yet' : `No favorite ${favoritesFilter.toLowerCase()} yet`}
+            subtitle={favoritesFilter === 'All' 
+              ? 'Tap the heart on albums, artists, and tracks to add them to your favorites.'
+              : `Tap the ♥ on any ${favoritesFilter.toLowerCase().slice(0, -1)} to add them here.`
+            }
             action={{
               label: "Browse your library",
               onClick: () => navigate('/library')
             }}
           />
         ) : (
-          <div className="space-y-8">
-            <section>
-              <h2 className="text-lg font-bold tracking-[-0.02em] mb-4">Favorite Artists</h2>
-              {artists.length > 0 ? (
+          <>
+            {favoritesFilter === 'All' ? (
+              <div className="space-y-8">
+                {/* Artists Section */}
+                {artists.length > 0 && (
+                  <section>
+                    <h2 className="text-lg font-bold tracking-[-0.02em] mb-4">Favorite Artists</h2>
+                    {viewMode === 'list' ? (
+                      <div className="space-y-1">
+                        {artists.map(a => (
+                          <ArtistListRow
+                            key={a.Id}
+                            id={a.Id!}
+                            name={a.Name ?? 'Unknown'}
+                            imageUrl={a.ImageTags?.Primary ? imgUrl(a, 120) : undefined}
+                            albumCount={(a as Record<string, unknown>).AlbumCount as number | undefined}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className={gridCols}>
+                        {artists.map(a => (
+                          <ArtistCard 
+                            key={a.Id} 
+                            id={a.Id!} 
+                            name={a.Name ?? ''} 
+                            imageUrl={a.ImageTags?.Primary ? imgUrl(a) : undefined} 
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                )}
+                
+                {/* Albums Section */}
+                {albums.length > 0 && (
+                  <section>
+                    <h2 className="text-lg font-bold tracking-[-0.02em] mb-4">Favorite Albums</h2>
+                    {viewMode === 'list' ? (
+                      <div className="space-y-1">
+                        {albums.map(a => (
+                          <AlbumListRow
+                            key={a.Id}
+                            id={a.Id!}
+                            name={a.Name ?? 'Unknown'}
+                            artistName={a.AlbumArtist ?? 'Unknown Artist'}
+                            imageUrl={imgUrl(a, 120)}
+                            year={a.ProductionYear ?? undefined}
+                            trackCount={a.ChildCount ?? undefined}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className={gridCols}>
+                        {albums.map(a => (
+                          <AlbumCard 
+                            key={a.Id} 
+                            id={a.Id!} 
+                            name={a.Name ?? ''} 
+                            artistName={a.AlbumArtist ?? ''} 
+                            imageUrl={imgUrl(a)} 
+                            year={a.ProductionYear ?? undefined} 
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                )}
+
+                {/* Tracks Section */}
+                {tracks.length > 0 && (
+                  <section>
+                    <h2 className="text-lg font-bold tracking-[-0.02em] mb-4">Favorite Tracks</h2>
+                    <div className="space-y-1">
+                      {convertTracks(tracks).map((track, index) => (
+                        <TrackRow
+                          key={track.id}
+                          track={track}
+                          index={index}
+                          allTracks={convertTracks(tracks)}
+                          showIndex={false}
+                          showArt={true}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </div>
+            ) : favoritesFilter === 'Artists' ? (
+              // Artists only
+              viewMode === 'list' ? (
+                <div className="space-y-1">
+                  {artists.map(a => (
+                    <ArtistListRow
+                      key={a.Id}
+                      id={a.Id!}
+                      name={a.Name ?? 'Unknown'}
+                      imageUrl={a.ImageTags?.Primary ? imgUrl(a, 120) : undefined}
+                      albumCount={(a as Record<string, unknown>).AlbumCount as number | undefined}
+                    />
+                  ))}
+                </div>
+              ) : (
                 <div className={gridCols}>
                   {artists.map(a => (
-                    <ArtistCard key={a.Id} id={a.Id!} name={a.Name ?? ''} imageUrl={a.ImageTags?.Primary ? imgUrl(a) : undefined} />
+                    <ArtistCard 
+                      key={a.Id} 
+                      id={a.Id!} 
+                      name={a.Name ?? ''} 
+                      imageUrl={a.ImageTags?.Primary ? imgUrl(a) : undefined} 
+                    />
+                  ))}
+                </div>
+              )
+            ) : favoritesFilter === 'Albums' ? (
+              // Albums only
+              viewMode === 'list' ? (
+                <div className="space-y-1">
+                  {albums.map(a => (
+                    <AlbumListRow
+                      key={a.Id}
+                      id={a.Id!}
+                      name={a.Name ?? 'Unknown'}
+                      artistName={a.AlbumArtist ?? 'Unknown Artist'}
+                      imageUrl={imgUrl(a, 120)}
+                      year={a.ProductionYear ?? undefined}
+                      trackCount={a.ChildCount ?? undefined}
+                    />
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center text-text-muted">
-                  <p className="text-sm">No favorite artists yet</p>
-                  <p className="text-xs mt-1 text-text-muted/60">Tap the ♥ on any artist to add them here</p>
-                </div>
-              )}
-            </section>
-            <section>
-              <h2 className="text-lg font-bold tracking-[-0.02em] mb-4">Favorite Albums</h2>
-              {albums.length > 0 ? (
                 <div className={gridCols}>
                   {albums.map(a => (
-                    <AlbumCard key={a.Id} id={a.Id!} name={a.Name ?? ''} artistName={a.AlbumArtist ?? ''} imageUrl={imgUrl(a)} year={a.ProductionYear ?? undefined} />
+                    <AlbumCard 
+                      key={a.Id} 
+                      id={a.Id!} 
+                      name={a.Name ?? ''} 
+                      artistName={a.AlbumArtist ?? ''} 
+                      imageUrl={imgUrl(a)} 
+                      year={a.ProductionYear ?? undefined} 
+                    />
                   ))}
                 </div>
-              ) : (
-                <div className="py-8 text-center text-text-muted">
-                  <p className="text-sm">No favorite albums yet</p>
-                  <p className="text-xs mt-1 text-text-muted/60">Tap the ♥ on any album to add it here</p>
-                </div>
-              )}
-            </section>
-          </div>
+              )
+            ) : favoritesFilter === 'Tracks' ? (
+              // Tracks only
+              <div className="space-y-1">
+                {convertTracks(tracks).map((track, index) => (
+                  <TrackRow
+                    key={track.id}
+                    track={track}
+                    index={index}
+                    allTracks={convertTracks(tracks)}
+                    showIndex={false}
+                    showArt={true}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </>
         )}
       </div>
     </div>
