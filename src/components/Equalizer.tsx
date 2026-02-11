@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useFocusManagement } from '../hooks/useFocusManagement'
 import { EQ_BANDS, EQ_PRESETS, type EQPreset } from '../lib/equalizer'
 
 interface EqualizerProps {
@@ -12,6 +13,13 @@ interface EqualizerProps {
 
 export default function Equalizer({ isOpen, onClose, gains, onGainsChange, onPresetApply }: EqualizerProps) {
   const [selectedPreset, setSelectedPreset] = useState<string>('Flat')
+
+  // Focus management
+  const { containerRef } = useFocusManagement({
+    isOpen,
+    restoreOnClose: true,
+    trapFocus: true,
+  })
 
   // Update selected preset when gains change externally
   useEffect(() => {
@@ -55,6 +63,7 @@ export default function Equalizer({ isOpen, onClose, gains, onGainsChange, onPre
           
           {/* EQ Panel */}
           <motion.div
+            ref={containerRef}
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}

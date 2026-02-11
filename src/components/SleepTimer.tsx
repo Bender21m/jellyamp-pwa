@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useFocusManagement } from '../hooks/useFocusManagement'
 import { usePlayerStore } from '../stores/player'
 
 interface SleepTimerProps {
@@ -24,6 +25,13 @@ export default function SleepTimer({ isOpen, onClose }: SleepTimerProps) {
   } = usePlayerStore()
 
   const [remainingTime, setRemainingTime] = useState(0)
+
+  // Focus management
+  const { containerRef } = useFocusManagement({
+    isOpen,
+    restoreOnClose: true,
+    trapFocus: true,
+  })
 
   // Update remaining time every second
   useEffect(() => {
@@ -92,6 +100,7 @@ export default function SleepTimer({ isOpen, onClose }: SleepTimerProps) {
           
           {/* Dropdown */}
           <motion.div
+            ref={containerRef}
             initial={{ opacity: 0, y: -8, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.95 }}

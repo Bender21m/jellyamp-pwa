@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { usePlayerStore } from '../stores/player'
 import { useAuthStore } from '../stores/auth'
 import { useAlbumColors } from '../hooks/useAlbumColors'
+import { useFocusManagement } from '../hooks/useFocusManagement'
 import { toggleFavorite } from '../lib/jellyfin'
 import { formatTime } from '../lib/formatTime'
 import LyricsView from './LyricsView'
@@ -30,6 +31,13 @@ export default function NowPlaying() {
     : (currentTrack?.isFavorite ?? false)
 
   const { colors: trackColors } = useAlbumColors(currentTrack?.imageUrl)
+
+  // Focus management for the Now Playing modal
+  const { containerRef } = useFocusManagement({
+    isOpen: showNowPlaying,
+    restoreOnClose: true,
+    trapFocus: true,
+  })
 
   async function handleFavorite() {
     if (!api || !userId || !currentTrack) return
@@ -294,6 +302,7 @@ export default function NowPlaying() {
     <AnimatePresence>
       {showNowPlaying && (
         <motion.div
+          ref={containerRef}
           initial={{ opacity: 0, y: '100%' }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: '100%' }}
