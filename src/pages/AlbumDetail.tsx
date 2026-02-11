@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useVirtualizer } from '@tanstack/react-virtual'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
 import { fetchTracks, getImageUrl, toggleFavorite } from '../lib/jellyfin'
@@ -384,9 +383,8 @@ export default function AlbumDetail() {
       </div>
 
       {/* Tracks */}
-      <VirtualTrackList
+      <TrackList
         tracks={tracks}
-        scrollRef={scrollContainerRef}
         trackListRef={trackListRef}
         selection={selection}
         focusedIndex={focusedIndex}
@@ -462,73 +460,47 @@ export default function AlbumDetail() {
   )
 }
 
-/* ── Virtualized Track List ── */
+/* ── Track List (plain render — album track counts don't need virtualization) ── */
 
-function VirtualTrackList({ tracks, scrollRef, trackListRef, selection, focusedIndex, onContextMenu }: {
+function TrackList({ tracks, trackListRef, selection, focusedIndex, onContextMenu }: {
   tracks: Track[]
-  scrollRef: React.RefObject<HTMLDivElement | null>
   trackListRef: React.RefObject<HTMLDivElement | null>
   selection: { isSelected: (id: string) => boolean; handleClick: (id: string, index: number, e: React.MouseEvent) => void }
   focusedIndex: number | null
   onContextMenu: (track: Track, e: React.MouseEvent) => void
 }) {
-  const virtualItems = useMemo<VirtualTrackItem[]>(() => {
+  const items = useMemo(() => {
     const setBreaks = detectSetBreaks(tracks)
-    const items: VirtualTrackItem[] = []
+    const result: VirtualTrackItem[] = []
     tracks.forEach((track, i) => {
       const breakBefore = setBreaks.find(b => b.position === i)
-      if (breakBefore) items.push({ type: 'break', label: breakBefore.label })
-      items.push({ type: 'track', track, index: i })
+      if (breakBefore) result.push({ type: 'break', label: breakBefore.label })
+      result.push({ type: 'track', track, index: i })
     })
-    return items
+    return result
   }, [tracks])
-
-  const virtualizer = useVirtualizer({
-    count: virtualItems.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: (i) => virtualItems[i].type === 'break' ? 48 : 52,
-    overscan: 10,
-  })
 
   return (
     <div ref={trackListRef} className="px-4 md:px-8 pr-6 md:pr-8" tabIndex={-1}>
       <div className="border-t border-white/5 pt-4">
-        <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-          {virtualizer.getVirtualItems().map(vRow => {
-            const item = virtualItems[vRow.index]
-            return (
-              <div
-                key={vRow.key}
-                data-index={vRow.index}
-                ref={virtualizer.measureElement}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  transform: `translateY(${vRow.start}px)`,
-                }}
-              >
-                {item.type === 'break' ? (
-                  <SetBreakIndicator label={item.label} />
-                ) : (
-                  <div className={item.index < tracks.length - 1 ? 'border-b border-white/5' : ''}>
-                    <TrackRow
-                      track={item.track}
-                      index={item.index}
-                      allTracks={tracks}
-                      showIndex
-                      isSelected={selection.isSelected(item.track.id)}
-                      isFocused={focusedIndex === item.index}
-                      onSelectionClick={selection.handleClick}
-                      onContextMenu={(e) => onContextMenu(item.track, e)}
-                    />
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
+        {items.map((item, i) =>
+          item.type === 'break' ? (
+            <SetBreakIndicator key={`break-${i}`} label={item.label} />
+          ) : (
+            <div key={item.track.id} className={item.index < tracks.length - 1 ? 'border-b border-white/5' : ''}>
+              <TrackRow
+                track={item.track}
+                index={item.index}
+                allTracks={tracks}
+                showIndex
+                isSelected={selection.isSelected(item.track.id)}
+                isFocused={focusedIndex === item.index}
+                onSelectionClick={selection.handleClick}
+                onContextMenu={(e) => onContextMenu(item.track, e)}
+              />
+            </div>
+          )
+        )}
       </div>
     </div>
   )
