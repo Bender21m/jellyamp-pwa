@@ -70,7 +70,7 @@ export default function ArtistDetail() {
     try {
       const [artistData, albumsRes, similarRes] = await Promise.all([
         fetchArtistById(api, userId, id),
-        fetchAlbums(api, userId, { artistIds: [id], limit: 200 }),
+        fetchAlbums(api, userId, { artistIds: [id], limit: 20 }),
         fetchSimilarArtists(api, userId, id),
       ])
       setArtist(artistData)
@@ -90,11 +90,13 @@ export default function ArtistDetail() {
 
   const hasMore = albums.length < totalAlbumCount
 
-  async function loadMoreAlbums() {
+  // Use ref to avoid stale closure in intersection observer callback
+  const loadMoreFnRef = useRef<() => void>(() => {})
+  loadMoreFnRef.current = async () => {
     if (!api || !userId || !id || loadingMore || !hasMore) return
     setLoadingMore(true)
     try {
-      const res = await fetchAlbums(api, userId, { artistIds: [id], limit: 200, startIndex: albums.length })
+      const res = await fetchAlbums(api, userId, { artistIds: [id], limit: 20, startIndex: albums.length })
       setAlbums(prev => [...prev, ...(res.Items ?? [])])
     } catch (e) {
       console.error('Failed to load more albums', e)
@@ -107,7 +109,7 @@ export default function ArtistDetail() {
   useEffect(() => {
     if (!loadMoreRef.current || !hasMore) return
     const observer = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting) loadMoreAlbums() },
+      (entries) => { if (entries[0].isIntersecting) loadMoreFnRef.current() },
       { rootMargin: '200px' }
     )
     observer.observe(loadMoreRef.current)
