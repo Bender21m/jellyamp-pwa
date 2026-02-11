@@ -13,6 +13,7 @@ import Player from './components/Player'
 import QueuePanel from './components/QueuePanel'
 import NowPlaying from './components/NowPlaying'
 import MobileNav from './components/MobileNav'
+import MobileSettingsButton from './components/MobileSettingsButton'
 import ToastContainer from './components/Toast'
 import InstallPrompt from './components/InstallPrompt'
 import UpdateNotification from './components/UpdateNotification'
@@ -99,6 +100,7 @@ function AppLayout() {
         <Player />
       </ErrorBoundary>
       <MobileNav />
+      <MobileSettingsButton />
       <NowPlaying />
       <ToastContainer />
       <InstallPrompt />
