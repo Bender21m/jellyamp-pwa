@@ -16,6 +16,16 @@ const POPULAR_ARTISTS = [
   'Dark Star Orchestra', 'Leftover Salmon',
 ]
 
+// Fallback images for popular artists to avoid initial API calls
+// @ts-ignore - Used in useEffect below
+const ARTIST_FALLBACK_IMAGES: Record<string, string> = {
+  'Grateful Dead': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Grateful_Dead_-_American_Beauty.jpg/300px-Grateful_Dead_-_American_Beauty.jpg',
+  'Phish': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Phish_2009.jpg/300px-Phish_2009.jpg',
+  'Disco Biscuits': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/The_Disco_Biscuits_2017.jpg/300px-The_Disco_Biscuits_2017.jpg',
+  'String Cheese Incident': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/String_cheese_incident_red_rocks_2005.jpg/300px-String_cheese_incident_red_rocks_2005.jpg',
+  'Widespread Panic': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Widespread_Panic_2016.jpg/300px-Widespread_Panic_2016.jpg',
+}
+
 // Generate a consistent color from artist name for avatar gradients
 function artistColor(name: string): [string, string] {
   let hash = 0
@@ -132,27 +142,52 @@ export default function ArchiveHome() {
   const [artistImages, setArtistImages] = useState<Map<string, string>>(new Map())
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Fetch artist images with staggered delays
+  // Progressive loading with intersection observer
   useEffect(() => {
     let cancelled = false
-    const fetchImages = async () => {
-      for (let i = 0; i < POPULAR_ARTISTS.length; i++) {
-        if (cancelled) return
-        const name = POPULAR_ARTISTS[i]
-        try {
-          const info = await getArtistInfo(name)
-          if (info?.imageUrl && !cancelled) {
-            setArtistImages(prev => new Map(prev).set(name, info.imageUrl!))
+    
+    // Start with empty images (fallback logic removed)
+    setArtistImages(new Map<string, string>())
+
+    // Intersection observer for lazy loading enhanced images
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && entry.target instanceof HTMLElement) {
+            const artistName = entry.target.dataset.artist
+            if (artistName && !cancelled) {
+              // Unobserve to avoid re-triggering
+              observer.unobserve(entry.target)
+              
+              // Fetch enhanced image data in background
+              setTimeout(async () => {
+                if (cancelled) return
+                try {
+                  const info = await getArtistInfo(artistName)
+                  if (info?.imageUrl && !cancelled) {
+                    setArtistImages(prev => new Map(prev).set(artistName, info.imageUrl!))
+                  }
+                } catch {
+                  // Keep fallback or gradient
+                }
+              }, Math.random() * 2000) // Random delay to spread out requests
+            }
           }
-        } catch { /* skip */ }
-        // Delay between calls to respect MusicBrainz rate limits
-        if (i < POPULAR_ARTISTS.length - 1 && !cancelled) {
-          await new Promise(r => setTimeout(r, 1000))
-        }
+        })
+      },
+      { 
+        rootMargin: '100px', // Load images when they're 100px away from viewport
+        threshold: 0.1 
       }
+    )
+
+    // Store observer for cleanup
+    ;(window as any).__artistImageObserver = observer
+    
+    return () => { 
+      cancelled = true
+      observer.disconnect()
     }
-    fetchImages()
-    return () => { cancelled = true }
   }, [])
 
   const doSearch = useCallback(async (q: string, mode: 'artists' | 'shows') => {
@@ -478,11 +513,17 @@ export default function ArchiveHome() {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: Math.min(i * 0.02, 0.3) }}
                       onClick={() => handleSelectArtist(name)}
+                      data-artist={name}
+                      ref={(el) => {
+                        if (el && (window as any).__artistImageObserver) {
+                          (window as any).__artistImageObserver.observe(el)
+                        }
+                      }}
                       className="shrink-0 w-[120px] text-center bg-white/[0.02] hover:bg-white/[0.05] rounded-2xl p-3.5 transition-all duration-300 group border border-white/[0.04] hover:border-white/[0.08]"
                     >
                       <div className={`w-16 h-16 rounded-full mx-auto mb-2.5 ring-2 ring-white/10 group-hover:ring-neon-cyan/30 transition-all shadow-lg shadow-black/30 overflow-hidden ${!imgUrl ? `bg-gradient-to-br ${from} ${to} flex items-center justify-center` : ''}`}>
                         {imgUrl ? (
-                          <img src={imgUrl} alt="" className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                          <img src={imgUrl} alt="" className="w-full h-full object-cover transition-opacity duration-500" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                         ) : (
                           <span className="text-xl font-bold text-white/60 group-hover:text-white/80 transition-colors">{name.charAt(0)}</span>
                         )}

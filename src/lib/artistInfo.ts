@@ -88,6 +88,50 @@ async function fetchMusicBrainzInfo(artistName: string): Promise<Partial<ArtistI
   }
 }
 
+// Queue for managing MusicBrainz requests to respect rate limits
+class RequestQueue {
+  private queue: Array<() => Promise<void>> = []
+  private processing = false
+  private lastMusicBrainzRequest = 0
+  private readonly MUSICBRAINZ_DELAY = 1100 // 1.1 seconds to be safe with 1req/s limit
+
+  async add<T>(task: () => Promise<T>, isMusicBrainz = false): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.queue.push(async () => {
+        try {
+          if (isMusicBrainz) {
+            const now = Date.now()
+            const timeSinceLastRequest = now - this.lastMusicBrainzRequest
+            if (timeSinceLastRequest < this.MUSICBRAINZ_DELAY) {
+              await new Promise(r => setTimeout(r, this.MUSICBRAINZ_DELAY - timeSinceLastRequest))
+            }
+            this.lastMusicBrainzRequest = Date.now()
+          }
+          const result = await task()
+          resolve(result)
+        } catch (error) {
+          reject(error)
+        }
+      })
+      this.process()
+    })
+  }
+
+  private async process() {
+    if (this.processing || this.queue.length === 0) return
+    this.processing = true
+
+    while (this.queue.length > 0) {
+      const task = this.queue.shift()!
+      await task()
+    }
+
+    this.processing = false
+  }
+}
+
+const requestQueue = new RequestQueue()
+
 export async function getArtistInfo(artistName: string): Promise<ArtistInfo | null> {
   try {
     const key = cacheKey(artistName)
@@ -97,10 +141,9 @@ export async function getArtistInfo(artistName: string): Promise<ArtistInfo | nu
       if (Date.now() - parsed.fetchedAt < CACHE_TTL) return parsed
     }
 
-    const [wiki, mb] = await Promise.all([
-      fetchWikipediaInfo(artistName),
-      fetchMusicBrainzInfo(artistName),
-    ])
+    // Fetch Wikipedia first (no rate limit), then MusicBrainz (rate limited)
+    const wiki = await fetchWikipediaInfo(artistName)
+    const mb = await requestQueue.add(() => fetchMusicBrainzInfo(artistName), true)
 
     const info: ArtistInfo = {
       name: artistName,

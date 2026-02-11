@@ -29,6 +29,7 @@ export default function TrackContextMenu({ track, position, onClose, playlistId,
   const inputRef = useRef<HTMLInputElement>(null)
 
   const isOpen = track !== null && position !== null
+  const isMobile = window.matchMedia('(hover: none)').matches
 
   useEffect(() => {
     if (!isOpen) return
@@ -112,8 +113,8 @@ export default function TrackContextMenu({ track, position, onClose, playlistId,
     }
   }
 
-  // Clamp menu position to viewport
-  const menuStyle = position ? (() => {
+  // Position menu - desktop: clamped to viewport, mobile: bottom sheet
+  const menuStyle = position && !isMobile ? (() => {
     const menuW = 220, menuH = 200
     let x = position.x, y = position.y
     if (x + menuW > window.innerWidth) x = window.innerWidth - menuW - 8
@@ -126,15 +127,39 @@ export default function TrackContextMenu({ track, position, onClose, playlistId,
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          ref={menuRef}
-          initial={{ opacity: 0, scale: 0.92 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.92 }}
-          transition={{ duration: 0.12 }}
-          className="fixed z-[100] w-[220px] bg-surface/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden"
-          style={menuStyle}
-        >
+        <>
+          {/* Mobile: backdrop overlay */}
+          {isMobile && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[99]"
+              onClick={onClose}
+            />
+          )}
+          
+          <motion.div
+            ref={menuRef}
+            initial={isMobile ? { opacity: 0, y: 100 } : { opacity: 0, scale: 0.92 }}
+            animate={isMobile ? { opacity: 1, y: 0 } : { opacity: 1, scale: 1 }}
+            exit={isMobile ? { opacity: 0, y: 100 } : { opacity: 0, scale: 0.92 }}
+            transition={isMobile ? { type: 'spring', damping: 25, stiffness: 300 } : { duration: 0.12 }}
+            className={`fixed z-[100] bg-surface/95 backdrop-blur-xl border border-white/10 shadow-2xl overflow-hidden ${
+              isMobile
+                ? 'left-0 right-0 bottom-0 rounded-t-2xl mx-2 mb-2'
+                : 'w-[220px] rounded-xl'
+            }`}
+            style={menuStyle}
+          >
+          {/* Mobile: handle bar */}
+          {isMobile && (
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-12 h-1 rounded-full bg-white/20" />
+            </div>
+          )}
+          
           {feedback ? (
             <div className="px-4 py-3 text-sm text-neon-cyan font-semibold text-center">{feedback}</div>
           ) : !showPlaylists ? (
@@ -250,6 +275,7 @@ export default function TrackContextMenu({ track, position, onClose, playlistId,
             </div>
           )}
         </motion.div>
+        </>
       )}
     </AnimatePresence>
   )
