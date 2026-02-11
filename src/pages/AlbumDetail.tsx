@@ -7,6 +7,7 @@ import { fetchTracks, getImageUrl, toggleFavorite } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import { useAlbumColors } from '../hooks/useAlbumColors'
 import JellyImage from '../components/JellyImage'
+import AlbumPlaceholder from '../components/AlbumPlaceholder'
 import { useScrollRestore } from '../hooks/useScrollRestore'
 import { parseShowDate, formatShowDate } from '../lib/dateParser'
 import { parseVenue } from '../lib/venueParser'
@@ -263,7 +264,11 @@ export default function AlbumDetail() {
             animate={{ opacity: 1, scale: 1 }}
             className="w-[220px] md:w-[260px] aspect-square rounded-2xl overflow-hidden shadow-2xl shrink-0 ring-1 ring-white/10"
           >
-            <JellyImage src={imageUrl} width={260} height={260} maxWidth={600} alt={album.Name ?? ''} className="w-full h-full" />
+            {imageUrl ? (
+              <JellyImage src={imageUrl} width={260} height={260} maxWidth={600} alt={album.Name ?? ''} className="w-full h-full" />
+            ) : (
+              <AlbumPlaceholder albumName={album.Name ?? ''} artistName={album.AlbumArtist ?? ''} className="w-full h-full text-lg" />
+            )}
           </motion.div>
 
           {/* Info */}

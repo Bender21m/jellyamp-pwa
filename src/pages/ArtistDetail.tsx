@@ -4,6 +4,9 @@ import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
 import JellyImage from '../components/JellyImage'
+import ArtistPlaceholder from '../components/ArtistPlaceholder'
+import AlbumPlaceholder from '../components/AlbumPlaceholder'
+import { useArtistImage } from '../hooks/useArtistImage'
 import { fetchAlbums, fetchArtistTracks, getImageUrl, fetchArtistById, toggleFavorite, fetchSimilarArtists, getInstantMix } from '../lib/jellyfin'
 import type { BaseItemDto } from '../lib/jellyfin'
 import { useAlbumColors } from '../hooks/useAlbumColors'
@@ -144,9 +147,11 @@ export default function ArtistDetail() {
   const imgUrl = (item: BaseItemDto, size = 400) =>
     serverUrl ? getImageUrl(serverUrl, item.Id!, item.ImageTags?.Primary, size) : ''
 
-  const artistImage = artist?.ImageTags?.Primary && serverUrl
+  const jellyfinArtistImage = artist?.ImageTags?.Primary && serverUrl
     ? getImageUrl(serverUrl, artist.Id!, artist.ImageTags.Primary, 400)
     : null
+  const wikiArtistImage = useArtistImage(artist?.Name ?? '', !!jellyfinArtistImage)
+  const artistImage = jellyfinArtistImage || wikiArtistImage
 
   const backdropUrl = albums.length > 0 && serverUrl
     ? getImageUrl(serverUrl, albums[0].Id!, albums[0].ImageTags?.Primary, 600)
@@ -272,11 +277,7 @@ export default function ArtistDetail() {
               {artistImage ? (
                 <img src={artistImage} alt={artist.Name ?? ''} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-neon-cyan/20 via-purple/20 to-neon-pink/20 flex items-center justify-center">
-                  <svg viewBox="0 0 24 24" className="w-16 h-16 text-text-muted/30" fill="currentColor">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                  </svg>
-                </div>
+                <ArtistPlaceholder name={artist.Name ?? ''} className="w-full h-full rounded-xl" textSize="text-5xl" />
               )}
             </motion.div>
 
@@ -485,7 +486,7 @@ export default function ArtistDetail() {
                   id={a.Id!}
                   name={a.Name ?? 'Unknown'}
                   artistName={a.AlbumArtist ?? artist.Name ?? ''}
-                  imageUrl={imgUrl(a)}
+                  imageUrl={a.ImageTags?.Primary ? imgUrl(a) : ''}
                   year={a.ProductionYear ?? undefined}
                 />
               </motion.div>
@@ -505,7 +506,11 @@ export default function ArtistDetail() {
                   className="flex items-center gap-4 px-3 md:px-4 h-[60px] rounded-lg cursor-pointer group transition-colors hover:bg-white/[0.03] odd:bg-white/[0.015]"
                 >
                   {/* Album art */}
-                  <JellyImage src={imgUrl(a, 48)} width={48} height={48} maxWidth={80} alt={a.Name ?? ''} className="w-12 h-12 rounded-lg shrink-0 ring-1 ring-white/10" />
+                  {a.ImageTags?.Primary ? (
+                    <JellyImage src={imgUrl(a, 48)} width={48} height={48} maxWidth={80} alt={a.Name ?? ''} className="w-12 h-12 rounded-lg shrink-0 ring-1 ring-white/10" />
+                  ) : (
+                    <AlbumPlaceholder albumName={a.Name ?? ''} artistName={a.AlbumArtist ?? ''} className="w-12 h-12 rounded-lg shrink-0 ring-1 ring-white/10" />
+                  )}
                   
                   {/* Album info */}
                   <div className="flex-1 min-w-0">
