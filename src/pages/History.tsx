@@ -146,7 +146,8 @@ export default function History() {
         containerRef.current = el
         pullContainerRef(el)
       }}
-      className="h-full overflow-y-auto pb-48 md:pb-28 relative"
+      className="h-full overflow-y-auto overflow-x-hidden pb-48 md:pb-28 relative"
+      style={{ touchAction: 'pan-y', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
       {...touchHandlers}
     >
       {/* Pull to refresh indicator */}
