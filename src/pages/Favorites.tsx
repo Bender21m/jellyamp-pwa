@@ -120,7 +120,7 @@ export default function Favorites() {
               key={a.Id}
               id={a.Id!}
               name={a.Name ?? 'Unknown'}
-              imageUrl={imgUrl(a, 120)}
+              imageUrl={a.ImageTags?.Primary ? imgUrl(a, 120) : undefined}
               albumCount={(a as Record<string, unknown>).AlbumCount as number | undefined}
             />
           ))}
@@ -130,7 +130,7 @@ export default function Favorites() {
     return (
       <div style={gridProps.style}>
         {artists.map(a => (
-          <ArtistCard key={a.Id} id={a.Id!} name={a.Name ?? ''} imageUrl={imgUrl(a)} />
+          <ArtistCard key={a.Id} id={a.Id!} name={a.Name ?? ''} imageUrl={a.ImageTags?.Primary ? imgUrl(a) : undefined} />
         ))}
       </div>
     )

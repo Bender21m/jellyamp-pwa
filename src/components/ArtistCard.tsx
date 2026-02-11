@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { setDragData } from '../lib/dragdrop'
 import JellyImage from './JellyImage'
 import ArtistPlaceholder from './ArtistPlaceholder'
+import { useArtistImage } from '../hooks/useArtistImage'
 
 interface ArtistCardProps {
   id: string
@@ -11,6 +12,8 @@ interface ArtistCardProps {
 }
 
 const ArtistCard = React.memo(function ArtistCard({ id, name, imageUrl }: ArtistCardProps) {
+  const wikiImage = useArtistImage(name, !!imageUrl)
+  const displayImage = imageUrl || wikiImage
   function handleDragStart(e: React.DragEvent) {
     setDragData(e, { type: 'artist', artistId: id, label: name })
   }
@@ -22,8 +25,8 @@ const ArtistCard = React.memo(function ArtistCard({ id, name, imageUrl }: Artist
         className="group cursor-pointer flex flex-col items-center hover:-translate-y-0.5 transition-transform duration-200"
       >
         <div className="relative w-full aspect-square mb-3 rounded-xl overflow-hidden bg-card ring-1 ring-white/5 group-hover:ring-neon-cyan/30 transition-all duration-300 group-hover:shadow-[0_0_20px_rgba(0,255,221,0.12)]">
-          {imageUrl ? (
-            <JellyImage src={imageUrl} width={300} height={300} maxWidth={300} alt={name} className="w-full h-full transition-transform duration-500 group-hover:scale-105" />
+          {displayImage ? (
+            <JellyImage src={displayImage} width={300} height={300} maxWidth={300} alt={name} className="w-full h-full transition-transform duration-500 group-hover:scale-105" />
           ) : (
             <ArtistPlaceholder name={name} className="w-full h-full transition-transform duration-500 group-hover:scale-105" textSize="text-3xl" />
           )}

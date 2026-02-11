@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import JellyImage from '../JellyImage'
 import ArtistPlaceholder from '../ArtistPlaceholder'
+import { useArtistImage } from '../../hooks/useArtistImage'
 
 interface ArtistListRowProps {
   id: string
@@ -10,11 +11,14 @@ interface ArtistListRowProps {
 }
 
 export default function ArtistListRow({ id, name, imageUrl, albumCount }: ArtistListRowProps) {
+  const wikiImage = useArtistImage(name, !!imageUrl)
+  const displayImage = imageUrl || wikiImage
+
   return (
     <Link to={`/artist/${id}`} className="flex items-center gap-4 px-4 py-2.5 min-h-[56px] rounded-lg hover:bg-surface transition-colors group cursor-pointer">
       <div className="w-12 h-12 rounded-xl overflow-hidden bg-card shrink-0 ring-1 ring-white/5 group-hover:ring-neon-cyan/30 transition-all">
-        {imageUrl ? (
-          <JellyImage src={imageUrl} width={48} height={48} maxWidth={80} alt={name} className="w-12 h-12" />
+        {displayImage ? (
+          <JellyImage src={displayImage} width={48} height={48} maxWidth={80} alt={name} className="w-12 h-12" />
         ) : (
           <ArtistPlaceholder name={name} className="w-12 h-12" textSize="text-sm" />
         )}
