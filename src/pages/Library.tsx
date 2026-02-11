@@ -49,10 +49,31 @@ export default function Library() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showSort, setShowSort] = useState(false)
+  const [showMobileSearch, setShowMobileSearch] = useState(false)
+  const [counts, setCounts] = useState({ artists: 0, albums: 0, playlists: 0 })
   
   // Scroll restoration
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   useScrollRestore(scrollContainerRef)
+
+  // Load counts for header (lightweight)
+  const loadCounts = useCallback(async () => {
+    if (!api || !userId) return
+    try {
+      const [albumsRes, artistsRes, playlistsRes] = await Promise.all([
+        fetchAlbums(api, userId, { limit: 0 }), // 0 limit = count only
+        fetchArtists(api, userId, { limit: 0 }),
+        fetchPlaylists(api, userId)
+      ])
+      setCounts({
+        artists: artistsRes.TotalRecordCount ?? 0,
+        albums: albumsRes.TotalRecordCount ?? 0,
+        playlists: playlistsRes.TotalRecordCount ?? 0,
+      })
+    } catch (e) {
+      console.error('Library counts fetch error', e)
+    }
+  }, [api, userId])
 
   const loadData = useCallback(async () => {
     if (!api || !userId) return
@@ -69,26 +90,47 @@ export default function Library() {
       }
       const sort = sortMap[sortOption]
 
-      const [albumsRes, artistsRes, playlistsRes, genresRes, recentRes] = await Promise.all([
-        fetchAlbums(api, userId, { limit: 200, ...sort, searchTerm: search || undefined }),
-        fetchArtists(api, userId, { limit: 200, searchTerm: search || undefined }),
-        fetchPlaylists(api, userId),
-        fetchGenres(api, userId),
-        fetchRecentAlbums(api, userId, 50),
-      ])
-      setAlbums(albumsRes.Items ?? [])
-      setArtists(artistsRes.Items ?? [])
-      setPlaylists(playlistsRes.Items ?? [])
-      setGenres(genresRes.Items ?? [])
-      setRecentAlbums(recentRes.Items ?? [])
+      // Only fetch data for the current filter
+      switch (libraryFilter) {
+        case 'Artists': {
+          const artistsRes = await fetchArtists(api, userId, { limit: 200, searchTerm: search || undefined })
+          setArtists(artistsRes.Items ?? [])
+          break
+        }
+        case 'Albums': {
+          const albumsRes = await fetchAlbums(api, userId, { limit: 200, ...sort, searchTerm: search || undefined })
+          setAlbums(albumsRes.Items ?? [])
+          break
+        }
+        case 'Playlists': {
+          const playlistsRes = await fetchPlaylists(api, userId)
+          setPlaylists(playlistsRes.Items ?? [])
+          break
+        }
+        case 'Genres': {
+          const genresRes = await fetchGenres(api, userId)
+          setGenres(genresRes.Items ?? [])
+          break
+        }
+        case 'Recent': {
+          const recentRes = await fetchRecentAlbums(api, userId, 50)
+          setRecentAlbums(recentRes.Items ?? [])
+          break
+        }
+      }
     } catch (e) {
       console.error('Library fetch error', e)
     }
     setLoading(false)
-  }, [api, userId, sortOption, search])
+  }, [api, userId, sortOption, search, libraryFilter])
 
+  // Load counts on mount
+  useEffect(() => { loadCounts() }, [loadCounts])
+
+  // Load data when filter, sort, or other deps change
   useEffect(() => { loadData() }, [loadData])
 
+  // Debounced search
   useEffect(() => {
     const t = setTimeout(() => loadData(), 300)
     return () => clearTimeout(t)
@@ -96,6 +138,10 @@ export default function Library() {
 
   // Pull to refresh
   const isTouchDevice = window.matchMedia('(hover: none)').matches
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([loadCounts(), loadData()])
+  }, [loadCounts, loadData])
+
   const {
     containerRef: pullContainerRef,
     touchHandlers: pullTouchHandlers,
@@ -104,7 +150,7 @@ export default function Library() {
     shouldTrigger,
     progress: pullProgress
   } = usePullToRefresh({
-    onRefresh: loadData,
+    onRefresh: handleRefresh,
     disabled: !isTouchDevice
   })
 
@@ -127,6 +173,13 @@ export default function Library() {
     setSelectedGenre(null)
     setGenreAlbums([])
   }, [libraryFilter])
+
+  // Auto-hide mobile search when search is cleared
+  useEffect(() => {
+    if (!search && showMobileSearch) {
+      setShowMobileSearch(false)
+    }
+  }, [search, showMobileSearch])
 
   // Group recent albums by timeframe
   const groupRecentAlbums = useCallback((items: BaseItemDto[]) => {
@@ -167,9 +220,9 @@ export default function Library() {
         <div className="flex items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-[-0.03em]">Library</h1>
-            {!loading && (
+            {!loading && counts.artists > 0 && (
               <p className="text-sm text-text-secondary mt-1 font-mono">
-                {artists.length.toLocaleString()} artists · {albums.length.toLocaleString()} albums
+                {counts.artists.toLocaleString()} artists · {counts.albums.toLocaleString()} albums
               </p>
             )}
           </div>
@@ -193,6 +246,7 @@ export default function Library() {
           {filters.map((f) => (
             <FilterPill key={f} label={f} active={libraryFilter === f} onClick={() => setLibraryFilter(f)} />
           ))}
+          {/* Mobile search removed - unused */}
           {/* Sort + View toggle — inline on desktop */}
           <div className="hidden md:flex items-center gap-2 ml-auto">
             <div className="relative shrink-0">
@@ -248,6 +302,8 @@ export default function Library() {
             </div>
           </div>
         </div>
+
+        {/* Mobile search removed - was unused */}
 
         {/* Sort + View toggle — second row on mobile */}
         <div className="flex md:hidden items-center gap-2 mt-1">
