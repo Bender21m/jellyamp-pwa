@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { usePlayerStore } from '../stores/player'
@@ -14,7 +14,6 @@ import { useGlobalKeyboard } from '../hooks/useGlobalKeyboard'
 import { useFocusManagement } from '../hooks/useFocusManagement'
 import { usePlaybackReporting } from '../hooks/usePlaybackReporting'
 import { useRadioMode } from '../hooks/useRadioMode'
-import { useSwipeAction } from '../hooks/useSwipeAction'
 import KeyboardShortcuts from './KeyboardShortcuts'
 import Waveform from './Waveform'
 import Equalizer from './Equalizer'
@@ -192,20 +191,37 @@ export default function Player() {
     }
   }
 
-  // Swipe handlers for full mini player
-  const { touchHandlers: fullPlayerSwipeHandlers } = useSwipeAction({
-    onSwipeMove: (_deltaX, deltaY) => {
-      if (deltaY < -30) setShowNowPlaying(true)
-      if (deltaY > 30) setMiniPlayerCollapsed(true)
-    }
-  })
-
-  // Swipe handlers for collapsed mini player
-  const { touchHandlers: collapsedPlayerSwipeHandlers } = useSwipeAction({
-    onSwipeMove: (_deltaX, deltaY) => {
-      if (deltaY < -30) setShowNowPlaying(true)
-    }
-  })
+  // Vertical swipe handlers for mini player (useSwipeAction cancels vertical movement)
+  const miniPlayerTouchRef = useRef<{ startY: number; handled: boolean }>({ startY: 0, handled: false })
+  const miniPlayerTouchHandlers = {
+    onTouchStart: (e: React.TouchEvent) => {
+      miniPlayerTouchRef.current = { startY: e.touches[0].clientY, handled: false }
+    },
+    onTouchMove: (e: React.TouchEvent) => {
+      if (miniPlayerTouchRef.current.handled) return
+      const deltaY = e.touches[0].clientY - miniPlayerTouchRef.current.startY
+      if (deltaY < -40) {
+        miniPlayerTouchRef.current.handled = true
+        setShowNowPlaying(true)
+      } else if (deltaY > 40) {
+        miniPlayerTouchRef.current.handled = true
+        setMiniPlayerCollapsed(true)
+      }
+    },
+  }
+  const collapsedTouchHandlers = {
+    onTouchStart: (e: React.TouchEvent) => {
+      miniPlayerTouchRef.current = { startY: e.touches[0].clientY, handled: false }
+    },
+    onTouchMove: (e: React.TouchEvent) => {
+      if (miniPlayerTouchRef.current.handled) return
+      const deltaY = e.touches[0].clientY - miniPlayerTouchRef.current.startY
+      if (deltaY < -40) {
+        miniPlayerTouchRef.current.handled = true
+        setShowNowPlaying(true)
+      }
+    },
+  }
 
   return (
     <AnimatePresence>
@@ -230,7 +246,7 @@ export default function Player() {
                 transition={{ type: 'spring', damping: 30, stiffness: 400 }}
                 className="md:hidden relative bg-white/5 cursor-pointer overflow-hidden"
                 onClick={() => setMiniPlayerCollapsed(false)}
-                {...collapsedPlayerSwipeHandlers}
+                {...collapsedTouchHandlers}
               >
                 {/* Progress bar */}
                 <div className="absolute inset-0">
@@ -268,7 +284,7 @@ export default function Player() {
                 <div 
                   className="flex items-center gap-3 px-3 py-2 min-h-[56px] cursor-pointer active:bg-white/5 transition-colors"
                   onClick={() => setShowNowPlaying(true)}
-                  {...fullPlayerSwipeHandlers}
+                  {...miniPlayerTouchHandlers}
                 >
                   {currentTrack.imageUrl && (
                     <img src={currentTrack.imageUrl} alt="" className="w-11 h-11 rounded-lg object-cover" style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.4), 0 0 16px rgba(0,255,221,0.08)' }} />
