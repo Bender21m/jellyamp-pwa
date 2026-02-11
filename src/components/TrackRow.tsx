@@ -183,7 +183,7 @@ const TrackRow = React.memo(function TrackRow({ track, index, allTracks, showInd
       {onContextMenu && (
         <button
           onClick={(e) => { e.stopPropagation(); onContextMenu(e) }}
-          className="w-8 h-8 flex items-center justify-center shrink-0 text-white/50 hover:text-white transition-colors rounded-md hover:bg-white/5 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
+          className="w-8 h-8 flex items-center justify-center shrink-0 text-white/70 hover:text-white transition-colors rounded-md hover:bg-white/5 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
         >
           <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
             <circle cx="12" cy="5" r="2" />

@@ -22,11 +22,11 @@ export default function MobileNav() {
   }
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-xl"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-xl border-t border-white/10"
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}
     >
-      {/* Gradient top line */}
-      <div className="h-px bg-gradient-primary opacity-20" />
+      {/* Stronger gradient top line */}
+      <div className="h-px bg-gradient-primary opacity-40" />
       <div className="flex items-stretch">
         {tabs.map((tab) => (
           <NavLink

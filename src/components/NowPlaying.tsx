@@ -3,6 +3,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform, type PanInfo } f
 import { useNavigate } from 'react-router-dom'
 import { usePlayerStore } from '../stores/player'
 import { useAuthStore } from '../stores/auth'
+import { useToastStore } from '../stores/toast'
 import { useAlbumColors } from '../hooks/useAlbumColors'
 import { useFocusManagement } from '../hooks/useFocusManagement'
 import { toggleFavorite } from '../lib/jellyfin'
@@ -19,6 +20,7 @@ export default function NowPlaying() {
     radioMode, setRadioMode,
   } = usePlayerStore()
   const { api, userId } = useAuthStore()
+  const { addToast } = useToastStore()
   const navigate = useNavigate()
   const [showLyrics, setShowLyrics] = useState(false)
 
@@ -68,6 +70,15 @@ export default function NowPlaying() {
   function handleAlbumClick(e: React.MouseEvent) {
     e.stopPropagation()
     if (currentTrack?.albumId) navigate(`/album/${currentTrack.albumId}`)
+  }
+
+  function handleRadioToggle() {
+    const newRadioMode = !radioMode
+    setRadioMode(newRadioMode, currentTrack?.id ?? undefined)
+    
+    if (!newRadioMode) {
+      addToast('Radio mode off', 'info')
+    }
   }
 
   if (!currentTrack) return null
@@ -221,12 +232,13 @@ export default function NowPlaying() {
   const radioButton = (
     <div className="flex items-center justify-center mt-2">
       <button
-        onClick={() => setRadioMode(!radioMode, currentTrack?.id ?? undefined)}
+        onClick={handleRadioToggle}
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
           radioMode
             ? 'bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30'
             : 'text-white/40 hover:text-white/60 border border-transparent'
         }`}
+        title={radioMode ? 'Radio mode: Auto-mix similar tracks' : 'Enable radio mode'}
       >
         <span className={`text-base leading-none ${radioMode ? 'animate-pulse' : ''}`}>∞</span>
         <span>Radio</span>
