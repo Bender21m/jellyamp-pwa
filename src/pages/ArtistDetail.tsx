@@ -70,7 +70,7 @@ export default function ArtistDetail() {
     try {
       const [artistData, albumsRes, similarRes] = await Promise.all([
         fetchArtistById(api, userId, id),
-        fetchAlbums(api, userId, { artistIds: [id], limit: 20 }),
+        fetchAlbums(api, userId, { artistIds: [id], limit: 200 }),
         fetchSimilarArtists(api, userId, id),
       ])
       setArtist(artistData)
@@ -94,7 +94,7 @@ export default function ArtistDetail() {
     if (!api || !userId || !id || loadingMore || !hasMore) return
     setLoadingMore(true)
     try {
-      const res = await fetchAlbums(api, userId, { artistIds: [id], limit: 20, startIndex: albums.length })
+      const res = await fetchAlbums(api, userId, { artistIds: [id], limit: 200, startIndex: albums.length })
       setAlbums(prev => [...prev, ...(res.Items ?? [])])
     } catch (e) {
       console.error('Failed to load more albums', e)
