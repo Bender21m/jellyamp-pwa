@@ -12,7 +12,7 @@ import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 
 export default function Library() {
   const { api, userId, serverUrl } = useAuthStore()
-  const { viewMode, setViewMode, sortOption, setSortOption, libraryFilter, setLibraryFilter } = useUIStore()
+  const { viewMode, setViewMode, gridDensity, setGridDensity, sortOption, setSortOption, libraryFilter, setLibraryFilter } = useUIStore()
   const [albums, setAlbums] = useState<BaseItemDto[]>([])
   const [artists, setArtists] = useState<BaseItemDto[]>([])
   const [playlists, setPlaylists] = useState<BaseItemDto[]>([])
@@ -161,6 +161,8 @@ export default function Library() {
         setSortOption={setSortOption}
         viewMode={viewMode}
         setViewMode={setViewMode}
+        gridDensity={gridDensity}
+        setGridDensity={setGridDensity}
         showSort={showSort}
         setShowSort={setShowSort}
         showMobileSearch={showMobileSearch}

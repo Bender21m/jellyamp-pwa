@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 type ViewMode = 'grid' | 'list'
+type GridDensity = 'normal' | 'compact' | 'dense'
 type SortOption = 'name-asc' | 'name-desc' | 'artist-asc' | 'artist-desc' | 'year-newest' | 'year-oldest' | 'date-added'
 type AudioQuality = 'original' | 'high' | 'medium' | 'low'
 type CrossfadeMode = 'off' | 'gapless' | 'crossfade'
@@ -22,6 +23,7 @@ interface ScrobbleSettings {
 
 interface UIState {
   viewMode: ViewMode
+  gridDensity: GridDensity
   sortOption: SortOption
   libraryFilter: string
   audioQuality: AudioQuality
@@ -35,6 +37,7 @@ interface UIState {
   volumeNormalization: boolean // Volume normalization on/off
 
   setViewMode: (mode: ViewMode) => void
+  setGridDensity: (density: GridDensity) => void
   setSortOption: (option: SortOption) => void
   setLibraryFilter: (filter: string) => void
   setAudioQuality: (quality: AudioQuality) => void
@@ -52,6 +55,7 @@ export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
       viewMode: 'grid',
+      gridDensity: 'normal',
       sortOption: 'name-asc',
       libraryFilter: 'Artists',
       audioQuality: 'original',
@@ -77,6 +81,7 @@ export const useUIStore = create<UIState>()(
       volumeNormalization: false, // Disabled by default
 
       setViewMode: (mode) => set({ viewMode: mode }),
+      setGridDensity: (density) => set({ gridDensity: density }),
       setSortOption: (option) => set({ sortOption: option }),
       setLibraryFilter: (filter) => set({ libraryFilter: filter }),
       setAudioQuality: (quality) => set({ audioQuality: quality }),
@@ -97,4 +102,4 @@ export const useUIStore = create<UIState>()(
   )
 )
 
-export type { ViewMode, SortOption, AudioQuality, CrossfadeMode, ScrobbleSettings }
+export type { ViewMode, GridDensity, SortOption, AudioQuality, CrossfadeMode, ScrobbleSettings }

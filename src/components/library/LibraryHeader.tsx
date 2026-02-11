@@ -2,7 +2,7 @@ import { useRef, useEffect, useCallback } from 'react'
 import FilterPill from '../FilterPill'
 import SortDropdown from './SortDropdown'
 import ViewModeToggle from './ViewModeToggle'
-import type { SortOption, ViewMode } from '../../stores/ui'
+import type { SortOption, ViewMode, GridDensity } from '../../stores/ui'
 
 const filters = ['Artists', 'Albums', 'Playlists', 'Genres', 'Recent']
 
@@ -17,6 +17,8 @@ interface LibraryHeaderProps {
   setSortOption: (option: SortOption) => void
   viewMode: ViewMode
   setViewMode: (mode: ViewMode) => void
+  gridDensity: GridDensity
+  setGridDensity: (density: GridDensity) => void
   showSort: boolean
   setShowSort: (show: boolean) => void
   showMobileSearch: boolean
@@ -34,6 +36,8 @@ export default function LibraryHeader({
   setSortOption,
   viewMode,
   setViewMode,
+  gridDensity,
+  setGridDensity,
   showSort,
   setShowSort,
   showMobileSearch,
@@ -111,7 +115,7 @@ export default function LibraryHeader({
             showSort={showSort}
             setShowSort={setShowSort}
           />
-          <ViewModeToggle viewMode={viewMode} setViewMode={setViewMode} />
+          <ViewModeToggle viewMode={viewMode} gridDensity={gridDensity} setViewMode={setViewMode} setGridDensity={setGridDensity} />
         </div>
       </div>
 
@@ -154,7 +158,7 @@ export default function LibraryHeader({
           isMobile={true}
         />
         <div className="flex-1" />
-        <ViewModeToggle viewMode={viewMode} setViewMode={setViewMode} />
+        <ViewModeToggle viewMode={viewMode} gridDensity={gridDensity} setViewMode={setViewMode} setGridDensity={setGridDensity} />
       </div>
     </div>
   )
