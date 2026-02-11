@@ -69,7 +69,10 @@ export default function LibraryHeader({
     <div className="px-4 md:px-8 pt-5 md:pt-8 pb-4 md:pb-5 space-y-4 shrink-0">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-[-0.03em]">Library</h1>
+          <div className="flex items-center gap-2.5">
+            <img src="/logo.svg" alt="JellyAmp" className="w-7 h-7 md:w-8 md:h-8" />
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-[-0.03em]">Library</h1>
+          </div>
           {!loading && counts.artists > 0 && (
             <p className="text-sm text-text-secondary mt-1 font-mono">
               {counts.artists.toLocaleString()} artists · {counts.albums.toLocaleString()} albums
