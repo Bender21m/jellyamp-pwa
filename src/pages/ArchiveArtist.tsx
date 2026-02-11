@@ -24,6 +24,12 @@ const SOURCE_FILTERS = [
   { label: 'MTX', value: 'matrix' },
 ] as const
 
+const RATING_FILTERS = [
+  { label: 'All Ratings', value: null },
+  { label: '4+ Stars', value: 4 },
+  { label: '4.5+ Stars', value: 4.5 },
+] as const
+
 export default function ArchiveArtist() {
   const { name } = useParams<{ name: string }>()
   const artistName = decodeURIComponent(name ?? '')
@@ -41,6 +47,8 @@ export default function ArchiveArtist() {
   const [sort, setSort] = useState('date desc')
   const [sortOpen, setSortOpen] = useState(false)
   const [sourceFilter, setSourceFilter] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [ratingFilter, setRatingFilter] = useState<number | null>(null)
   const [artistInfo, setArtistInfo] = useState<ArtistInfo | null>(null)
   const [bioExpanded, setBioExpanded] = useState(false)
   const sortRef = useRef<HTMLDivElement>(null)
@@ -106,10 +114,30 @@ export default function ArchiveArtist() {
     loadShows(nextPage, yearFilter, sort, true)
   }
 
-  // Apply client-side source filter
-  const filteredShows = sourceFilter
-    ? shows.filter((s) => s.source.toLowerCase().includes(sourceFilter))
-    : shows
+  // Apply client-side filters
+  const filteredShows = shows.filter((show) => {
+    // Source filter
+    if (sourceFilter && !show.source.toLowerCase().includes(sourceFilter)) {
+      return false
+    }
+    
+    // Search filter (date or venue)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim()
+      const matchesDate = show.date.includes(query)
+      const matchesVenue = show.venue.toLowerCase().includes(query)
+      if (!matchesDate && !matchesVenue) {
+        return false
+      }
+    }
+    
+    // Rating filter
+    if (ratingFilter !== null && (!show.rating || show.rating < ratingFilter)) {
+      return false
+    }
+    
+    return true
+  })
 
   // Group shows by date
   const grouped = groupShowsByDate(filteredShows)
@@ -260,7 +288,33 @@ export default function ArchiveArtist() {
           </div>
         )}
 
-        {/* Sort & Source filter row */}
+        {/* Search input */}
+        <div className="mb-3">
+          <div className="relative">
+            <svg viewBox="0 0 24 24" className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-muted" fill="currentColor">
+              <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search by year or venue..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-white/[0.03] border border-white/[0.08] rounded-lg text-sm text-text-primary placeholder:text-text-muted focus:border-neon-cyan/40 focus:bg-white/[0.05] focus:outline-none transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted hover:text-text-secondary"
+              >
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Sort, Source, & Rating filter row */}
         <div className="flex items-center gap-3 flex-wrap">
           {/* Sort dropdown */}
           <div className="relative" ref={sortRef}>
@@ -311,6 +365,23 @@ export default function ArchiveArtist() {
               </button>
             ))}
           </div>
+
+          {/* Rating filter pills */}
+          <div className="flex gap-1.5">
+            {RATING_FILTERS.map((rf: typeof RATING_FILTERS[number]) => (
+              <button
+                key={rf.label}
+                onClick={() => setRatingFilter(ratingFilter === rf.value ? null : rf.value)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+                  ratingFilter === rf.value
+                    ? 'bg-yellow-500/15 text-yellow-400 border border-yellow-400/30'
+                    : 'bg-white/[0.03] text-text-muted border border-white/[0.06] hover:text-text-secondary hover:border-white/10'
+                }`}
+              >
+                {rf.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -339,7 +410,18 @@ export default function ArchiveArtist() {
               </svg>
             }
             title="No shows found"
-            subtitle={yearFilter ? `No recordings found for ${yearFilter}.` : sourceFilter ? `No ${sourceFilter.toUpperCase()} recordings found.` : `No recordings found for ${artistName}.`}
+            subtitle={(() => {
+              const filters = []
+              if (yearFilter) filters.push(`year ${yearFilter}`)
+              if (sourceFilter) filters.push(`${sourceFilter.toUpperCase()} recordings`)
+              if (searchQuery.trim()) filters.push(`"${searchQuery.trim()}"`)
+              if (ratingFilter) filters.push(`${ratingFilter}+ stars`)
+              
+              if (filters.length > 0) {
+                return `No recordings found for ${filters.join(', ')}.`
+              }
+              return `No recordings found for ${artistName}.`
+            })()}
           />
         ) : (
           <div className="space-y-3">
