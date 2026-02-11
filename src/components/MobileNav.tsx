@@ -30,7 +30,7 @@ export default function MobileNav() {
           ? 'bg-[rgb(8,8,12)]/95'
           : 'bg-[rgb(8,8,12)]/95 shadow-[0_-1px_0_rgba(255,255,255,0.06)]'
       }`}
-      style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}
+      style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)', paddingTop: '4px' }}
     >
       <div className="flex items-stretch">
         {tabs.map((tab) => (
@@ -50,7 +50,7 @@ export default function MobileNav() {
                 </svg>
                 <span className="text-[10px] mt-0.5 font-medium">{tab.label}</span>
                 {isActive && (
-                  <span className="absolute top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-neon-cyan shadow-[0_0_4px_rgba(0,255,221,0.6)]" />
+                  <span className="absolute top-2 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-neon-cyan shadow-[0_0_4px_rgba(0,255,221,0.6)]" />
                 )}
               </>
             )}
