@@ -1,5 +1,7 @@
+import type { ViewMode } from '../../stores/ui'
+
 interface SkeletonGridProps {
-  viewMode: string
+  viewMode: ViewMode
   type: string
 }
 

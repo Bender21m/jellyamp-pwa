@@ -1,6 +1,8 @@
+import type { ViewMode } from '../../stores/ui'
+
 interface ViewModeToggleProps {
-  viewMode: string
-  setViewMode: (mode: string) => void
+  viewMode: ViewMode
+  setViewMode: (mode: ViewMode) => void
 }
 
 export default function ViewModeToggle({ viewMode, setViewMode }: ViewModeToggleProps) {

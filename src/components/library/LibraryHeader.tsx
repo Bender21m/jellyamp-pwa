@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react'
 import FilterPill from '../FilterPill'
 import SortDropdown from './SortDropdown'
 import ViewModeToggle from './ViewModeToggle'
-import type { SortOption } from '../../stores/ui'
+import type { SortOption, ViewMode } from '../../stores/ui'
 
 const filters = ['Artists', 'Albums', 'Playlists', 'Genres', 'Recent']
 
@@ -15,8 +15,8 @@ interface LibraryHeaderProps {
   setLibraryFilter: (filter: string) => void
   sortOption: SortOption
   setSortOption: (option: SortOption) => void
-  viewMode: string
-  setViewMode: (mode: string) => void
+  viewMode: ViewMode
+  setViewMode: (mode: ViewMode) => void
   showSort: boolean
   setShowSort: (show: boolean) => void
   showMobileSearch: boolean
