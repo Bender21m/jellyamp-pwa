@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect } from 'react'
+import { useFocusManagement } from '../hooks/useFocusManagement'
 
 interface KeyboardShortcutsProps {
   isOpen: boolean
@@ -19,6 +20,8 @@ const shortcutGroups: ShortcutGroup[] = [
     title: 'Playback',
     shortcuts: [
       { key: 'Space', label: 'Play/Pause' },
+      { key: '←', label: 'Seek backward 10s' },
+      { key: '→', label: 'Seek forward 10s' },
       { key: 'Shift + →', label: 'Next Track' },
       { key: 'Shift + ←', label: 'Previous Track' },
       { key: 'M', label: 'Mute/Unmute' },
@@ -29,8 +32,10 @@ const shortcutGroups: ShortcutGroup[] = [
   {
     title: 'Navigation',
     shortcuts: [
+      { key: '/', label: 'Focus Search' },
+      { key: 'F', label: 'Toggle Fullscreen Now Playing' },
+      { key: 'Esc', label: 'Close Now Playing/Modals' },
       { key: '?', label: 'Show Shortcuts' },
-      { key: 'Esc', label: 'Close Overlay' },
     ]
   }
 ]
@@ -44,7 +49,14 @@ function Keycap({ children }: { children: React.ReactNode }) {
 }
 
 export default function KeyboardShortcuts({ isOpen, onClose }: KeyboardShortcutsProps) {
-  // Handle escape key to close
+  // Focus management
+  const { containerRef } = useFocusManagement({
+    isOpen,
+    restoreOnClose: true,
+    trapFocus: true,
+  })
+
+  // Handle escape key to close (handled by global keyboard hook now, but keep as fallback)
   useEffect(() => {
     if (!isOpen) return
     
@@ -86,6 +98,7 @@ export default function KeyboardShortcuts({ isOpen, onClose }: KeyboardShortcuts
           
           {/* Modal */}
           <motion.div
+            ref={containerRef}
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}

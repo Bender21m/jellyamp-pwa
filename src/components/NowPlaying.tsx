@@ -12,9 +12,9 @@ import FeatureHint from './FeatureHint'
 
 export default function NowPlaying() {
   const {
-    currentTrack, isPlaying, currentTime, duration, shuffle, repeat, showNowPlaying,
+    currentTrack, isPlaying, currentTime, duration, shuffle, repeat, playbackRate, showNowPlaying,
     queue, queueIndex,
-    toggle, next, previous, seek, toggleShuffle, cycleRepeat, setShowNowPlaying, setShowQueue,
+    toggle, next, previous, seek, toggleShuffle, cycleRepeat, setPlaybackRate, setShowNowPlaying, setShowQueue,
     radioMode, setRadioMode,
   } = usePlayerStore()
   const { api, userId } = useAuthStore()
@@ -191,6 +191,25 @@ export default function NowPlaying() {
     </div>
   )
 
+  const playbackSpeedButton = (
+    <div className="flex items-center justify-center mt-2">
+      <button
+        onClick={() => {
+          const rates = [0.5, 0.75, 1, 1.25, 1.5, 2]
+          const currentIndex = rates.indexOf(playbackRate)
+          const nextIndex = (currentIndex + 1) % rates.length
+          setPlaybackRate(rates[nextIndex])
+        }}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all text-white/40 hover:text-white/60 border border-transparent hover:border-white/20"
+      >
+        <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+          <path d="M13,8V16L18,12M4,6H6V18H4V6M8,6H10V18H8V6Z" />
+        </svg>
+        <span>{playbackRate === 1 ? '1x' : `${playbackRate}x`}</span>
+      </button>
+    </div>
+  )
+
   const radioButton = (
     <div className="flex items-center justify-center mt-2">
       <button
@@ -344,7 +363,10 @@ export default function NowPlaying() {
             />
             <div className="w-full mb-4">{waveformProgress}</div>
             {controls}
-            {radioButton}
+            <div className="flex items-center justify-center gap-4 mt-2">
+              {playbackSpeedButton}
+              {radioButton}
+            </div>
             <div className="mt-8 w-full">{upNextLyrics}</div>
           </div>
 
@@ -360,7 +382,10 @@ export default function NowPlaying() {
               {trackInfo}
               {waveformProgress}
               {controls}
-              {radioButton}
+              <div className="flex items-center justify-center gap-4 mt-2">
+                {playbackSpeedButton}
+                {radioButton}
+              </div>
               <div className="mt-4">{upNextLyrics}</div>
             </div>
           </div>

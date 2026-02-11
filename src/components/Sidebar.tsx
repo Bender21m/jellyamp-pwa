@@ -8,6 +8,7 @@ import { fetchPlaylists, fetchFavorites, fetchTracks, fetchArtistTracks, createP
 import type { BaseItemDto } from '../lib/jellyfin'
 import { getDragData, DRAG_FORMAT } from '../lib/dragdrop'
 import { useArchiveStore } from '../stores/archive'
+import { useSidebarKeyboard } from '../hooks/useSidebarKeyboard'
 import OnThisDay from './OnThisDay'
 import logoSvg from '../assets/logo.svg'
 
@@ -187,6 +188,20 @@ export default function Sidebar() {
   const [deleteError, setDeleteError] = useState('')
   const [dropToast, setDropToast] = useState('')
 
+  // Prepare nav items for keyboard navigation
+  const archiveEnabled = useArchiveStore((s) => s.enabled)
+  const allNavItems = [
+    ...libraryNav,
+    ...(archiveEnabled ? [{ to: '/archive', label: 'Live Archive', icon: '' }] : []),
+    ...bottomNav,
+  ]
+
+  // Keyboard navigation for sidebar
+  const { containerRef } = useSidebarKeyboard({
+    navItems: allNavItems,
+    isCollapsed: false,
+  })
+
   async function loadPlaylists() {
     if (!api || !userId) return
     try {
@@ -262,13 +277,14 @@ export default function Sidebar() {
     }
   }
 
-  const archiveEnabled = useArchiveStore((s) => s.enabled)
   const displayPlaylists = playlists.slice(0, SIDEBAR_ITEM_LIMIT)
   const displayArtists = favoriteArtists.slice(0, SIDEBAR_ITEM_LIMIT)
 
   return (
-    <aside className="hidden md:flex h-full flex-col bg-card/50 border-r border-white/5 backdrop-blur-sm shrink-0 overflow-hidden
-      md:w-[72px] lg:w-[280px]">
+    <aside 
+      ref={containerRef}
+      className="hidden md:flex h-full flex-col bg-card/50 border-r border-white/5 backdrop-blur-sm shrink-0 overflow-hidden
+        md:w-[72px] lg:w-[280px]">
 
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 lg:px-5 py-5 shrink-0">
@@ -286,7 +302,7 @@ export default function Sidebar() {
       {/* Library section */}
       <div className="px-2 lg:px-3 pt-4">
         <p className="hidden lg:block text-[11px] font-mono uppercase tracking-widest text-text-muted/60 px-4 mb-2">Library</p>
-        <nav className="space-y-1">
+        <nav role="navigation" className="space-y-1">
           {libraryNav.map((item) => (
             <NavItem key={item.to} item={item} collapsed={false} />
           ))}
@@ -415,9 +431,11 @@ export default function Sidebar() {
 
       {/* Settings + User */}
       <div className="px-2 lg:px-3 pb-2 shrink-0">
-        {bottomNav.map((item) => (
-          <NavItem key={item.to} item={item} collapsed={false} />
-        ))}
+        <nav role="navigation">
+          {bottomNav.map((item) => (
+            <NavItem key={item.to} item={item} collapsed={false} />
+          ))}
+        </nav>
       </div>
 
       <div className="mx-3 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent shrink-0" />

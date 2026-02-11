@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useAuthStore } from '../stores/auth'
 import type { Track } from '../stores/player'
 import { searchAll, getImageUrl, BaseItemKind } from '../lib/jellyfin'
@@ -11,6 +11,57 @@ import EmptyState from '../components/EmptyState'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
 import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 
+const SEARCH_HISTORY_KEY = 'jellyamp-search-history'
+const MAX_HISTORY_ITEMS = 10
+
+// Search history helpers
+function getSearchHistory(): string[] {
+  try {
+    const history = localStorage.getItem(SEARCH_HISTORY_KEY)
+    return history ? JSON.parse(history) : []
+  } catch {
+    return []
+  }
+}
+
+function addToSearchHistory(query: string) {
+  if (!query.trim()) return
+  
+  const history = getSearchHistory()
+  const trimmedQuery = query.trim()
+  
+  // Remove if already exists
+  const filteredHistory = history.filter(item => item !== trimmedQuery)
+  
+  // Add to beginning
+  const newHistory = [trimmedQuery, ...filteredHistory].slice(0, MAX_HISTORY_ITEMS)
+  
+  try {
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(newHistory))
+  } catch (error) {
+    console.error('Failed to save search history:', error)
+  }
+}
+
+function removeFromSearchHistory(query: string) {
+  const history = getSearchHistory()
+  const newHistory = history.filter(item => item !== query)
+  
+  try {
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(newHistory))
+  } catch (error) {
+    console.error('Failed to update search history:', error)
+  }
+}
+
+function clearSearchHistory() {
+  try {
+    localStorage.removeItem(SEARCH_HISTORY_KEY)
+  } catch (error) {
+    console.error('Failed to clear search history:', error)
+  }
+}
+
 export default function Search() {
   const { api, userId, serverUrl } = useAuthStore()
   const [query, setQuery] = useState('')
@@ -19,6 +70,8 @@ export default function Search() {
   const [error, setError] = useState<string | null>(null)
   const [contextTrack, setContextTrack] = useState<Track | null>(null)
   const [contextPos, setContextPos] = useState<{ x: number; y: number } | null>(null)
+  const [searchHistory, setSearchHistory] = useState<string[]>(getSearchHistory)
+  const [showHistory, setShowHistory] = useState(false)
 
   // Pull to refresh — re-runs current search
   const isTouchDevice = window.matchMedia('(hover: none)').matches
@@ -58,6 +111,9 @@ export default function Search() {
       try {
         const res = await searchAll(api, userId, query.trim())
         setResults(res.Items ?? [])
+        // Add to history on successful search
+        addToSearchHistory(query.trim())
+        setSearchHistory(getSearchHistory())
       } catch (e) {
         console.error('Search failed', e)
         setError('Search failed. Please try again.')
@@ -85,15 +141,34 @@ export default function Search() {
     imageUrl: t.AlbumId && serverUrl ? getImageUrl(serverUrl, t.AlbumId, t.AlbumPrimaryImageTag, 120) : undefined,
   })), [tracks, serverUrl])
 
+  // Search history handlers
+  const handleHistoryClick = useCallback((historyQuery: string) => {
+    setQuery(historyQuery)
+    setShowHistory(false)
+  }, [])
+
+  const handleRemoveHistory = useCallback((historyQuery: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    removeFromSearchHistory(historyQuery)
+    setSearchHistory(getSearchHistory())
+  }, [])
+
+  const handleClearHistory = useCallback(() => {
+    clearSearchHistory()
+    setSearchHistory([])
+  }, [])
+
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col" onClick={() => setShowHistory(false)}>
       <div className="px-4 md:px-8 pt-5 md:pt-8 pb-4 space-y-4 shrink-0">
         <h1 className="text-2xl md:text-3xl font-extrabold tracking-[-0.03em]">Search</h1>
-        <div className="relative">
+        <div className="relative" onClick={(e) => e.stopPropagation()}>
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setShowHistory(!query.trim() && searchHistory.length > 0)}
+            onBlur={() => setTimeout(() => setShowHistory(false), 150)} // Delay to allow clicks
             placeholder="Search artists, albums, tracks..."
             autoFocus
             className="w-full pl-12 pr-4 py-3.5 bg-surface border border-white/5 rounded-xl text-[15px] text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-neon-cyan/30 focus:ring-1 focus:ring-neon-cyan/10 transition-all"
@@ -101,6 +176,40 @@ export default function Search() {
           <svg viewBox="0 0 24 24" className="w-5 h-5 text-text-muted absolute left-4 top-1/2 -translate-y-1/2" fill="currentColor">
             <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
           </svg>
+          
+          {/* Search History */}
+          {showHistory && searchHistory.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-white/10 rounded-xl shadow-lg z-10 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-text-muted/70 uppercase tracking-wider">Recent Searches</span>
+                <button 
+                  onClick={handleClearHistory}
+                  className="text-xs text-text-muted/50 hover:text-text-muted transition-colors"
+                >
+                  Clear all
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {searchHistory.map((historyItem) => (
+                  <button
+                    key={historyItem}
+                    onClick={() => handleHistoryClick(historyItem)}
+                    className="group flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-full text-sm text-text-primary/80 hover:text-text-primary transition-colors"
+                  >
+                    <span className="truncate max-w-[120px]">{historyItem}</span>
+                    <button
+                      onClick={(e) => handleRemoveHistory(historyItem, e)}
+                      className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-white/20 rounded-full transition-all"
+                    >
+                      <svg viewBox="0 0 24 24" className="w-3 h-3" fill="currentColor">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                      </svg>
+                    </button>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

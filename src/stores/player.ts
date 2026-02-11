@@ -1,6 +1,85 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+const QUEUE_STORAGE_KEY = 'jellyamp-queue-v2'
+const MAX_QUEUE_PERSISTENCE = 200
+
+// Convert full track to lightweight representation
+function trackToLightweight(track: Track): LightweightTrack {
+  return {
+    id: track.id,
+    name: track.name,
+    artistName: track.artistName,
+    albumId: track.albumId,
+    duration: track.duration,
+  }
+}
+
+// Convert lightweight track to basic full track (missing imageUrl etc.)
+function lightweightToTrack(lightweight: LightweightTrack): Track {
+  return {
+    id: lightweight.id,
+    name: lightweight.name,
+    artistName: lightweight.artistName,
+    albumId: lightweight.albumId,
+    duration: lightweight.duration,
+    // imageUrl will be filled in lazily when needed
+    imageUrl: undefined,
+  }
+}
+
+// Save queue to localStorage
+function saveQueueToStorage(queue: Track[], queueIndex: number) {
+  try {
+    const lightweightQueue = queue.slice(0, MAX_QUEUE_PERSISTENCE).map(trackToLightweight)
+    const queueData = {
+      queue: lightweightQueue,
+      queueIndex: Math.min(queueIndex, lightweightQueue.length - 1),
+      timestamp: Date.now(),
+    }
+    localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(queueData))
+  } catch (error) {
+    console.error('[Player Store] Failed to save queue:', error)
+  }
+}
+
+// Load queue from localStorage
+function loadQueueFromStorage(): { queue: Track[]; queueIndex: number } | null {
+  try {
+    const stored = localStorage.getItem(QUEUE_STORAGE_KEY)
+    if (!stored) return null
+    
+    const queueData = JSON.parse(stored)
+    const { queue, queueIndex, timestamp } = queueData
+    
+    // Ignore old queue data (older than 7 days)
+    if (!timestamp || Date.now() - timestamp > 7 * 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(QUEUE_STORAGE_KEY)
+      return null
+    }
+    
+    if (Array.isArray(queue) && typeof queueIndex === 'number') {
+      return {
+        queue: queue.map(lightweightToTrack),
+        queueIndex: Math.max(0, Math.min(queueIndex, queue.length - 1)),
+      }
+    }
+  } catch (error) {
+    console.error('[Player Store] Failed to load queue:', error)
+    localStorage.removeItem(QUEUE_STORAGE_KEY)
+  }
+  return null
+}
+
+// Clear queue from localStorage
+function clearQueueFromStorage() {
+  try {
+    localStorage.removeItem(QUEUE_STORAGE_KEY)
+  } catch (error) {
+    console.error('[Player Store] Failed to clear queue:', error)
+  }
+}
+
 export interface Track {
   id: string
   name: string
@@ -17,6 +96,15 @@ export interface Track {
   streamUrl?: string // direct audio URL (bypasses Jellyfin, used for Archive streams)
 }
 
+// Lightweight queue representation for persistence
+interface LightweightTrack {
+  id: string
+  name: string
+  artistName?: string
+  albumId?: string
+  duration: number
+}
+
 type RepeatMode = 'off' | 'one' | 'all'
 
 interface PlayerState {
@@ -30,6 +118,7 @@ interface PlayerState {
   muted: boolean
   shuffle: boolean
   repeat: RepeatMode
+  playbackRate: number // 0.5x, 0.75x, 1x, 1.25x, 1.5x, 2x
   showNowPlaying: boolean
   showQueue: boolean
   radioMode: boolean
@@ -53,6 +142,7 @@ interface PlayerState {
   toggleMute: () => void
   toggleShuffle: () => void
   cycleRepeat: () => void
+  setPlaybackRate: (rate: number) => void
   addToQueue: (tracks: Track[]) => void
   playNext: (track: Track) => void
   removeFromQueue: (index: number) => void
@@ -71,27 +161,32 @@ interface PlayerState {
 
 export const usePlayerStore = create<PlayerState>()(
   persist(
-    (set, get) => ({
-  currentTrack: null,
-  queue: [],
-  queueIndex: -1,
-  isPlaying: false,
-  currentTime: 0,
-  duration: 0,
-  volume: parseFloat(localStorage.getItem('jellyamp-volume') ?? '0.8'),
-  muted: false,
-  shuffle: false,
-  repeat: 'off',
-  radioMode: false,
-  radioSeedId: null,
-  showNowPlaying: false,
-  showQueue: false,
-  sleepTimer: {
-    active: false,
-    endTime: null,
-    mode: 'time',
-    originalVolume: 0.8,
-  },
+    (set, get) => {
+      // Load queue from storage on initialization
+      const savedQueue = loadQueueFromStorage()
+      
+      return {
+        currentTrack: savedQueue?.queue[savedQueue.queueIndex] ?? null,
+        queue: savedQueue?.queue ?? [],
+        queueIndex: savedQueue?.queueIndex ?? -1,
+        isPlaying: false,
+        currentTime: 0,
+        duration: 0,
+        volume: parseFloat(localStorage.getItem('jellyamp-volume') ?? '0.8'),
+        muted: false,
+        shuffle: false,
+        repeat: 'off',
+        playbackRate: 1.0,
+        radioMode: false,
+        radioSeedId: null,
+        showNowPlaying: false,
+        showQueue: false,
+        sleepTimer: {
+          active: false,
+          endTime: null,
+          mode: 'time',
+          originalVolume: 0.8,
+        },
 
   setRadioMode: (enabled, seedId) => set({
     radioMode: enabled,
@@ -99,14 +194,17 @@ export const usePlayerStore = create<PlayerState>()(
   }),
 
   setTrack: (track, queue, index) => {
+    const newQueue = queue ?? [track]
+    const newIndex = index ?? 0
     set({
       currentTrack: track,
-      queue: queue ?? [track],
-      queueIndex: index ?? 0,
+      queue: newQueue,
+      queueIndex: newIndex,
       isPlaying: true,
       currentTime: 0,
       duration: track.duration,
     })
+    saveQueueToStorage(newQueue, newIndex)
   },
 
   play: () => set({ isPlaying: true }),
@@ -132,7 +230,10 @@ export const usePlayerStore = create<PlayerState>()(
       }
     }
     const track = queue[nextIndex]
-    if (track) set({ currentTrack: track, queueIndex: nextIndex, currentTime: 0, duration: track.duration, isPlaying: true })
+    if (track) {
+      set({ currentTrack: track, queueIndex: nextIndex, currentTime: 0, duration: track.duration, isPlaying: true })
+      saveQueueToStorage(queue, nextIndex)
+    }
   },
 
   previous: () => {
@@ -141,6 +242,7 @@ export const usePlayerStore = create<PlayerState>()(
     const prevIndex = queueIndex - 1
     if (prevIndex >= 0 && queue[prevIndex]) {
       set({ currentTrack: queue[prevIndex], queueIndex: prevIndex, currentTime: 0, duration: queue[prevIndex].duration, isPlaying: true })
+      saveQueueToStorage(queue, prevIndex)
     }
   },
 
@@ -154,14 +256,18 @@ export const usePlayerStore = create<PlayerState>()(
   cycleRepeat: () => set((s) => ({
     repeat: s.repeat === 'off' ? 'all' : s.repeat === 'all' ? 'one' : 'off',
   })),
+  setPlaybackRate: (rate) => set({ playbackRate: rate }),
 
   addToQueue: (tracks) => {
-    const { queue, currentTrack } = get()
+    const { queue, currentTrack, queueIndex } = get()
     const newQueue = [...queue, ...tracks]
     if (!currentTrack && tracks.length > 0) {
-      set({ queue: newQueue, currentTrack: tracks[0], queueIndex: queue.length, isPlaying: true, currentTime: 0, duration: tracks[0].duration })
+      const newIndex = queue.length
+      set({ queue: newQueue, currentTrack: tracks[0], queueIndex: newIndex, isPlaying: true, currentTime: 0, duration: tracks[0].duration })
+      saveQueueToStorage(newQueue, newIndex)
     } else {
       set({ queue: newQueue })
+      saveQueueToStorage(newQueue, queueIndex)
     }
   },
 
@@ -170,6 +276,7 @@ export const usePlayerStore = create<PlayerState>()(
     const newQueue = [...queue]
     newQueue.splice(queueIndex + 1, 0, track)
     set({ queue: newQueue })
+    saveQueueToStorage(newQueue, queueIndex)
   },
 
   removeFromQueue: (index) => {
@@ -180,12 +287,16 @@ export const usePlayerStore = create<PlayerState>()(
     if (index === queueIndex) {
       if (newQueue.length === 0) {
         set({ queue: [], currentTrack: null, queueIndex: -1, isPlaying: false })
+        clearQueueFromStorage()
       } else {
         const ni = Math.min(index, newQueue.length - 1)
         set({ queue: newQueue, currentTrack: newQueue[ni], queueIndex: ni, currentTime: 0 })
+        saveQueueToStorage(newQueue, ni)
       }
     } else {
-      set({ queue: newQueue, queueIndex: index < queueIndex ? queueIndex - 1 : queueIndex })
+      const newIndex = index < queueIndex ? queueIndex - 1 : queueIndex
+      set({ queue: newQueue, queueIndex: newIndex })
+      saveQueueToStorage(newQueue, newIndex)
     }
   },
 
@@ -199,16 +310,21 @@ export const usePlayerStore = create<PlayerState>()(
     else if (from < queueIndex && to >= queueIndex) newIndex--
     else if (from > queueIndex && to <= queueIndex) newIndex++
     set({ queue: newQueue, queueIndex: newIndex })
+    saveQueueToStorage(newQueue, newIndex)
   },
 
   jumpToTrack: (index) => {
     const { queue } = get()
     if (index >= 0 && index < queue.length) {
       set({ currentTrack: queue[index], queueIndex: index, currentTime: 0, duration: queue[index].duration, isPlaying: true })
+      saveQueueToStorage(queue, index)
     }
   },
 
-  clearQueue: () => set({ queue: [], queueIndex: -1, currentTrack: null, isPlaying: false, currentTime: 0, duration: 0 }),
+  clearQueue: () => {
+    set({ queue: [], queueIndex: -1, currentTrack: null, isPlaying: false, currentTime: 0, duration: 0 })
+    clearQueueFromStorage()
+  },
   setCurrentTime: (time) => set({ currentTime: time }),
   setDuration: (time) => set({ duration: time }),
   setShowNowPlaying: (show) => set({ showNowPlaying: show }),
@@ -252,7 +368,8 @@ export const usePlayerStore = create<PlayerState>()(
     if (!sleepTimer.active || !sleepTimer.endTime) return 0
     return Math.max(0, sleepTimer.endTime - Date.now())
   },
-}),
+      }
+    },
     {
       name: 'jellyamp-player',
       partialize: (state) => ({
@@ -263,6 +380,7 @@ export const usePlayerStore = create<PlayerState>()(
         muted: state.muted,
         shuffle: state.shuffle,
         repeat: state.repeat,
+        playbackRate: state.playbackRate,
         radioMode: state.radioMode,
         radioSeedId: state.radioSeedId,
       }),

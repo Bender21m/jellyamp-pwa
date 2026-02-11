@@ -12,6 +12,7 @@ interface UseAudioEngineOptions {
   isPlaying: boolean
   volume: number
   muted: boolean
+  playbackRate: number
   crossfadeMode: string
   crossfadeDuration: number
   eqEnabled: boolean
@@ -30,7 +31,7 @@ interface UseAudioEngineOptions {
 export function useAudioEngine(options: UseAudioEngineOptions) {
   const {
     trackId, currentTrack, serverUrl, accessToken, audioQuality,
-    isPlaying, volume, muted, crossfadeMode, crossfadeDuration,
+    isPlaying, volume, muted, playbackRate, crossfadeMode, crossfadeDuration,
     eqEnabled, eqGains,
     queue, queueIndex, repeat,
     onPlay, onSetCurrentTime, onSetDuration, onNext,
@@ -50,6 +51,7 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
   // Refs for values accessed in event handlers to prevent stale closures
   const volumeRef = useRef(volume)
   const mutedRef = useRef(muted)
+  const playbackRateRef = useRef(playbackRate)
   const crossfadeModeRef = useRef(crossfadeMode)
   const crossfadeDurationRef = useRef(crossfadeDuration)
   const onSetCurrentTimeRef = useRef(onSetCurrentTime)
@@ -59,6 +61,7 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
   // Keep refs in sync with current values
   volumeRef.current = volume
   mutedRef.current = muted
+  playbackRateRef.current = playbackRate
   crossfadeModeRef.current = crossfadeMode
   crossfadeDurationRef.current = crossfadeDuration
   onSetCurrentTimeRef.current = onSetCurrentTime
@@ -293,6 +296,11 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = muted ? 0 : volume
   }, [volume, muted])
+
+  // Playback rate sync
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.playbackRate = playbackRate
+  }, [playbackRate])
 
   // Listen for seek events from NowPlaying
   useEffect(() => {

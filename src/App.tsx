@@ -81,10 +81,15 @@ function AppLayout() {
 
   return (
     <div className="h-full flex flex-col relative">
+      {/* Skip to content link for screen readers */}
+      <a href="#main-content" className="skip-link">
+        Skip to content
+      </a>
+      
       <div className="noise absolute inset-0 pointer-events-none z-50" />
       <div className="flex flex-1 min-h-0">
         <Sidebar />
-        <main className="flex-1 min-w-0 overflow-hidden bg-deep-black">
+        <main id="main-content" className="flex-1 min-w-0 overflow-hidden bg-deep-black">
           <AnimatedRoutes />
         </main>
         <QueuePanel />

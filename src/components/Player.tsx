@@ -10,7 +10,8 @@ import { useAudioEngine } from '../hooks/useAudioEngine'
 import { useMediaSession } from '../hooks/useMediaSession'
 import { useScrobbling } from '../hooks/useScrobbling'
 import { useSleepTimer } from '../hooks/useSleepTimer'
-import { usePlayerKeyboard } from '../hooks/usePlayerKeyboard'
+import { useGlobalKeyboard } from '../hooks/useGlobalKeyboard'
+import { useFocusManagement } from '../hooks/useFocusManagement'
 import { usePlaybackReporting } from '../hooks/usePlaybackReporting'
 import { useRadioMode } from '../hooks/useRadioMode'
 import { useSwipeAction } from '../hooks/useSwipeAction'
@@ -21,7 +22,7 @@ import SleepTimer from './SleepTimer'
 
 export default function Player() {
   const {
-    currentTrack, isPlaying, currentTime, duration, volume, muted, shuffle, repeat,
+    currentTrack, isPlaying, currentTime, duration, volume, muted, playbackRate, shuffle, repeat,
     queue, queueIndex, sleepTimer, showNowPlaying,
     play, pause, toggle, next, previous, seek, setVolume, toggleMute, toggleShuffle,
     cycleRepeat, setCurrentTime, setDuration, setShowNowPlaying, showQueue, setShowQueue,
@@ -51,6 +52,7 @@ export default function Player() {
     isPlaying,
     volume,
     muted,
+    playbackRate,
     crossfadeMode,
     crossfadeDuration,
     eqEnabled,
@@ -107,14 +109,57 @@ export default function Player() {
   // Smart Radio — auto-queue similar tracks when queue runs low
   useRadioMode()
 
-  // Keyboard shortcuts
-  usePlayerKeyboard({
+  // Focus management for modals
+  const { focusSearch } = useFocusManagement({
+    isOpen: showShortcuts || showEqualizer || showSleepTimer,
+  })
+
+  // Global keyboard shortcuts
+  useGlobalKeyboard({
     volume,
     onToggle: toggle,
     onNext: next,
     onPrevious: previous,
     onMute: toggleMute,
     onVolumeChange: setVolume,
+    onSeekBackward: useCallback(() => {
+      if (audioRef.current && duration > 0) {
+        const newTime = Math.max(0, currentTime - 10)
+        audioRef.current.currentTime = newTime
+        seek(newTime)
+      }
+    }, [currentTime, duration, seek]),
+    onSeekForward: useCallback(() => {
+      if (audioRef.current && duration > 0) {
+        const newTime = Math.min(duration, currentTime + 10)
+        audioRef.current.currentTime = newTime
+        seek(newTime)
+      }
+    }, [currentTime, duration, seek]),
+    onToggleFullscreen: useCallback(() => {
+      setShowNowPlaying(!showNowPlaying)
+    }, [showNowPlaying, setShowNowPlaying]),
+    onCloseModal: useCallback(() => {
+      if (showNowPlaying) {
+        setShowNowPlaying(false)
+      } else if (showShortcuts) {
+        setShowShortcuts(false)
+      } else if (showEqualizer) {
+        setShowEqualizer(false)
+      } else if (showSleepTimer) {
+        setShowSleepTimer(false)
+      } else if (showQueue) {
+        setShowQueue(false)
+      }
+    }, [showNowPlaying, showShortcuts, showEqualizer, showSleepTimer, showQueue, setShowNowPlaying, setShowQueue]),
+    onFocusSearch: useCallback(() => {
+      // Navigate to search page and focus the input
+      navigate('/search')
+      // Wait for navigation to complete, then focus the search input
+      setTimeout(() => {
+        focusSearch()
+      }, 100)
+    }, [navigate, focusSearch]),
     onShowShortcuts: useCallback(() => setShowShortcuts(s => !s), []),
   })
 

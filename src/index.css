@@ -220,6 +220,26 @@ h1, h2, h3 {
   animation: shimmer 1.5s ease-in-out infinite;
 }
 
+/* Focus rings for accessibility */
+.focus-ring {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black;
+}
+
+/* Focus rings for interactive elements */
+button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"]) {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black;
+}
+
+/* Custom focus for specific components that need different styling */
+.focus-ring-inset {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-inset;
+}
+
+/* Skip to content link */
+.skip-link {
+  @apply absolute left-4 top-4 z-[100] px-4 py-2 bg-neon-cyan text-deep-black font-semibold rounded-lg transform -translate-y-16 transition-transform focus:translate-y-0;
+}
+
 /* Hover only for pointer devices */
 @media (hover: hover) {
   .hover-lift {
