@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 type ViewMode = 'grid' | 'list'
-type GridDensity = 'normal' | 'compact' | 'dense'
+type GridDensity = 'normal' | 'compact'
 type SortOption = 'name-asc' | 'name-desc' | 'artist-asc' | 'artist-desc' | 'year-newest' | 'year-oldest' | 'date-added'
 type AudioQuality = 'original' | 'high' | 'medium' | 'low'
 type CrossfadeMode = 'off' | 'gapless' | 'crossfade'

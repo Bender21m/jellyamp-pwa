@@ -17,12 +17,10 @@ import { getImageUrl } from '../../lib/jellyfin'
  * Returns inline style + className for responsive grid based on density.
  * Uses CSS minmax auto-fill so Tailwind purging can't strip the classes.
  */
-export function getGridProps(density: GridDensity = 'normal'): { style: React.CSSProperties; className: string } {
-  // minWidth per card determines how many columns fit
+export function getGridProps(density: GridDensity = 'normal'): { style: React.CSSProperties } {
   const config = {
-    normal: { minWidth: '160px', gap: '1.25rem' },   // ~2 cols mobile
-    compact: { minWidth: '120px', gap: '0.75rem' },   // ~3 cols mobile
-    dense: { minWidth: '90px', gap: '0.5rem' },        // ~4 cols mobile
+    normal: { minWidth: '155px', gap: '1.25rem' },   // 2 per row on mobile
+    compact: { minWidth: '105px', gap: '0.75rem' },   // 3 per row on mobile
   }
   const { minWidth, gap } = config[density]
   return {
@@ -31,7 +29,6 @@ export function getGridProps(density: GridDensity = 'normal'): { style: React.CS
       gridTemplateColumns: `repeat(auto-fill, minmax(${minWidth}, 1fr))`,
       gap,
     },
-    className: '',
   }
 }
 
