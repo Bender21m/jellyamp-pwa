@@ -117,7 +117,9 @@ export default function ArchiveHome() {
     cacheFavoriteShowDetails,
   } = useArchiveStore()
   const [query, setQuery] = useState('')
+  const [searchMode, setSearchMode] = useState<'artists' | 'shows'>('artists')
   const [results, setResults] = useState<{ name: string; showCount: number }[]>([])
+  const [showResults, setShowResults] = useState<ArchiveShow[]>([])
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
   const [inputFocused, setInputFocused] = useState(false)
@@ -153,27 +155,36 @@ export default function ArchiveHome() {
     return () => { cancelled = true }
   }, [])
 
-  const doSearch = useCallback(async (q: string) => {
+  const doSearch = useCallback(async (q: string, mode: 'artists' | 'shows') => {
     if (!q.trim()) {
       setResults([])
+      setShowResults([])
       setSearched(false)
       return
     }
     setLoading(true)
     setSearched(true)
     try {
-      const res = await searchArtists(q.trim())
-      setResults(res)
+      if (mode === 'shows') {
+        const res = await searchShows(q.trim(), { rows: 24 })
+        setShowResults(res.shows)
+        setResults([])
+      } else {
+        const res = await searchArtists(q.trim())
+        setResults(res)
+        setShowResults([])
+      }
     } catch {
       setResults([])
+      setShowResults([])
     }
     setLoading(false)
   }, [])
 
   useEffect(() => {
-    const t = setTimeout(() => doSearch(query), 300)
+    const t = setTimeout(() => doSearch(query, searchMode), 300)
     return () => clearTimeout(t)
-  }, [query, doSearch])
+  }, [query, searchMode, doSearch])
 
   // Fetch discovery sections in parallel
   useEffect(() => {
@@ -297,13 +308,48 @@ export default function ArchiveHome() {
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setInputFocused(true)}
             onBlur={() => setTimeout(() => setInputFocused(false), 200)}
-            placeholder="Search artists..."
+            placeholder={searchMode === 'shows' ? 'Search shows...' : 'Search artists...'}
             className="w-full pl-10 pr-4 py-3.5 bg-white/[0.03] border border-white/[0.06] rounded-2xl text-sm text-text-primary placeholder:text-text-muted/40 focus:outline-none focus:border-neon-cyan/25 focus:bg-white/[0.04] focus:shadow-[0_0_24px_rgba(0,255,221,0.06)] transition-all duration-300"
           />
           <svg viewBox="0 0 24 24" className="w-4.5 h-4.5 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2" fill="currentColor">
             <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
           </svg>
         </form>
+
+        {/* Search Mode Toggle */}
+        <div className="flex gap-1 mt-3 bg-white/[0.03] rounded-full p-0.5 w-fit border border-white/[0.04]">
+          {(['artists', 'shows'] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setSearchMode(mode)}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                searchMode === mode
+                  ? 'bg-neon-cyan/15 text-neon-cyan'
+                  : 'text-text-muted hover:text-text-secondary'
+              }`}
+            >
+              {mode === 'artists' ? 'Artists' : 'Shows'}
+            </button>
+          ))}
+        </div>
+
+        {/* Suggested Artists */}
+        {inputFocused && !query.trim() && recentSearches.length === 0 && (
+          <div className="mt-3">
+            <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted mb-2 block">Suggested Artists</span>
+            <div className="flex flex-wrap gap-2">
+              {POPULAR_ARTISTS.map((name) => (
+                <button
+                  key={name}
+                  onClick={() => handleSelectArtist(name)}
+                  className="px-3 py-1.5 bg-neon-cyan/5 text-neon-cyan/70 rounded-full text-xs ring-1 ring-neon-cyan/10 hover:ring-neon-cyan/30 hover:text-neon-cyan transition-all"
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Recent Searches */}
         {showRecentSearches && (
@@ -339,7 +385,21 @@ export default function ArchiveHome() {
         {loading ? (
           <SkeletonGrid />
         ) : query.trim() ? (
-          results.length > 0 ? (
+          searchMode === 'shows' ? (
+            showResults.length > 0 ? (
+              <ShowGrid shows={showResults} navigate={navigate} />
+            ) : searched ? (
+              <EmptyState
+                icon={
+                  <svg viewBox="0 0 24 24" className="w-16 h-16" fill="currentColor">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                  </svg>
+                }
+                title="No shows found"
+                subtitle={`No results for "${query}". Try a different search.`}
+              />
+            ) : null
+          ) : results.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {results.map((artist, i) => (
                 <motion.button

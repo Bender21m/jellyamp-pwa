@@ -186,10 +186,9 @@ export async function getShowTracks(identifier: string): Promise<ArchiveTrack[]>
   }
 }
 
-export async function searchArtists(
+async function searchArtistsSingle(
   query: string
 ): Promise<{ name: string; showCount: number }[]> {
-  // Search etree collection, group by creator
   const params = new URLSearchParams({
     q: `collection:etree AND creator:"${query}"`,
     'fl[]': 'creator',
@@ -205,7 +204,6 @@ export async function searchArtists(
     const data = await res.json()
     const docs: Record<string, unknown>[] = data?.response?.docs ?? []
 
-    // Group by creator name to get counts
     const counts = new Map<string, number>()
     for (const doc of docs) {
       const name = String(doc.creator ?? '').trim()
@@ -219,6 +217,30 @@ export async function searchArtists(
     console.error('[Archive] searchArtists error:', err)
     return []
   }
+}
+
+export async function searchArtists(
+  query: string
+): Promise<{ name: string; showCount: number }[]> {
+  const trimmed = query.trim()
+  const searches = [searchArtistsSingle(trimmed)]
+
+  // Also search "The {query}" to handle name variations
+  if (!/^the\s/i.test(trimmed)) {
+    searches.push(searchArtistsSingle(`The ${trimmed}`))
+  }
+
+  const allResults = (await Promise.all(searches)).flat()
+
+  // Deduplicate by name, summing show counts
+  const merged = new Map<string, number>()
+  for (const r of allResults) {
+    merged.set(r.name, Math.max(merged.get(r.name) ?? 0, r.showCount))
+  }
+
+  return Array.from(merged.entries())
+    .map(([name, showCount]) => ({ name, showCount }))
+    .sort((a, b) => b.showCount - a.showCount)
 }
 
 /**
