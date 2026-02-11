@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
@@ -197,6 +197,20 @@ function VirtualQueue({ upcoming, queueIndex, dragIdx, overIdx, setDragIdx, setO
   navigate: (path: string) => void
 }) {
   const queueScrollRef = useRef<HTMLDivElement>(null)
+  const isMobile = window.matchMedia('(max-width: 768px)').matches
+
+  // Touch drag state
+  const touchDragRef = useRef<{
+    active: boolean
+    fromIndex: number
+    currentOverIndex: number
+    startY: number
+    longPressTimer: ReturnType<typeof setTimeout> | null
+    itemHeight: number
+    scrollTop: number
+  }>({ active: false, fromIndex: -1, currentOverIndex: -1, startY: 0, longPressTimer: null, itemHeight: 48, scrollTop: 0 })
+  const [touchDragFrom, setTouchDragFrom] = useState<number | null>(null)
+  const [touchDragOver, setTouchDragOver] = useState<number | null>(null)
 
   const virtualizer = useVirtualizer({
     count: upcoming.length,
@@ -204,6 +218,91 @@ function VirtualQueue({ upcoming, queueIndex, dragIdx, overIdx, setDragIdx, setO
     estimateSize: () => 48,
     overscan: 8,
   })
+
+  // Touch handlers for mobile drag reorder
+  const handleTouchStart = useCallback((e: React.TouchEvent, realIndex: number) => {
+    const ref = touchDragRef.current
+    ref.startY = e.touches[0].clientY
+    ref.fromIndex = realIndex
+    ref.scrollTop = queueScrollRef.current?.scrollTop ?? 0
+    ref.longPressTimer = setTimeout(() => {
+      ref.active = true
+      ref.currentOverIndex = realIndex
+      setTouchDragFrom(realIndex)
+      setTouchDragOver(realIndex)
+      try { navigator.vibrate?.(10) } catch {}
+    }, 300)
+  }, [])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    const ref = touchDragRef.current
+    // Cancel long press if finger moves before activation
+    if (!ref.active && ref.longPressTimer) {
+      const dy = Math.abs(e.touches[0].clientY - ref.startY)
+      if (dy > 10) {
+        clearTimeout(ref.longPressTimer)
+        ref.longPressTimer = null
+        return
+      }
+    }
+    if (!ref.active) return
+    e.preventDefault()
+
+    const scrollEl = queueScrollRef.current
+    if (!scrollEl) return
+    const touch = e.touches[0]
+    const rect = scrollEl.getBoundingClientRect()
+
+    // Auto-scroll near edges
+    const edgeZone = 48
+    if (touch.clientY < rect.top + edgeZone) {
+      scrollEl.scrollTop -= 6
+    } else if (touch.clientY > rect.bottom - edgeZone) {
+      scrollEl.scrollTop += 6
+    }
+
+    // Determine which item we're over based on touch position
+    const yInList = touch.clientY - rect.top + scrollEl.scrollTop
+    // Account for the "Up Next" header (~32px)
+    const headerOffset = 32
+    const itemIdx = Math.floor(Math.max(0, yInList - headerOffset) / ref.itemHeight)
+    const clampedIdx = Math.min(Math.max(0, itemIdx), upcoming.length - 1)
+    const realOverIdx = queueIndex + 1 + clampedIdx
+
+    if (realOverIdx !== ref.currentOverIndex) {
+      ref.currentOverIndex = realOverIdx
+      setTouchDragOver(realOverIdx)
+    }
+  }, [upcoming.length, queueIndex])
+
+  const handleTouchEnd = useCallback(() => {
+    const ref = touchDragRef.current
+    if (ref.longPressTimer) {
+      clearTimeout(ref.longPressTimer)
+      ref.longPressTimer = null
+    }
+    if (ref.active && ref.fromIndex !== ref.currentOverIndex) {
+      moveInQueue(ref.fromIndex, ref.currentOverIndex)
+    }
+    ref.active = false
+    ref.fromIndex = -1
+    ref.currentOverIndex = -1
+    setTouchDragFrom(null)
+    setTouchDragOver(null)
+  }, [moveInQueue])
+
+  // Cleanup long press timer on unmount
+  useEffect(() => {
+    return () => {
+      if (touchDragRef.current.longPressTimer) {
+        clearTimeout(touchDragRef.current.longPressTimer)
+      }
+    }
+  }, [])
+
+  // Merge desktop drag and touch drag states
+  const activeDragFrom = touchDragFrom ?? dragIdx
+  const activeDragOver = touchDragOver ?? overIdx
 
   if (upcoming.length === 0) {
     return (
@@ -231,7 +330,13 @@ function VirtualQueue({ upcoming, queueIndex, dragIdx, overIdx, setDragIdx, setO
   }
 
   return (
-    <div ref={queueScrollRef} className="flex-1 overflow-y-auto">
+    <div
+      ref={queueScrollRef}
+      className="flex-1 overflow-y-auto"
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+    >
       <p className="text-[11px] text-text-muted font-mono uppercase tracking-wider px-4 pt-3 pb-1">
         Up Next · {upcoming.length} track{upcoming.length !== 1 ? 's' : ''}
       </p>
@@ -239,8 +344,8 @@ function VirtualQueue({ upcoming, queueIndex, dragIdx, overIdx, setDragIdx, setO
         {virtualizer.getVirtualItems().map(vRow => {
           const track = upcoming[vRow.index]
           const realIndex = queueIndex + 1 + vRow.index
-          const isDrag = dragIdx === realIndex
-          const isOver = overIdx === realIndex
+          const isDrag = activeDragFrom === realIndex
+          const isOver = activeDragOver === realIndex && activeDragFrom !== null && activeDragFrom !== realIndex
           return (
             <div
               key={vRow.key}
@@ -255,26 +360,15 @@ function VirtualQueue({ upcoming, queueIndex, dragIdx, overIdx, setDragIdx, setO
               }}
             >
               <div
-                draggable
-                onDragStart={() => setDragIdx(realIndex)}
-                onDragOver={(e) => { e.preventDefault(); setOverIdx(realIndex) }}
-                onDragLeave={() => { if (overIdx === realIndex) setOverIdx(null) }}
-                onDrop={() => {
-                  if (dragIdx !== null && dragIdx !== realIndex) moveInQueue(dragIdx, realIndex)
-                  setDragIdx(null)
-                  setOverIdx(null)
-                }}
-                onDragEnd={() => { setDragIdx(null); setOverIdx(null) }}
-                onClick={() => jumpToTrack(realIndex)}
-                className={`flex items-center gap-3 px-4 py-2.5 min-h-[48px] cursor-pointer group transition-all ${
-                  isDrag ? 'opacity-30' : isOver ? 'bg-neon-cyan/10 border-t border-neon-cyan/30' : 'hover:bg-white/5'
+                onClick={() => { if (!touchDragRef.current.active) jumpToTrack(realIndex) }}
+                className={`flex items-center gap-3 px-4 py-2.5 min-h-[48px] cursor-pointer group transition-all duration-150 ${
+                  isDrag
+                    ? 'opacity-40 scale-[1.03] shadow-lg shadow-neon-cyan/10 bg-white/5 z-10 relative'
+                    : isOver
+                    ? 'bg-neon-cyan/10 border-t-2 border-neon-cyan/40'
+                    : 'hover:bg-white/5'
                 }`}
               >
-                <div className="opacity-0 group-hover:opacity-40 cursor-grab active:cursor-grabbing shrink-0 text-text-muted">
-                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
-                    <path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
-                  </svg>
-                </div>
                 {track.imageUrl && (
                   <JellyImage src={track.imageUrl} width={36} height={36} maxWidth={80} className="w-9 h-9 rounded-lg" />
                 )}
@@ -285,12 +379,36 @@ function VirtualQueue({ upcoming, queueIndex, dragIdx, overIdx, setDragIdx, setO
                 <span className="text-xs text-text-muted font-mono shrink-0">{formatDuration(track.duration)}</span>
                 <button
                   onClick={(e) => { e.stopPropagation(); removeFromQueue(realIndex) }}
-                  className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-neon-pink transition-all p-1 min-w-[32px] min-h-[32px] flex items-center justify-center"
+                  className={`text-text-muted hover:text-neon-pink transition-all p-1 min-w-[32px] min-h-[32px] flex items-center justify-center ${
+                    isMobile ? 'opacity-0 pointer-events-none w-0 p-0 min-w-0' : 'opacity-0 group-hover:opacity-100'
+                  }`}
                 >
                   <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
                     <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
                   </svg>
                 </button>
+                {/* Drag handle — right side */}
+                <div
+                  draggable={!isMobile}
+                  onDragStart={(e) => { e.stopPropagation(); setDragIdx(realIndex) }}
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setOverIdx(realIndex) }}
+                  onDragLeave={() => { if (overIdx === realIndex) setOverIdx(null) }}
+                  onDrop={(e) => {
+                    e.stopPropagation()
+                    if (dragIdx !== null && dragIdx !== realIndex) moveInQueue(dragIdx, realIndex)
+                    setDragIdx(null)
+                    setOverIdx(null)
+                  }}
+                  onDragEnd={() => { setDragIdx(null); setOverIdx(null) }}
+                  onTouchStart={(e) => { e.stopPropagation(); handleTouchStart(e, realIndex) }}
+                  className={`shrink-0 text-text-muted cursor-grab active:cursor-grabbing touch-none select-none p-1 min-w-[32px] min-h-[32px] flex items-center justify-center ${
+                    isMobile ? 'opacity-40' : 'opacity-0 group-hover:opacity-40 hover:!opacity-70'
+                  }`}
+                >
+                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+                    <path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                  </svg>
+                </div>
               </div>
             </div>
           )

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth'
 import { useUIStore } from '../stores/ui'
@@ -33,10 +33,39 @@ function createTrack(item: BaseItemDto, serverUrl: string): Track {
   }
 }
 
+/** Section header with count and optional Play All */
+function SectionHeader({ title, count, onPlayAll }: { title: string; count: number; onPlayAll?: () => void }) {
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <h2 className="text-lg font-bold tracking-[-0.02em]">
+        {title} <span className="text-text-muted font-medium">({count})</span>
+      </h2>
+      {onPlayAll && count > 0 && (
+        <button
+          onClick={onPlayAll}
+          className="flex items-center gap-1.5 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors px-2.5 py-1.5 rounded-lg hover:bg-surface-hover active:scale-95"
+        >
+          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+          Play All
+        </button>
+      )}
+    </div>
+  )
+}
+
+/** Muted empty hint for a section */
+function SectionEmpty({ text }: { text: string }) {
+  return (
+    <p className="py-6 text-center text-sm text-text-muted/70">{text}</p>
+  )
+}
+
 export default function Favorites() {
   const { api, userId, serverUrl } = useAuthStore()
   const { viewMode, gridDensity, setViewMode, setGridDensity } = useUIStore()
-  const setTrack = usePlayerStore(s => s.setTrack)
+  const { setTrack } = usePlayerStore()
   const navigate = useNavigate()
   const [items, setItems] = useState<BaseItemDto[]>([])
   const [loading, setLoading] = useState(true)
@@ -64,33 +93,59 @@ export default function Favorites() {
     setLoading(false)
   }
 
-  // Pull to refresh setup
+  // Pull to refresh
   const containerRef = useRef<HTMLDivElement>(null)
   const isTouchDevice = window.matchMedia('(hover: none)').matches
-  const { 
-    containerRef: pullContainerRef, 
-    touchHandlers, 
-    isRefreshing: isPullRefreshing, 
-    isPulling, 
-    shouldTrigger, 
-    progress 
-  } = usePullToRefresh({
-    onRefresh: loadFavorites,
-    disabled: !isTouchDevice
-  })
+  const {
+    containerRef: pullContainerRef,
+    touchHandlers,
+    isRefreshing: isPullRefreshing,
+    isPulling,
+    shouldTrigger,
+    progress,
+  } = usePullToRefresh({ onRefresh: loadFavorites, disabled: !isTouchDevice })
 
   const imgUrl = (item: BaseItemDto, size = 400) =>
     serverUrl ? getImageUrl(serverUrl, item.Id!, item.ImageTags?.Primary, size) : ''
 
-  // Filter items by type
-  const artists = items.filter(i => i.Type === BaseItemKind.MusicArtist)
-  const albums = items.filter(i => i.Type === BaseItemKind.MusicAlbum)  
-  const tracks = items.filter(i => i.Type === BaseItemKind.Audio)
-  const trackObjects = serverUrl ? tracks.map(t => createTrack(t, serverUrl)) : []
+  // Sorted & filtered items
+  const artists = useMemo(
+    () =>
+      items
+        .filter((i) => i.Type === BaseItemKind.MusicArtist)
+        .sort((a, b) => (a.Name ?? '').localeCompare(b.Name ?? '')),
+    [items],
+  )
+
+  const albums = useMemo(
+    () =>
+      items
+        .filter((i) => i.Type === BaseItemKind.MusicAlbum)
+        .sort((a, b) => {
+          const artist = (a.AlbumArtist ?? '').localeCompare(b.AlbumArtist ?? '')
+          if (artist !== 0) return artist
+          return (a.ProductionYear ?? 0) - (b.ProductionYear ?? 0)
+        }),
+    [items],
+  )
+
+  const tracks = useMemo(() => items.filter((i) => i.Type === BaseItemKind.Audio), [items])
+
+  const trackObjects = useMemo(
+    () =>
+      serverUrl
+        ? tracks
+            .map((t) => createTrack(t, serverUrl))
+            .sort((a, b) => {
+              const artist = (a.artistName ?? '').localeCompare(b.artistName ?? '')
+              if (artist !== 0) return artist
+              return a.name.localeCompare(b.name)
+            })
+        : [],
+    [tracks, serverUrl],
+  )
 
   const gridProps = getGridProps(gridDensity)
-
-  // Show view toggle for filters that have grid-able content
   const showViewToggle = favoritesFilter === 'All' || favoritesFilter === 'Albums' || favoritesFilter === 'Artists'
 
   function handleTrackContextMenu(track: Track, e: React.MouseEvent) {
@@ -102,20 +157,18 @@ export default function Favorites() {
     setTrack(track, trackObjects, index)
   }
 
-  // Render artist section
+  function handlePlayAllTracks() {
+    if (trackObjects.length > 0) setTrack(trackObjects[0], trackObjects, 0)
+  }
+
+  // --- Section renderers ---
+
   function renderArtists() {
-    if (artists.length === 0) {
-      return (
-        <div className="py-8 text-center text-text-muted">
-          <p className="text-sm">No favorite artists yet</p>
-          <p className="text-xs mt-1 text-text-muted/60">Tap the ♥ on any artist to add them here</p>
-        </div>
-      )
-    }
+    if (artists.length === 0) return <SectionEmpty text="No favorite artists yet" />
     if (viewMode === 'list') {
       return (
         <div className="space-y-1">
-          {artists.map(a => (
+          {artists.map((a) => (
             <ArtistListRow
               key={a.Id}
               id={a.Id!}
@@ -129,27 +182,19 @@ export default function Favorites() {
     }
     return (
       <div style={gridProps.style}>
-        {artists.map(a => (
+        {artists.map((a) => (
           <ArtistCard key={a.Id} id={a.Id!} name={a.Name ?? ''} imageUrl={a.ImageTags?.Primary ? imgUrl(a) : undefined} />
         ))}
       </div>
     )
   }
 
-  // Render album section
   function renderAlbums() {
-    if (albums.length === 0) {
-      return (
-        <div className="py-8 text-center text-text-muted">
-          <p className="text-sm">No favorite albums yet</p>
-          <p className="text-xs mt-1 text-text-muted/60">Tap the ♥ on any album to add it here</p>
-        </div>
-      )
-    }
+    if (albums.length === 0) return <SectionEmpty text="No favorite albums yet" />
     if (viewMode === 'list') {
       return (
         <div className="space-y-1">
-          {albums.map(a => (
+          {albums.map((a) => (
             <AlbumListRow
               key={a.Id}
               id={a.Id!}
@@ -165,23 +210,15 @@ export default function Favorites() {
     }
     return (
       <div style={gridProps.style}>
-        {albums.map(a => (
+        {albums.map((a) => (
           <AlbumCard key={a.Id} id={a.Id!} name={a.Name ?? ''} artistName={a.AlbumArtist ?? ''} imageUrl={imgUrl(a)} year={a.ProductionYear ?? undefined} />
         ))}
       </div>
     )
   }
 
-  // Render tracks section
   function renderTracks() {
-    if (trackObjects.length === 0) {
-      return (
-        <div className="py-8 text-center text-text-muted">
-          <p className="text-sm">No favorite tracks yet</p>
-          <p className="text-xs mt-1 text-text-muted/60">Tap the ♥ on any track to add it here</p>
-        </div>
-      )
-    }
+    if (trackObjects.length === 0) return <SectionEmpty text="No favorite tracks yet" />
     return (
       <div className="space-y-1">
         {trackObjects.map((track, index) => (
@@ -200,6 +237,8 @@ export default function Favorites() {
     )
   }
 
+  const isAll = favoritesFilter === 'All'
+
   return (
     <div className="h-full flex flex-col">
       <div className="px-4 md:px-8 pt-5 md:pt-8 pb-4 md:pb-5 space-y-4 shrink-0">
@@ -214,17 +253,11 @@ export default function Favorites() {
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Filter pills */}
         <div className="flex items-center gap-2 md:gap-3 overflow-x-auto pb-1 -mx-1 px-1">
           {filters.map((f) => (
-            <FilterPill 
-              key={f} 
-              label={f} 
-              active={favoritesFilter === f} 
-              onClick={() => setFavoritesFilter(f)} 
-            />
+            <FilterPill key={f} label={f} active={favoritesFilter === f} onClick={() => setFavoritesFilter(f)} />
           ))}
-          {/* View toggle — inline on desktop */}
           {showViewToggle && (
             <div className="hidden md:flex items-center gap-2 ml-auto">
               <ViewModeToggle viewMode={viewMode} gridDensity={gridDensity} setViewMode={setViewMode} setGridDensity={setGridDensity} />
@@ -232,7 +265,7 @@ export default function Favorites() {
           )}
         </div>
 
-        {/* View toggle — second row on mobile */}
+        {/* Mobile view toggle */}
         {showViewToggle && (
           <div className="flex md:hidden items-center gap-2 mt-1">
             <div className="flex-1" />
@@ -241,7 +274,7 @@ export default function Favorites() {
         )}
       </div>
 
-      <div 
+      <div
         ref={(el) => {
           containerRef.current = el
           pullContainerRef(el)
@@ -249,13 +282,8 @@ export default function Favorites() {
         className="flex-1 overflow-y-auto px-4 md:px-8 pb-48 md:pb-28 relative"
         {...touchHandlers}
       >
-        {/* Pull to refresh indicator */}
-        <PullToRefreshIndicator
-          isVisible={isPulling}
-          isRefreshing={isPullRefreshing}
-          shouldTrigger={shouldTrigger}
-          progress={progress}
-        />
+        <PullToRefreshIndicator isVisible={isPulling} isRefreshing={isPullRefreshing} shouldTrigger={shouldTrigger} progress={progress} />
+
         {loading ? (
           <div style={gridProps.style}>
             {Array.from({ length: 8 }).map((_, i) => (
@@ -275,10 +303,7 @@ export default function Favorites() {
             }
             title="Something went wrong"
             subtitle={error}
-            action={{
-              label: "Try again",
-              onClick: () => loadFavorites()
-            }}
+            action={{ label: 'Try again', onClick: () => loadFavorites() }}
           />
         ) : items.length === 0 ? (
           <EmptyState
@@ -289,33 +314,30 @@ export default function Favorites() {
             }
             title="No favorites yet"
             subtitle="Tap the heart on albums and artists to add them to your favorites."
-            action={{
-              label: "Browse your library",
-              onClick: () => navigate('/library')
-            }}
+            action={{ label: 'Browse your library', onClick: () => navigate('/library') }}
           />
         ) : (
           <div className="space-y-8">
-            {/* Artists section */}
-            {(favoritesFilter === 'All' || favoritesFilter === 'Artists') && (
+            {/* Artists */}
+            {(isAll || favoritesFilter === 'Artists') && (
               <section>
-                {favoritesFilter === 'All' && <h2 className="text-lg font-bold tracking-[-0.02em] mb-4">Favorite Artists</h2>}
+                {isAll && <SectionHeader title="Favorite Artists" count={artists.length} />}
                 {renderArtists()}
               </section>
             )}
 
-            {/* Albums section */}
-            {(favoritesFilter === 'All' || favoritesFilter === 'Albums') && (
+            {/* Albums */}
+            {(isAll || favoritesFilter === 'Albums') && (
               <section>
-                {favoritesFilter === 'All' && <h2 className="text-lg font-bold tracking-[-0.02em] mb-4">Favorite Albums</h2>}
+                {isAll && <SectionHeader title="Favorite Albums" count={albums.length} />}
                 {renderAlbums()}
               </section>
             )}
 
-            {/* Tracks section */}
-            {(favoritesFilter === 'All' || favoritesFilter === 'Tracks') && (
+            {/* Tracks */}
+            {(isAll || favoritesFilter === 'Tracks') && (
               <section>
-                {favoritesFilter === 'All' && <h2 className="text-lg font-bold tracking-[-0.02em] mb-4">Favorite Tracks</h2>}
+                {isAll && <SectionHeader title="Favorite Tracks" count={trackObjects.length} onPlayAll={handlePlayAllTracks} />}
                 {renderTracks()}
               </section>
             )}
@@ -323,12 +345,7 @@ export default function Favorites() {
         )}
       </div>
 
-      {/* Context Menu */}
-      <TrackContextMenu
-        track={contextMenu?.track || null}
-        position={contextMenu?.position || null}
-        onClose={() => setContextMenu(null)}
-      />
+      <TrackContextMenu track={contextMenu?.track || null} position={contextMenu?.position || null} onClose={() => setContextMenu(null)} />
     </div>
   )
 }
