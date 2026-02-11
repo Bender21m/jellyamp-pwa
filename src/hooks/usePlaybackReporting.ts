@@ -59,8 +59,7 @@ export function usePlaybackReporting(options: UsePlaybackReportingOptions) {
     const playstateApi = getPlaystateApi(api)
 
     const reportProgress = () => {
-      const ticks = Math.round(currentTime * 10_000_000)
-      lastReportedTimeRef.current = currentTime
+      const ticks = Math.round(lastReportedTimeRef.current * 10_000_000)
       playstateApi.onPlaybackProgress({
         itemId: trackId,
         positionTicks: ticks,
