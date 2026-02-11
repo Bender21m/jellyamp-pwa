@@ -468,7 +468,7 @@ function VirtualTrackList({ tracks, scrollRef, trackListRef, selection, focusedI
   tracks: Track[]
   scrollRef: React.RefObject<HTMLDivElement | null>
   trackListRef: React.RefObject<HTMLDivElement | null>
-  selection: ReturnType<typeof import('../hooks/useTrackSelection').useTrackSelection>
+  selection: { isSelected: (id: string) => boolean; handleClick: (id: string, index: number, e: React.MouseEvent) => void }
   focusedIndex: number | null
   onContextMenu: (track: Track, e: React.MouseEvent) => void
 }) {
