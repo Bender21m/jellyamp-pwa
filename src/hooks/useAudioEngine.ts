@@ -47,6 +47,7 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
   const fadeInRef = useRef<number | null>(null)
   const lastPauseTimeRef = useRef<number>(0)
   const userInitiatedRef = useRef(false) // tracks whether playback was user-initiated vs restore from reload
+  const playAttemptedRef = useRef(false)
 
   // Refs for values accessed in event handlers to prevent stale closures
   const volumeRef = useRef(volume)
@@ -172,29 +173,54 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
     // Only auto-play if this is a user-initiated track change (not a page reload restore)
     const shouldAutoPlay = userInitiatedRef.current
 
+    let safetyTimer: ReturnType<typeof setTimeout> | null = null
+
     if (shouldAutoPlay) {
-      const onCanPlay = () => {
+      playAttemptedRef.current = false
+
+      const attemptPlay = () => {
+        if (playAttemptedRef.current) return
+        playAttemptedRef.current = true
+
         const targetVolume = mutedRef.current ? 0 : volumeRef.current
         if (crossfadeModeRef.current === 'gapless') {
           audio.volume = targetVolume
         } else {
           startFadeIn(audio, targetVolume)
         }
-        audio.play().then(() => onPlay()).catch((err) => console.error('[JellyAmp] Play failed:', err))
+        audio.play()
+          .then(() => onPlay())
+          .catch((err) => {
+            console.warn('[JellyAmp] Play attempt failed, retrying...', err)
+            playAttemptedRef.current = false
+            setTimeout(() => {
+              if (!playAttemptedRef.current && audio === audioRef.current) {
+                playAttemptedRef.current = true
+                audio.play()
+                  .then(() => onPlay())
+                  .catch((e) => console.error('[JellyAmp] Play retry failed:', e))
+              }
+            }, 300)
+          })
       }
 
-      const isGaplessPreloaded = crossfadeModeRef.current === 'gapless' && audio.readyState >= 3
       if (audio.readyState >= 3) {
-        const targetVolume = mutedRef.current ? 0 : volumeRef.current
-        if (isGaplessPreloaded) {
-          audio.volume = targetVolume
-        } else {
-          startFadeIn(audio, targetVolume)
-        }
-        audio.play().then(() => onPlay()).catch(() => {})
+        attemptPlay()
       } else {
-        audio.addEventListener('canplay', onCanPlay, { once: true })
+        audio.addEventListener('canplay', attemptPlay, { once: true })
+        audio.addEventListener('loadeddata', () => {
+          if (!playAttemptedRef.current && audio.readyState >= 2) {
+            attemptPlay()
+          }
+        }, { once: true })
       }
+
+      safetyTimer = setTimeout(() => {
+        if (audio === audioRef.current && audio.paused && !playAttemptedRef.current) {
+          console.warn('[JellyAmp] Safety timeout: forcing play attempt')
+          attemptPlay()
+        }
+      }, 3000)
     }
     audio.addEventListener('error', onError)
 
@@ -256,6 +282,8 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
       audio.removeEventListener('durationchange', onDuration)
       audio.removeEventListener('ended', onEnded)
       audio.removeEventListener('error', onError)
+      if (safetyTimer) clearTimeout(safetyTimer)
+      playAttemptedRef.current = false
       if (crossfadeTimerRef.current) {
         cancelAnimationFrame(crossfadeTimerRef.current)
         crossfadeTimerRef.current = null
