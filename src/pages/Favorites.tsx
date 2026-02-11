@@ -14,7 +14,7 @@ import TrackContextMenu from '../components/TrackContextMenu'
 import EmptyState from '../components/EmptyState'
 import FilterPill from '../components/FilterPill'
 import ViewModeToggle from '../components/library/ViewModeToggle'
-import { getGridCols } from '../components/library/LibraryContent'
+import { getGridProps } from '../components/library/LibraryContent'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
 import PullToRefreshIndicator from '../components/PullToRefreshIndicator'
 
@@ -88,7 +88,7 @@ export default function Favorites() {
   const tracks = items.filter(i => i.Type === BaseItemKind.Audio)
   const trackObjects = serverUrl ? tracks.map(t => createTrack(t, serverUrl)) : []
 
-  const gridCols = getGridCols(gridDensity)
+  const gridProps = getGridProps(gridDensity)
 
   // Show view toggle for filters that have grid-able content
   const showViewToggle = favoritesFilter === 'All' || favoritesFilter === 'Albums' || favoritesFilter === 'Artists'
@@ -128,7 +128,7 @@ export default function Favorites() {
       )
     }
     return (
-      <div className={gridCols}>
+      <div style={gridProps.style}>
         {artists.map(a => (
           <ArtistCard key={a.Id} id={a.Id!} name={a.Name ?? ''} imageUrl={a.ImageTags?.Primary ? imgUrl(a) : undefined} />
         ))}
@@ -164,7 +164,7 @@ export default function Favorites() {
       )
     }
     return (
-      <div className={gridCols}>
+      <div style={gridProps.style}>
         {albums.map(a => (
           <AlbumCard key={a.Id} id={a.Id!} name={a.Name ?? ''} artistName={a.AlbumArtist ?? ''} imageUrl={imgUrl(a)} year={a.ProductionYear ?? undefined} />
         ))}
@@ -257,7 +257,7 @@ export default function Favorites() {
           progress={progress}
         />
         {loading ? (
-          <div className={gridCols}>
+          <div style={gridProps.style}>
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i}>
                 <div className="aspect-square skeleton rounded-xl mb-3" />

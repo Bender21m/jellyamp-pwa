@@ -13,14 +13,25 @@ import type { BaseItemDto } from '../../lib/jellyfin'
 import type { ViewMode, GridDensity } from '../../stores/ui'
 import { getImageUrl } from '../../lib/jellyfin'
 
-export function getGridCols(density: GridDensity = 'normal'): string {
-  switch (density) {
-    case 'compact':
-      return 'grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3 md:gap-4 lg:gap-5'
-    case 'dense':
-      return 'grid grid-cols-4 sm:grid-cols-5 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-2 md:gap-3'
-    default:
-      return 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 md:gap-6 lg:gap-7'
+/**
+ * Returns inline style + className for responsive grid based on density.
+ * Uses CSS minmax auto-fill so Tailwind purging can't strip the classes.
+ */
+export function getGridProps(density: GridDensity = 'normal'): { style: React.CSSProperties; className: string } {
+  // minWidth per card determines how many columns fit
+  const config = {
+    normal: { minWidth: '160px', gap: '1.25rem' },   // ~2 cols mobile
+    compact: { minWidth: '120px', gap: '0.75rem' },   // ~3 cols mobile
+    dense: { minWidth: '90px', gap: '0.5rem' },        // ~4 cols mobile
+  }
+  const { minWidth, gap } = config[density]
+  return {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: `repeat(auto-fill, minmax(${minWidth}, 1fr))`,
+      gap,
+    },
+    className: '',
   }
 }
 
@@ -66,7 +77,7 @@ export default function LibraryContent({
   const imgUrl = (item: BaseItemDto, size = 400) =>
     serverUrl ? getImageUrl(serverUrl, item.Id!, item.ImageTags?.Primary, size) : ''
 
-  const gridCols = getGridCols(gridDensity)
+  const gridProps = getGridProps(gridDensity)
 
   // Group recent albums by timeframe
   const groupRecentAlbums = useCallback((items: BaseItemDto[]) => {
@@ -115,7 +126,7 @@ export default function LibraryContent({
           {genreAlbums.length === 0 ? (
             <p className="text-text-muted text-sm">No albums found in this genre.</p>
           ) : (
-            <div className={gridCols}>
+            <div style={gridProps.style}>
               {genreAlbums.map((a) => (
                 <div key={a.Id}>
                   <AlbumCard
@@ -188,7 +199,7 @@ export default function LibraryContent({
         {groupRecentAlbums(recentAlbums).map(group => (
           <div key={group.label}>
             <h2 className="text-lg font-bold mb-3 text-text-secondary">{group.label}</h2>
-            <div className={gridCols}>
+            <div style={gridProps.style}>
               {group.items.map((a) => (
                 <div key={a.Id}>
                   <AlbumCard
@@ -241,7 +252,7 @@ export default function LibraryContent({
     }
     
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-5 md:gap-7">
+      <div style={gridProps.style}>
         {albums.map((a) => (
           <AlbumCard
             key={a.Id}
@@ -288,7 +299,7 @@ export default function LibraryContent({
     }
     
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6 gap-5 md:gap-7">
+      <div style={gridProps.style}>
         {artists.map((a) => (
           <ArtistCard
             key={a.Id}
@@ -321,7 +332,7 @@ export default function LibraryContent({
     }
     
     return (
-      <div className={gridCols}>
+      <div style={gridProps.style}>
         {playlists.map((p) => (
           <div key={p.Id}>
             <PlaylistCard
