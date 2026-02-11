@@ -2,6 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { setDragData } from '../lib/dragdrop'
 import JellyImage from './JellyImage'
+import ArtistPlaceholder from './ArtistPlaceholder'
 
 interface ArtistCardProps {
   id: string
@@ -21,7 +22,11 @@ const ArtistCard = React.memo(function ArtistCard({ id, name, imageUrl }: Artist
         className="group cursor-pointer flex flex-col items-center hover:-translate-y-0.5 transition-transform duration-200"
       >
         <div className="relative w-full aspect-square mb-3 rounded-xl overflow-hidden bg-card ring-1 ring-white/5 group-hover:ring-neon-cyan/30 transition-all duration-300 group-hover:shadow-[0_0_20px_rgba(0,255,221,0.12)]">
-          <JellyImage src={imageUrl} width={300} height={300} maxWidth={300} alt={name} className="w-full h-full transition-transform duration-500 group-hover:scale-105" />
+          {imageUrl ? (
+            <JellyImage src={imageUrl} width={300} height={300} maxWidth={300} alt={name} className="w-full h-full transition-transform duration-500 group-hover:scale-105" />
+          ) : (
+            <ArtistPlaceholder name={name} className="w-full h-full transition-transform duration-500 group-hover:scale-105" textSize="text-3xl" />
+          )}
           {/* Play overlay on hover - desktop only */}
           <div className="absolute inset-0 bg-deep-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none hidden md:flex">
             <div className="w-12 h-12 rounded-full bg-neon-cyan flex items-center justify-center shadow-[0_0_24px_rgba(0,255,221,0.5)]">
