@@ -169,6 +169,8 @@ export async function fetchFavorites(api: Api, userId: string, itemTypes: BaseIt
     sortOrder: [SortOrder.Ascending],
     filters: ['IsFavorite' as never],
     fields: [ItemFields.PrimaryImageAspectRatio],
+    enableImages: true,
+    enableImageTypes: ['Primary' as never],
   })
   return data
 }
