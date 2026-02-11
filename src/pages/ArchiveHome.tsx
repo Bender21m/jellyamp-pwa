@@ -330,7 +330,13 @@ export default function ArchiveHome() {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="px-4 md:px-8 pt-5 md:pt-8 pb-4 shrink-0">
-        <div className="flex items-baseline gap-3 mb-0.5">
+        <div className="flex items-center gap-2.5 mb-0.5">
+          {/* Internet Archive logo */}
+          <svg viewBox="0 0 24 24" className="w-7 h-7 md:w-8 md:h-8 text-neon-cyan shrink-0" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 21h18M4 21V8l8-5 8 5v13" />
+            <path d="M9 21v-6h6v6M9 12h1M14 12h1M9 15h1M14 15h1" />
+            <circle cx="12" cy="9" r="1" fill="currentColor" stroke="none" />
+          </svg>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-[-0.04em]">Live Archive</h1>
         </div>
         <p className="text-[13px] text-text-muted tracking-wide">200,000+ live recordings from the Internet Archive</p>
