@@ -163,7 +163,7 @@ export default function AlbumDetail() {
 
   if (loading) {
     return (
-      <div className="h-full overflow-y-auto pb-40 md:pb-28 px-5 md:px-8 pt-6">
+      <div className="h-full overflow-y-auto pb-48 md:pb-28 px-5 md:px-8 pt-6">
         <div className="h-6 w-12 skeleton rounded mb-4" />
         <div className="flex flex-col items-center md:flex-row md:items-end gap-6 md:gap-8 mb-10">
           <div className="w-[220px] md:w-[260px] aspect-square skeleton rounded-2xl shrink-0" />

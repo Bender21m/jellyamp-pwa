@@ -174,12 +174,14 @@ export default function Library() {
     setGenreAlbums([])
   }, [libraryFilter])
 
-  // Auto-hide mobile search when search is cleared
+  const mobileSearchRef = useRef<HTMLInputElement>(null)
+
+  // Focus input when mobile search opens
   useEffect(() => {
-    if (!search && showMobileSearch) {
-      setShowMobileSearch(false)
+    if (showMobileSearch && mobileSearchRef.current) {
+      mobileSearchRef.current.focus()
     }
-  }, [search, showMobileSearch])
+  }, [showMobileSearch])
 
   // Group recent albums by timeframe
   const groupRecentAlbums = useCallback((items: BaseItemDto[]) => {
@@ -313,7 +315,34 @@ export default function Library() {
           </div>
         </div>
 
-        {/* Mobile search removed - was unused */}
+        {/* Mobile search input — expandable */}
+        {showMobileSearch && (
+          <div className="flex md:hidden items-center gap-2 mt-1">
+            <div className="relative flex-1">
+              <input
+                ref={mobileSearchRef}
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search library..."
+                className="w-full pl-9 pr-9 py-2.5 bg-surface border border-white/5 rounded-lg text-sm text-text-primary placeholder:text-text-muted/50 focus:outline-none focus:border-neon-cyan/30 focus:ring-1 focus:ring-neon-cyan/10"
+              />
+              <svg viewBox="0 0 24 24" className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" fill="currentColor">
+                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+              </svg>
+              {search && (
+                <button
+                  onClick={() => { setSearch(''); setShowMobileSearch(false) }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
+                >
+                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Sort + View toggle — second row on mobile */}
         <div className="flex md:hidden items-center gap-2 mt-1">
