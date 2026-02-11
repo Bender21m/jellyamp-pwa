@@ -11,7 +11,14 @@ export default function Connect() {
 
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (await connect(url)) {
+    
+    // Auto-prepend https:// if no protocol is provided
+    let serverUrl = url.trim()
+    if (serverUrl && !serverUrl.match(/^https?:\/\//)) {
+      serverUrl = `https://${serverUrl}`
+    }
+    
+    if (await connect(serverUrl)) {
       setStep('login')
     }
   }
@@ -54,6 +61,9 @@ export default function Connect() {
           </h1>
           <p className="text-text-secondary mt-2 text-sm tracking-wide font-mono uppercase">
             Your music. Everywhere.
+          </p>
+          <p className="text-text-muted mt-6 text-sm text-center">
+            Enter your Jellyfin server URL below to get started
           </p>
         </motion.div>
 
@@ -142,7 +152,12 @@ export default function Connect() {
               exit={{ opacity: 0, y: 10 }}
               className="mt-4 px-4 py-3 rounded-xl bg-neon-pink/10 border border-neon-pink/20 text-neon-pink text-sm text-center"
             >
-              {error}
+              <div className="mb-1">{error}</div>
+              {error.includes('Could not connect') && (
+                <div className="text-xs text-neon-pink/80 mt-2">
+                  Check the URL is correct. If you're using http://, try https:// instead.
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
