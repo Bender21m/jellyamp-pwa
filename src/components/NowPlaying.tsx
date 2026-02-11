@@ -7,9 +7,6 @@ import { useAlbumColors } from '../hooks/useAlbumColors'
 import { toggleFavorite } from '../lib/jellyfin'
 import { formatTime } from '../lib/formatTime'
 import LyricsView from './LyricsView'
-import { useAuthStore as useAuthStoreForRadio } from '../stores/auth'
-import { getInstantMix, getImageUrl as getImageUrlForRadio } from '../lib/jellyfin'
-import type { BaseItemDto } from '../lib/jellyfin'
 import Waveform from './Waveform'
 
 export default function NowPlaying() {
@@ -17,6 +14,7 @@ export default function NowPlaying() {
     currentTrack, isPlaying, currentTime, duration, shuffle, repeat, showNowPlaying,
     queue, queueIndex,
     toggle, next, previous, seek, toggleShuffle, cycleRepeat, setShowNowPlaying, setShowQueue,
+    radioMode, setRadioMode,
   } = usePlayerStore()
   const { api, userId } = useAuthStore()
   const navigate = useNavigate()
@@ -192,6 +190,22 @@ export default function NowPlaying() {
     </div>
   )
 
+  const radioButton = (
+    <div className="flex items-center justify-center mt-2">
+      <button
+        onClick={() => setRadioMode(!radioMode, currentTrack?.id ?? undefined)}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+          radioMode
+            ? 'bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30'
+            : 'text-white/40 hover:text-white/60 border border-transparent'
+        }`}
+      >
+        <span className={`text-base leading-none ${radioMode ? 'animate-pulse' : ''}`}>∞</span>
+        <span>Radio</span>
+      </button>
+    </div>
+  )
+
   const upNextLyrics = (
     <motion.div
       initial={{ opacity: 0 }}
@@ -322,6 +336,7 @@ export default function NowPlaying() {
             <div className="w-full mt-6 mb-6">{trackInfo}</div>
             <div className="w-full mb-4">{waveformProgress}</div>
             {controls}
+            {radioButton}
             <div className="mt-8 w-full">{upNextLyrics}</div>
           </div>
 
@@ -337,6 +352,7 @@ export default function NowPlaying() {
               {trackInfo}
               {waveformProgress}
               {controls}
+              {radioButton}
               <div className="mt-4">{upNextLyrics}</div>
             </div>
           </div>

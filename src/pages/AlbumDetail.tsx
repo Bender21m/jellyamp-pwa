@@ -25,6 +25,7 @@ export default function AlbumDetail() {
   const navigate = useNavigate()
   const { api, userId, serverUrl } = useAuthStore()
   const setTrack = usePlayerStore(s => s.setTrack)
+  const setRadioMode = usePlayerStore(s => s.setRadioMode)
   const [album, setAlbum] = useState<BaseItemDto | null>(null)
   const [tracks, setTracks] = useState<Track[]>([])
   const [loading, setLoading] = useState(true)
@@ -329,6 +330,19 @@ export default function AlbumDetail() {
               >
                 <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" /></svg>
                 Shuffle
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  if (id && tracks.length > 0) {
+                    setTrack(tracks[0], tracks, 0)
+                    setRadioMode(true, id)
+                  }
+                }}
+                className="h-11 inline-flex items-center gap-2.5 px-6 rounded-full border border-white/10 text-sm text-text-secondary whitespace-nowrap hover:text-text-primary hover:border-white/20 transition-all"
+              >
+                <span className="text-base leading-none">∞</span>
+                Radio
               </motion.button>
               <button
                 onClick={handleFavorite}
