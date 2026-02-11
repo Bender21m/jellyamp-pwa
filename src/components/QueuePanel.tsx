@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { usePlayerStore } from '../stores/player'
 import EmptyState from './EmptyState'
 import JellyImage from './JellyImage'
@@ -160,84 +161,141 @@ export default function QueuePanel() {
         </div>
 
         {/* Up Next */}
-        <div className="flex-1 overflow-y-auto">
-          {upcoming.length === 0 ? (
-            <div className="py-8">
-              <EmptyState
-                icon={
-                  <svg viewBox="0 0 24 24" className="w-12 h-12" fill="currentColor">
-                    <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
-                  </svg>
-                }
-                title="Queue is empty"
-                subtitle="Play something to get started"
-                action={{
-                  label: "Browse library",
-                  onClick: () => {
-                    setShowQueue(false)
-                    navigate('/library')
-                  }
-                }}
-              />
-            </div>
-          ) : (
-            <>
-              <p className="text-[11px] text-text-muted font-mono uppercase tracking-wider px-4 pt-3 pb-1">
-                Up Next · {upcoming.length} track{upcoming.length !== 1 ? 's' : ''}
-              </p>
-              {upcoming.map((track, i) => {
-                const realIndex = queueIndex + 1 + i
-                const isDragging = dragIdx === realIndex
-                const isOver = overIdx === realIndex
-                return (
-                  <div
-                    key={`${track.id}-${realIndex}`}
-                    draggable
-                    onDragStart={() => setDragIdx(realIndex)}
-                    onDragOver={(e) => { e.preventDefault(); setOverIdx(realIndex) }}
-                    onDragLeave={() => { if (overIdx === realIndex) setOverIdx(null) }}
-                    onDrop={() => {
-                      if (dragIdx !== null && dragIdx !== realIndex) {
-                        moveInQueue(dragIdx, realIndex)
-                      }
-                      setDragIdx(null)
-                      setOverIdx(null)
-                    }}
-                    onDragEnd={() => { setDragIdx(null); setOverIdx(null) }}
-                    onClick={() => jumpToTrack(realIndex)}
-                    className={`flex items-center gap-3 px-4 py-2.5 min-h-[48px] cursor-pointer group transition-all ${
-                      isDragging ? 'opacity-30' : isOver ? 'bg-neon-cyan/10 border-t border-neon-cyan/30' : 'hover:bg-white/5'
-                    }`}
-                  >
-                    {/* Drag handle */}
-                    <div className="opacity-0 group-hover:opacity-40 cursor-grab active:cursor-grabbing shrink-0 text-text-muted">
-                      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
-                        <path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
-                      </svg>
-                    </div>
-                    {track.imageUrl && (
-                      <JellyImage src={track.imageUrl} width={36} height={36} maxWidth={80} className="w-9 h-9 rounded-lg" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm truncate group-hover:text-neon-cyan transition-colors">{track.name}</p>
-                      <p className="text-xs text-text-muted truncate">{track.artistName}</p>
-                    </div>
-                    <span className="text-xs text-text-muted font-mono shrink-0">{formatDuration(track.duration)}</span>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); removeFromQueue(realIndex) }}
-                      className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-neon-pink transition-all p-1 min-w-[32px] min-h-[32px] flex items-center justify-center"
-                    >
-                      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
-                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                      </svg>
-                    </button>
-                  </div>
-                )
-              })}
-            </>
-          )}
-        </div>
+        <VirtualQueue
+          upcoming={upcoming}
+          queueIndex={queueIndex}
+          dragIdx={dragIdx}
+          overIdx={overIdx}
+          setDragIdx={setDragIdx}
+          setOverIdx={setOverIdx}
+          moveInQueue={moveInQueue}
+          jumpToTrack={jumpToTrack}
+          removeFromQueue={removeFromQueue}
+          formatDuration={formatDuration}
+          setShowQueue={setShowQueue}
+          navigate={navigate}
+        />
       </motion.div>
     </AnimatePresence>
+  )
+}
+
+/* ── Virtualized Queue ── */
+
+function VirtualQueue({ upcoming, queueIndex, dragIdx, overIdx, setDragIdx, setOverIdx, moveInQueue, jumpToTrack, removeFromQueue, formatDuration, setShowQueue, navigate }: {
+  upcoming: ReturnType<typeof usePlayerStore.getState>['queue']
+  queueIndex: number
+  dragIdx: number | null
+  overIdx: number | null
+  setDragIdx: (idx: number | null) => void
+  setOverIdx: (idx: number | null) => void
+  moveInQueue: (from: number, to: number) => void
+  jumpToTrack: (idx: number) => void
+  removeFromQueue: (idx: number) => void
+  formatDuration: (s: number) => string
+  setShowQueue: (v: boolean) => void
+  navigate: (path: string) => void
+}) {
+  const queueScrollRef = useRef<HTMLDivElement>(null)
+
+  const virtualizer = useVirtualizer({
+    count: upcoming.length,
+    getScrollElement: () => queueScrollRef.current,
+    estimateSize: () => 48,
+    overscan: 8,
+  })
+
+  if (upcoming.length === 0) {
+    return (
+      <div className="flex-1 overflow-y-auto">
+        <div className="py-8">
+          <EmptyState
+            icon={
+              <svg viewBox="0 0 24 24" className="w-12 h-12" fill="currentColor">
+                <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
+              </svg>
+            }
+            title="Queue is empty"
+            subtitle="Play something to get started"
+            action={{
+              label: "Browse library",
+              onClick: () => {
+                setShowQueue(false)
+                navigate('/library')
+              }
+            }}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div ref={queueScrollRef} className="flex-1 overflow-y-auto">
+      <p className="text-[11px] text-text-muted font-mono uppercase tracking-wider px-4 pt-3 pb-1">
+        Up Next · {upcoming.length} track{upcoming.length !== 1 ? 's' : ''}
+      </p>
+      <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+        {virtualizer.getVirtualItems().map(vRow => {
+          const track = upcoming[vRow.index]
+          const realIndex = queueIndex + 1 + vRow.index
+          const isDrag = dragIdx === realIndex
+          const isOver = overIdx === realIndex
+          return (
+            <div
+              key={vRow.key}
+              data-index={vRow.index}
+              ref={virtualizer.measureElement}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                transform: `translateY(${vRow.start}px)`,
+              }}
+            >
+              <div
+                draggable
+                onDragStart={() => setDragIdx(realIndex)}
+                onDragOver={(e) => { e.preventDefault(); setOverIdx(realIndex) }}
+                onDragLeave={() => { if (overIdx === realIndex) setOverIdx(null) }}
+                onDrop={() => {
+                  if (dragIdx !== null && dragIdx !== realIndex) moveInQueue(dragIdx, realIndex)
+                  setDragIdx(null)
+                  setOverIdx(null)
+                }}
+                onDragEnd={() => { setDragIdx(null); setOverIdx(null) }}
+                onClick={() => jumpToTrack(realIndex)}
+                className={`flex items-center gap-3 px-4 py-2.5 min-h-[48px] cursor-pointer group transition-all ${
+                  isDrag ? 'opacity-30' : isOver ? 'bg-neon-cyan/10 border-t border-neon-cyan/30' : 'hover:bg-white/5'
+                }`}
+              >
+                <div className="opacity-0 group-hover:opacity-40 cursor-grab active:cursor-grabbing shrink-0 text-text-muted">
+                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                    <path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                  </svg>
+                </div>
+                {track.imageUrl && (
+                  <JellyImage src={track.imageUrl} width={36} height={36} maxWidth={80} className="w-9 h-9 rounded-lg" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm truncate group-hover:text-neon-cyan transition-colors">{track.name}</p>
+                  <p className="text-xs text-text-muted truncate">{track.artistName}</p>
+                </div>
+                <span className="text-xs text-text-muted font-mono shrink-0">{formatDuration(track.duration)}</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); removeFromQueue(realIndex) }}
+                  className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-neon-pink transition-all p-1 min-w-[32px] min-h-[32px] flex items-center justify-center"
+                >
+                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
 import { fetchRecentlyPlayed, fetchMostPlayed, getImageUrl } from '../lib/jellyfin'
@@ -222,58 +223,15 @@ export default function History() {
           />
         ) : (
           <AnimatePresence mode="wait">
-            <motion.div
+            <VirtualHistoryList
               key={tab}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
-              className="space-y-px"
-            >
-              {tab === 'recent' ? (
-                /* Recent tracks with timestamps */
-                recentTracks.map((track, index) => (
-                  <div key={`${track.id}-${track.lastPlayed}`} className="flex items-center">
-                    <div className="flex-1">
-                      <TrackRow
-                        track={track}
-                        index={index}
-                        allTracks={recentTracks}
-                        showIndex={false}
-                        showArt={true}
-                        onPlay={() => handleTrackPlay(track, recentTracks, index)}
-                        onContextMenu={(e) => handleTrackContextMenu(track, e)}
-                      />
-                    </div>
-                    <div className="px-4 text-xs text-text-muted font-mono shrink-0 w-20 text-right">
-                      {track.lastPlayed ? formatRelativeTime(track.lastPlayed) : ''}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                /* Most played tracks with play count badges */
-                mostPlayedTracks.map((track, index) => (
-                  <div key={`${track.id}-${track.playCount}`} className="flex items-center">
-                    <div className="flex-1">
-                      <TrackRow
-                        track={track}
-                        index={index}
-                        allTracks={mostPlayedTracks}
-                        showIndex={false}
-                        showArt={true}
-                        onPlay={() => handleTrackPlay(track, mostPlayedTracks, index)}
-                        onContextMenu={(e) => handleTrackContextMenu(track, e)}
-                      />
-                    </div>
-                    <div className="px-4 shrink-0">
-                      <div className="bg-neon-cyan/20 text-neon-cyan text-xs font-bold px-2 py-1 rounded-full min-w-[40px] text-center">
-                        {track.playCount}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </motion.div>
+              tab={tab}
+              recentTracks={recentTracks}
+              mostPlayedTracks={mostPlayedTracks}
+              scrollRef={containerRef}
+              onTrackPlay={handleTrackPlay}
+              onTrackContextMenu={handleTrackContextMenu}
+            />
           </AnimatePresence>
         )}
       </div>
@@ -284,6 +242,74 @@ export default function History() {
         position={contextMenu?.position || null}
         onClose={() => setContextMenu(null)}
       />
+    </div>
+  )
+}
+
+/* ── Virtualized History List ── */
+
+function VirtualHistoryList({ tab, recentTracks, mostPlayedTracks, scrollRef, onTrackPlay, onTrackContextMenu }: {
+  tab: Tab
+  recentTracks: (Track & { lastPlayed?: string })[]
+  mostPlayedTracks: (Track & { playCount?: number })[]
+  scrollRef: React.RefObject<HTMLDivElement | null>
+  onTrackPlay: (track: Track, allTracks: Track[], index: number) => void
+  onTrackContextMenu: (track: Track, e: React.MouseEvent) => void
+}) {
+  const tracks = tab === 'recent' ? recentTracks : mostPlayedTracks
+
+  const virtualizer = useVirtualizer({
+    count: tracks.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 56,
+    overscan: 10,
+  })
+
+  return (
+    <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+      {virtualizer.getVirtualItems().map(vRow => {
+        const track = tracks[vRow.index]
+        const index = vRow.index
+        return (
+          <div
+            key={vRow.key}
+            data-index={vRow.index}
+            ref={virtualizer.measureElement}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              transform: `translateY(${vRow.start}px)`,
+            }}
+          >
+            <div className="flex items-center">
+              <div className="flex-1">
+                <TrackRow
+                  track={track}
+                  index={index}
+                  allTracks={tracks}
+                  showIndex={false}
+                  showArt={true}
+                  onPlay={() => onTrackPlay(track, tracks, index)}
+                  onContextMenu={(e) => onTrackContextMenu(track, e)}
+                />
+              </div>
+              {tab === 'recent' ? (
+                <div className="px-4 text-xs text-text-muted font-mono shrink-0 w-20 text-right">
+                  {(track as Track & { lastPlayed?: string }).lastPlayed ? formatRelativeTime((track as Track & { lastPlayed?: string }).lastPlayed!) : ''}
+                </div>
+              ) : (
+                <div className="px-4 shrink-0">
+                  <div className="bg-neon-cyan/20 text-neon-cyan text-xs font-bold px-2 py-1 rounded-full min-w-[40px] text-center">
+                    {(track as Track & { playCount?: number }).playCount}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }

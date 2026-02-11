@@ -125,7 +125,7 @@ export default function ArchiveArtist() {
   return (
     <div className="h-full overflow-y-auto pb-48 md:pb-28">
       {/* Hero — scrolls away with the page */}
-      <div className="relative h-[180px] md:h-[260px] overflow-hidden">
+      <div className="relative h-[140px] md:h-[260px] overflow-hidden">
         {/* Background image or gradient fallback */}
         {artistInfo?.fullImageUrl ? (
           <img
@@ -191,9 +191,9 @@ export default function ArchiveArtist() {
         </div>
       </div>
 
-      {/* Genre tags + bio — compact, below hero */}
+      {/* Genre tags + bio — hidden on mobile, shown on desktop */}
       {(artistInfo?.genres?.length || artistInfo?.extract) && (
-        <div className="px-4 md:px-8 pt-3 pb-2">
+        <div className="hidden md:block px-4 md:px-8 pt-3 pb-2">
           {/* Genre tags */}
           {artistInfo?.genres && artistInfo.genres.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-2">

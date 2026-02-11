@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useAuthStore } from '../stores/auth'
 import { usePlayerStore, type Track } from '../stores/player'
 import { fetchTracks, getImageUrl, toggleFavorite } from '../lib/jellyfin'
@@ -19,6 +20,8 @@ import SetBreakIndicator from '../components/SetBreakIndicator'
 import EmptyState from '../components/EmptyState'
 import { useTrackSelection } from '../hooks/useTrackSelection'
 import { useTrackKeyboard } from '../hooks/useTrackKeyboard'
+
+type VirtualTrackItem = { type: 'track'; track: Track; index: number } | { type: 'break'; label: string }
 
 export default function AlbumDetail() {
   const { id } = useParams<{ id: string }>()
@@ -381,46 +384,18 @@ export default function AlbumDetail() {
       </div>
 
       {/* Tracks */}
-      <div ref={trackListRef} className="px-4 md:px-8 pr-6 md:pr-8" tabIndex={-1}>
-        <div className="border-t border-white/5 pt-4">
-          {(() => {
-            const setBreaks = detectSetBreaks(tracks)
-            const elements: React.ReactElement[] = []
-            
-            tracks.forEach((track, i) => {
-              // Check if there's a set break before this track
-              const breakBefore = setBreaks.find(b => b.position === i)
-              if (breakBefore) {
-                elements.push(
-                  <SetBreakIndicator key={`break-${i}`} label={breakBefore.label} />
-                )
-              }
-              
-              // Add the track
-              elements.push(
-                <div key={track.id} className={i < tracks.length - 1 ? 'border-b border-white/5' : ''}>
-                  <TrackRow
-                    track={track}
-                    index={i}
-                    allTracks={tracks}
-                    showIndex
-                    isSelected={selection.isSelected(track.id)}
-                    isFocused={focusedIndex === i}
-                    onSelectionClick={selection.handleClick}
-                    onContextMenu={(e) => {
-                      e.preventDefault()
-                      setContextTrack(track)
-                      setContextPos({ x: e.clientX, y: e.clientY })
-                    }}
-                  />
-                </div>
-              )
-            })
-            
-            return elements
-          })()}
-        </div>
-      </div>
+      <VirtualTrackList
+        tracks={tracks}
+        scrollRef={scrollContainerRef}
+        trackListRef={trackListRef}
+        selection={selection}
+        focusedIndex={focusedIndex}
+        onContextMenu={(track, e) => {
+          e.preventDefault()
+          setContextTrack(track)
+          setContextPos({ x: e.clientX, y: e.clientY })
+        }}
+      />
 
       <SelectionBar
         selectedCount={selection.selectedIds.size}
@@ -483,6 +458,78 @@ export default function AlbumDetail() {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  )
+}
+
+/* ── Virtualized Track List ── */
+
+function VirtualTrackList({ tracks, scrollRef, trackListRef, selection, focusedIndex, onContextMenu }: {
+  tracks: Track[]
+  scrollRef: React.RefObject<HTMLDivElement | null>
+  trackListRef: React.RefObject<HTMLDivElement | null>
+  selection: ReturnType<typeof import('../hooks/useTrackSelection').useTrackSelection>
+  focusedIndex: number | null
+  onContextMenu: (track: Track, e: React.MouseEvent) => void
+}) {
+  const virtualItems = useMemo<VirtualTrackItem[]>(() => {
+    const setBreaks = detectSetBreaks(tracks)
+    const items: VirtualTrackItem[] = []
+    tracks.forEach((track, i) => {
+      const breakBefore = setBreaks.find(b => b.position === i)
+      if (breakBefore) items.push({ type: 'break', label: breakBefore.label })
+      items.push({ type: 'track', track, index: i })
+    })
+    return items
+  }, [tracks])
+
+  const virtualizer = useVirtualizer({
+    count: virtualItems.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (i) => virtualItems[i].type === 'break' ? 48 : 52,
+    overscan: 10,
+  })
+
+  return (
+    <div ref={trackListRef} className="px-4 md:px-8 pr-6 md:pr-8" tabIndex={-1}>
+      <div className="border-t border-white/5 pt-4">
+        <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+          {virtualizer.getVirtualItems().map(vRow => {
+            const item = virtualItems[vRow.index]
+            return (
+              <div
+                key={vRow.key}
+                data-index={vRow.index}
+                ref={virtualizer.measureElement}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  transform: `translateY(${vRow.start}px)`,
+                }}
+              >
+                {item.type === 'break' ? (
+                  <SetBreakIndicator label={item.label} />
+                ) : (
+                  <div className={item.index < tracks.length - 1 ? 'border-b border-white/5' : ''}>
+                    <TrackRow
+                      track={item.track}
+                      index={item.index}
+                      allTracks={tracks}
+                      showIndex
+                      isSelected={selection.isSelected(item.track.id)}
+                      isFocused={focusedIndex === item.index}
+                      onSelectionClick={selection.handleClick}
+                      onContextMenu={(e) => onContextMenu(item.track, e)}
+                    />
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }

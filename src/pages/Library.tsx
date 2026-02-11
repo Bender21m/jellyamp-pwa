@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useAuthStore } from '../stores/auth'
 import { useUIStore } from '../stores/ui'
 import JellyImage from '../components/JellyImage'
@@ -31,6 +32,22 @@ const sortLabels: Record<SortOption, string> = {
 }
 
 const sortOptions: SortOption[] = ['name-asc', 'name-desc', 'artist-asc', 'artist-desc', 'year-newest', 'year-oldest', 'date-added']
+
+function getColumnCount() {
+  const w = window.innerWidth
+  if (w >= 1536) return 6
+  if (w >= 1280) return 5
+  if (w >= 1024) return 4
+  if (w >= 640) return 3
+  return 2
+}
+
+function getGridGap() {
+  const w = window.innerWidth
+  if (w >= 1024) return 28
+  if (w >= 768) return 24
+  return 20
+}
 
 export default function Library() {
   const { api, userId, serverUrl } = useAuthStore()
@@ -338,8 +355,8 @@ export default function Library() {
                 <p className="text-text-muted text-sm">No albums found in this genre.</p>
               ) : (
                 <div className={gridCols}>
-                  {genreAlbums.map((a, i) => (
-                    <motion.div key={a.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.015, 0.3) }}>
+                  {genreAlbums.map((a) => (
+                    <div key={a.Id}>
                       <AlbumCard
                         id={a.Id!}
                         name={a.Name ?? 'Unknown'}
@@ -347,7 +364,7 @@ export default function Library() {
                         imageUrl={imgUrl(a)}
                         year={a.ProductionYear ?? undefined}
                       />
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -361,9 +378,9 @@ export default function Library() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
               {genres.map((g, i) => (
-                <motion.div key={g.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.015, 0.3) }}>
+                <div key={g.Id}>
                   <GenreCard name={g.Name ?? 'Unknown'} index={i} onClick={() => handleGenreClick(g.Id!, g.Name ?? 'Unknown')} />
-                </motion.div>
+                </div>
               ))}
             </div>
           )
@@ -380,8 +397,8 @@ export default function Library() {
               <div>
                 <h2 className="text-lg font-bold mb-3">Recently Added</h2>
                 <HorizontalScroll>
-                  {recentAlbums.slice(0, 20).map((a, i) => (
-                    <motion.div key={a.Id} className="shrink-0 w-36 md:w-44" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.4) }}>
+                  {recentAlbums.slice(0, 20).map((a) => (
+                    <div key={a.Id} className="shrink-0 w-36 md:w-44">
                       <AlbumCard
                         id={a.Id!}
                         name={a.Name ?? 'Unknown'}
@@ -389,7 +406,7 @@ export default function Library() {
                         imageUrl={imgUrl(a)}
                         year={a.ProductionYear ?? undefined}
                       />
-                    </motion.div>
+                    </div>
                   ))}
                 </HorizontalScroll>
               </div>
@@ -398,8 +415,8 @@ export default function Library() {
                 <div key={group.label}>
                   <h2 className="text-lg font-bold mb-3 text-text-secondary">{group.label}</h2>
                   <div className={gridCols}>
-                    {group.items.map((a, i) => (
-                      <motion.div key={a.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.015, 0.3) }}>
+                    {group.items.map((a) => (
+                      <div key={a.Id}>
                         <AlbumCard
                           id={a.Id!}
                           name={a.Name ?? 'Unknown'}
@@ -407,7 +424,7 @@ export default function Library() {
                           imageUrl={imgUrl(a)}
                           year={a.ProductionYear ?? undefined}
                         />
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -426,34 +443,35 @@ export default function Library() {
               subtitle="Add some music to your Jellyfin server to get started."
             />
           ) : viewMode === 'list' ? (
-            <div className="space-y-0.5">
-              {albums.map((a, i) => (
-                <motion.div key={a.Id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(i * 0.01, 0.3) }}>
-                  <AlbumListRow
-                    id={a.Id!}
-                    name={a.Name ?? 'Unknown'}
-                    artistName={a.AlbumArtist ?? 'Unknown Artist'}
-                    imageUrl={imgUrl(a, 120)}
-                    year={a.ProductionYear ?? undefined}
-                    trackCount={a.ChildCount ?? undefined}
-                  />
-                </motion.div>
-              ))}
-            </div>
+            <VirtualList
+              items={albums}
+              scrollRef={scrollContainerRef}
+              estimateSize={64}
+              renderItem={(a) => (
+                <AlbumListRow
+                  id={a.Id!}
+                  name={a.Name ?? 'Unknown'}
+                  artistName={a.AlbumArtist ?? 'Unknown Artist'}
+                  imageUrl={imgUrl(a, 120)}
+                  year={a.ProductionYear ?? undefined}
+                  trackCount={a.ChildCount ?? undefined}
+                />
+              )}
+            />
           ) : (
-            <div className={gridCols}>
-              {albums.map((a, i) => (
-                <motion.div key={a.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.015, 0.3) }}>
-                  <AlbumCard
-                    id={a.Id!}
-                    name={a.Name ?? 'Unknown'}
-                    artistName={a.AlbumArtist ?? 'Unknown Artist'}
-                    imageUrl={imgUrl(a)}
-                    year={a.ProductionYear ?? undefined}
-                  />
-                </motion.div>
-              ))}
-            </div>
+            <VirtualGrid
+              items={albums}
+              scrollRef={scrollContainerRef}
+              renderItem={(a) => (
+                <AlbumCard
+                  id={a.Id!}
+                  name={a.Name ?? 'Unknown'}
+                  artistName={a.AlbumArtist ?? 'Unknown Artist'}
+                  imageUrl={imgUrl(a)}
+                  year={a.ProductionYear ?? undefined}
+                />
+              )}
+            />
           )
         ) : libraryFilter === 'Artists' ? (
           artists.length === 0 ? (
@@ -467,30 +485,31 @@ export default function Library() {
               subtitle="Add some music to your Jellyfin server to get started."
             />
           ) : viewMode === 'list' ? (
-            <div className="space-y-0.5">
-              {artists.map((a, i) => (
-                <motion.div key={a.Id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(i * 0.01, 0.3) }}>
-                  <ArtistListRow
-                    id={a.Id!}
-                    name={a.Name ?? 'Unknown'}
-                    imageUrl={a.ImageTags?.Primary ? imgUrl(a, 120) : undefined}
-                    albumCount={(a as any).AlbumCount ?? undefined}
-                  />
-                </motion.div>
-              ))}
-            </div>
+            <VirtualList
+              items={artists}
+              scrollRef={scrollContainerRef}
+              estimateSize={56}
+              renderItem={(a) => (
+                <ArtistListRow
+                  id={a.Id!}
+                  name={a.Name ?? 'Unknown'}
+                  imageUrl={a.ImageTags?.Primary ? imgUrl(a, 120) : undefined}
+                  albumCount={(a as Record<string, unknown>).AlbumCount as number | undefined}
+                />
+              )}
+            />
           ) : (
-            <div className={gridCols}>
-              {artists.map((a, i) => (
-                <motion.div key={a.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.015, 0.3) }}>
-                  <ArtistCard
-                    id={a.Id!}
-                    name={a.Name ?? 'Unknown'}
-                    imageUrl={a.ImageTags?.Primary ? imgUrl(a) : undefined}
-                  />
-                </motion.div>
-              ))}
-            </div>
+            <VirtualGrid
+              items={artists}
+              scrollRef={scrollContainerRef}
+              renderItem={(a) => (
+                <ArtistCard
+                  id={a.Id!}
+                  name={a.Name ?? 'Unknown'}
+                  imageUrl={a.ImageTags?.Primary ? imgUrl(a) : undefined}
+                />
+              )}
+            />
           )
         ) : libraryFilter === 'Playlists' ? (
           playlists.length === 0 ? (
@@ -509,20 +528,115 @@ export default function Library() {
             />
           ) : (
             <div className={gridCols}>
-              {playlists.map((p, i) => (
-                <motion.div key={p.Id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.015, 0.3) }}>
+              {playlists.map((p) => (
+                <div key={p.Id}>
                   <PlaylistCard
                     id={p.Id!}
                     name={p.Name ?? 'Untitled'}
                     imageUrl={p.ImageTags?.Primary ? imgUrl(p) : undefined}
                     trackCount={p.ChildCount ?? undefined}
                   />
-                </motion.div>
+                </div>
               ))}
             </div>
           )
         ) : null}
       </div>
+    </div>
+  )
+}
+
+/* ── Virtualized Grid ── */
+
+function VirtualGrid({ items, scrollRef, renderItem }: {
+  items: BaseItemDto[]
+  scrollRef: React.RefObject<HTMLDivElement | null>
+  renderItem: (item: BaseItemDto) => React.ReactNode
+}) {
+  const [cols, setCols] = useState(getColumnCount)
+  const [gap, setGap] = useState(getGridGap)
+
+  useEffect(() => {
+    const update = () => {
+      setCols(getColumnCount())
+      setGap(getGridGap())
+    }
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
+
+  const rows = useMemo(() => {
+    const r: BaseItemDto[][] = []
+    for (let i = 0; i < items.length; i += cols) r.push(items.slice(i, i + cols))
+    return r
+  }, [items, cols])
+
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 280,
+    overscan: 3,
+  })
+
+  return (
+    <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+      {virtualizer.getVirtualItems().map(vRow => (
+        <div
+          key={vRow.key}
+          data-index={vRow.index}
+          ref={virtualizer.measureElement}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            transform: `translateY(${vRow.start}px)`,
+          }}
+        >
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap, paddingBottom: gap }}>
+            {rows[vRow.index].map(item => (
+              <div key={item.Id}>{renderItem(item)}</div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/* ── Virtualized List ── */
+
+function VirtualList({ items, scrollRef, estimateSize, renderItem }: {
+  items: BaseItemDto[]
+  scrollRef: React.RefObject<HTMLDivElement | null>
+  estimateSize: number
+  renderItem: (item: BaseItemDto) => React.ReactNode
+}) {
+  const virtualizer = useVirtualizer({
+    count: items.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => estimateSize,
+    overscan: 8,
+  })
+
+  return (
+    <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+      {virtualizer.getVirtualItems().map(vRow => (
+        <div
+          key={vRow.key}
+          data-index={vRow.index}
+          ref={virtualizer.measureElement}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            transform: `translateY(${vRow.start}px)`,
+          }}
+        >
+          {renderItem(items[vRow.index])}
+        </div>
+      ))}
     </div>
   )
 }
@@ -599,7 +713,3 @@ function SkeletonGrid({ viewMode, type }: { viewMode: string; type: string }) {
     </div>
   )
 }
-
-/* ── Empty State ── */
-
-// removed unused LocalEmptyState
