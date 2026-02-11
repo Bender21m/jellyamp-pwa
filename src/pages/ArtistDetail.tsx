@@ -40,8 +40,10 @@ export default function ArtistDetail() {
   const setRadioMode = usePlayerStore(s => s.setRadioMode)
   const [artist, setArtist] = useState<BaseItemDto | null>(null)
   const [albums, setAlbums] = useState<BaseItemDto[]>([])
+  const [totalAlbumCount, setTotalAlbumCount] = useState(0)
   const [similarArtists, setSimilarArtists] = useState<BaseItemDto[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [discSort, setDiscSort] = useState<DiscographySort>('year-newest')
   const [showSort, setShowSort] = useState(false)
@@ -65,12 +67,13 @@ export default function ArtistDetail() {
     try {
       const [artistData, albumsRes, similarRes] = await Promise.all([
         fetchArtistById(api, userId, id),
-        fetchAlbums(api, userId, { artistIds: [id], limit: 200 }),
+        fetchAlbums(api, userId, { artistIds: [id], limit: 20 }),
         fetchSimilarArtists(api, userId, id),
       ])
       setArtist(artistData)
       setIsFav(artistData?.UserData?.IsFavorite ?? false)
       setAlbums(albumsRes.Items ?? [])
+      setTotalAlbumCount(albumsRes.TotalRecordCount ?? albumsRes.Items?.length ?? 0)
       setSimilarArtists(similarRes)
     } catch (e) {
       console.error('Failed to load artist', e)
@@ -81,6 +84,32 @@ export default function ArtistDetail() {
     }
     setLoading(false)
   }
+
+  const hasMore = albums.length < totalAlbumCount
+
+  async function loadMoreAlbums() {
+    if (!api || !userId || !id || loadingMore || !hasMore) return
+    setLoadingMore(true)
+    try {
+      const res = await fetchAlbums(api, userId, { artistIds: [id], limit: 20, startIndex: albums.length })
+      setAlbums(prev => [...prev, ...(res.Items ?? [])])
+    } catch (e) {
+      console.error('Failed to load more albums', e)
+    }
+    setLoadingMore(false)
+  }
+
+  // Intersection observer for infinite scroll
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!loadMoreRef.current || !hasMore) return
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) loadMoreAlbums() },
+      { rootMargin: '200px' }
+    )
+    observer.observe(loadMoreRef.current)
+    return () => observer.disconnect()
+  }, [hasMore, albums.length, loadingMore])
 
   async function playAll(shuffle = false) {
     if (!api || !userId || !serverUrl || !id || albums.length === 0) return
@@ -500,6 +529,19 @@ export default function ArtistDetail() {
           </div>
         )}
       </div>
+
+      {/* Load more sentinel */}
+      {hasMore && (
+        <div ref={loadMoreRef} className="flex justify-center py-6">
+          {loadingMore ? (
+            <svg viewBox="0 0 24 24" className="w-6 h-6 text-neon-cyan animate-spin" fill="currentColor">
+              <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8z" />
+            </svg>
+          ) : (
+            <span className="text-xs text-text-muted font-mono">Scroll for more</span>
+          )}
+        </div>
+      )}
 
       {/* Similar Artists */}
       {similarArtists.length > 0 && (
