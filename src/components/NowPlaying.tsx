@@ -7,6 +7,9 @@ import { useAlbumColors } from '../hooks/useAlbumColors'
 import { toggleFavorite } from '../lib/jellyfin'
 import { formatTime } from '../lib/formatTime'
 import LyricsView from './LyricsView'
+import { useAuthStore as useAuthStoreForRadio } from '../stores/auth'
+import { getInstantMix, getImageUrl as getImageUrlForRadio } from '../lib/jellyfin'
+import type { BaseItemDto } from '../lib/jellyfin'
 import Waveform from './Waveform'
 
 export default function NowPlaying() {

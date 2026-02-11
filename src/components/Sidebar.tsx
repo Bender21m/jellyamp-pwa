@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { NavLink, Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
@@ -125,7 +126,7 @@ function SidebarPlaylistItem({ playlist, onDelete, onDrop }: {
           </>
         )}
       </NavLink>
-      {showCtx && (
+      {showCtx && createPortal(
         <div
           ref={ctxRef}
           className="fixed z-50 bg-card border border-white/10 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] py-1.5 min-w-[160px]"
@@ -141,7 +142,8 @@ function SidebarPlaylistItem({ playlist, onDelete, onDrop }: {
             </svg>
             Delete Playlist
           </button>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )

@@ -32,6 +32,8 @@ interface PlayerState {
   repeat: RepeatMode
   showNowPlaying: boolean
   showQueue: boolean
+  radioMode: boolean
+  radioSeedId: string | null // the item ID used to seed radio mode
   sleepTimer: {
     active: boolean
     endTime: number | null // timestamp when timer should end
@@ -39,6 +41,7 @@ interface PlayerState {
     originalVolume: number // to restore volume if timer is cancelled
   }
 
+  setRadioMode: (enabled: boolean, seedId?: string | null) => void
   setTrack: (track: Track, queue?: Track[], index?: number) => void
   play: () => void
   pause: () => void
@@ -79,6 +82,8 @@ export const usePlayerStore = create<PlayerState>()(
   muted: false,
   shuffle: false,
   repeat: 'off',
+  radioMode: false,
+  radioSeedId: null,
   showNowPlaying: false,
   showQueue: false,
   sleepTimer: {
@@ -87,6 +92,11 @@ export const usePlayerStore = create<PlayerState>()(
     mode: 'time',
     originalVolume: 0.8,
   },
+
+  setRadioMode: (enabled, seedId) => set({
+    radioMode: enabled,
+    radioSeedId: seedId ?? (enabled ? get().currentTrack?.id ?? null : null),
+  }),
 
   setTrack: (track, queue, index) => {
     set({

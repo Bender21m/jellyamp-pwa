@@ -363,5 +363,22 @@ export async function fetchRecentAlbums(api: Api, userId: string, limit = 50) {
   return data
 }
 
+export async function getInstantMix(
+  serverUrl: string,
+  itemId: string,
+  accessToken: string,
+  userId: string,
+  limit = 20
+): Promise<BaseItemDto[]> {
+  const headers = {
+    'X-Emby-Authorization': `MediaBrowser Client="JellyAmp", Device="Web", DeviceId="jellyamp-pwa", Version="0.1", Token="${accessToken}"`,
+  }
+  const params = new URLSearchParams({ UserId: userId, Limit: limit.toString(), Fields: 'MediaSources' })
+  const res = await fetch(`${serverUrl}/Items/${itemId}/InstantMix?${params}`, { headers })
+  if (!res.ok) throw new Error(`InstantMix failed: ${res.status}`)
+  const data = await res.json()
+  return (data.Items ?? []) as BaseItemDto[]
+}
+
 export { jellyfin, getItemsApi, getArtistsApi, getImageApi, BaseItemKind, SortOrder, ItemSortBy, ItemFields }
 export type { BaseItemDto }

@@ -12,6 +12,7 @@ import { useScrobbling } from '../hooks/useScrobbling'
 import { useSleepTimer } from '../hooks/useSleepTimer'
 import { usePlayerKeyboard } from '../hooks/usePlayerKeyboard'
 import { usePlaybackReporting } from '../hooks/usePlaybackReporting'
+import { useRadioMode } from '../hooks/useRadioMode'
 import { useSwipeAction } from '../hooks/useSwipeAction'
 import KeyboardShortcuts from './KeyboardShortcuts'
 import Waveform from './Waveform'
@@ -102,6 +103,9 @@ export default function Player() {
     volume,
     isExternalStream: !!currentTrack?.streamUrl,
   })
+
+  // Smart Radio — auto-queue similar tracks when queue runs low
+  useRadioMode()
 
   // Keyboard shortcuts
   usePlayerKeyboard({
