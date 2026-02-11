@@ -132,7 +132,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="h-full scroll-container pb-48 md:pb-28">
+    <div className="h-full overflow-y-auto pb-48 md:pb-28">
       <div className="px-4 md:px-8 pt-5 md:pt-8 pb-4">
         <h1 className="text-2xl md:text-3xl font-extrabold tracking-[-0.03em]">Settings</h1>
       </div>
