@@ -8,6 +8,7 @@ import type { BaseItemDto } from '../lib/jellyfin'
 import { useAlbumColors } from '../hooks/useAlbumColors'
 import JellyImage from '../components/JellyImage'
 import AlbumPlaceholder from '../components/AlbumPlaceholder'
+import { useAlbumImage } from '../hooks/useAlbumImage'
 import { useScrollRestore } from '../hooks/useScrollRestore'
 import { parseShowDate, formatShowDate } from '../lib/dateParser'
 import { parseVenue } from '../lib/venueParser'
@@ -155,7 +156,11 @@ export default function AlbumDetail() {
     }
   }
 
-  const imageUrl = album && serverUrl ? getImageUrl(serverUrl, album.Id!, album.ImageTags?.Primary, 600) : ''
+  const jellyfinImageUrl = album?.ImageTags?.Primary && serverUrl
+    ? getImageUrl(serverUrl, album.Id!, album.ImageTags.Primary, 600)
+    : ''
+  const coverArtUrl = useAlbumImage(album?.Name ?? '', album?.AlbumArtist ?? '', !!jellyfinImageUrl)
+  const imageUrl = jellyfinImageUrl || coverArtUrl || ''
   const totalDuration = tracks.reduce((sum, t) => sum + t.duration, 0)
   const totalMin = Math.round(totalDuration / 60)
   
