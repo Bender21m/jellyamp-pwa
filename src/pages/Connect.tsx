@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 
 export default function Connect() {
-  const { connect, login, isConnecting, error } = useAuthStore()
+  const { connect, login, isConnecting, error, enterArchiveOnly } = useAuthStore()
   const [url, setUrl] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -11,13 +11,10 @@ export default function Connect() {
 
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Auto-prepend https:// if no protocol is provided
     let serverUrl = url.trim()
     if (serverUrl && !serverUrl.match(/^https?:\/\//)) {
       serverUrl = `https://${serverUrl}`
     }
-    
     if (await connect(serverUrl)) {
       setStep('login')
     }
@@ -30,13 +27,11 @@ export default function Connect() {
 
   return (
     <div className="relative h-full flex items-center justify-center overflow-hidden">
-      {/* Background — soft, diffused glows */}
+      {/* Background */}
       <div className="absolute inset-0 bg-deep-black">
         <div className="absolute top-[20%] left-[15%] w-[500px] h-[500px] rounded-full bg-neon-cyan/[0.03] blur-[160px]" />
         <div className="absolute bottom-[15%] right-[10%] w-[400px] h-[400px] rounded-full bg-purple/[0.04] blur-[140px]" />
       </div>
-
-      {/* Grain overlay */}
       <div className="noise absolute inset-0" />
 
       <motion.div
@@ -47,7 +42,7 @@ export default function Connect() {
       >
         {/* Logo */}
         <motion.div
-          className="flex flex-col items-center mb-14"
+          className="flex flex-col items-center mb-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 0.1 }}
@@ -76,6 +71,9 @@ export default function Connect() {
               className="space-y-5"
             >
               <div>
+                <p className="text-text-secondary text-sm text-center mb-6 leading-relaxed">
+                  Connect to your Jellyfin server by entering the URL below.
+                </p>
                 <label className="block text-[10px] font-mono uppercase tracking-[0.15em] text-text-muted mb-2 ml-1">
                   Server URL
                 </label>
@@ -90,6 +88,29 @@ export default function Connect() {
                 />
               </div>
               <ConnectButton loading={isConnecting} text="Connect" />
+
+              {/* Divider */}
+              <div className="flex items-center gap-3 pt-2">
+                <div className="flex-1 h-px bg-white/[0.06]" />
+                <span className="text-text-muted text-[10px] font-mono uppercase tracking-widest">or</span>
+                <div className="flex-1 h-px bg-white/[0.06]" />
+              </div>
+
+              {/* Archive-only CTA */}
+              <button
+                type="button"
+                onClick={enterArchiveOnly}
+                className="w-full group"
+              >
+                <div className="px-4 py-3.5 rounded-2xl border border-white/[0.06] bg-surface/30 hover:bg-surface/50 hover:border-white/[0.1] transition-all duration-200">
+                  <div className="text-sm font-medium text-text-primary group-hover:text-neon-cyan transition-colors">
+                    Explore Live Music Archive
+                  </div>
+                  <div className="text-xs text-text-muted mt-0.5">
+                    200,000+ free live recordings — no server needed
+                  </div>
+                </div>
+              </button>
             </motion.form>
           ) : (
             <motion.form
@@ -101,6 +122,9 @@ export default function Connect() {
               transition={{ duration: 0.25 }}
               className="space-y-4"
             >
+              <p className="text-text-secondary text-sm text-center mb-6 leading-relaxed">
+                Sign in to your Jellyfin account to access your library.
+              </p>
               <div>
                 <label className="block text-[10px] font-mono uppercase tracking-[0.15em] text-text-muted mb-2 ml-1">
                   Username

@@ -12,11 +12,13 @@ interface AuthState {
   api: Api | null
   isConnecting: boolean
   error: string | null
+  archiveOnly: boolean
 
   connect: (serverUrl: string) => Promise<boolean>
   login: (username: string, password: string) => Promise<boolean>
   logout: () => void
   restore: () => void
+  enterArchiveOnly: () => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -30,6 +32,11 @@ export const useAuthStore = create<AuthState>()(
       api: null,
       isConnecting: false,
       error: null,
+      archiveOnly: false,
+
+      enterArchiveOnly: () => {
+        set({ archiveOnly: true })
+      },
 
       connect: async (serverUrl: string) => {
         set({ isConnecting: true, error: null })
@@ -85,7 +92,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         set({
           serverUrl: null, userId: null, username: null, accessToken: null,
-          serverName: null, api: null, error: null,
+          serverName: null, api: null, error: null, archiveOnly: false,
         })
       },
 
@@ -115,6 +122,7 @@ export const useAuthStore = create<AuthState>()(
         username: state.username,
         accessToken: state.accessToken,
         serverName: state.serverName,
+        archiveOnly: state.archiveOnly,
       }),
     }
   )

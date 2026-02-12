@@ -38,6 +38,8 @@ const ArchiveShow = lazy(() => import('./pages/ArchiveShow'))
 function AnimatedRoutes() {
   const location = useLocation()
   const archiveEnabled = useArchiveStore((s) => s.enabled)
+  const archiveOnly = useAuthStore((s) => s.archiveOnly)
+  const defaultRoute = archiveOnly ? '/archive' : '/library'
 
   return (
     <AnimatePresence mode="wait">
@@ -52,14 +54,18 @@ function AnimatedRoutes() {
         <ErrorBoundary>
           <Suspense fallback={<PageSkeleton />}>
             <Routes location={location}>
-              <Route path="/library" element={<Library />} />
-              <Route path="/search" element={<Search />} />
-              <Route path="/favorites" element={<Favorites />} />
-              <Route path="/history" element={<History />} />
-              <Route path="/playlists" element={<Playlists />} />
-              <Route path="/playlist/:id" element={<PlaylistDetail />} />
-              <Route path="/album/:id" element={<AlbumDetail />} />
-              <Route path="/artist/:id" element={<ArtistDetail />} />
+              {!archiveOnly && (
+                <>
+                  <Route path="/library" element={<Library />} />
+                  <Route path="/search" element={<Search />} />
+                  <Route path="/favorites" element={<Favorites />} />
+                  <Route path="/history" element={<History />} />
+                  <Route path="/playlists" element={<Playlists />} />
+                  <Route path="/playlist/:id" element={<PlaylistDetail />} />
+                  <Route path="/album/:id" element={<AlbumDetail />} />
+                  <Route path="/artist/:id" element={<ArtistDetail />} />
+                </>
+              )}
               <Route path="/settings" element={<Settings />} />
               {archiveEnabled && (
                 <>
@@ -68,7 +74,7 @@ function AnimatedRoutes() {
                   <Route path="/archive/show/:id" element={<ArchiveShow />} />
                 </>
               )}
-              <Route path="*" element={<Navigate to="/library" replace />} />
+              <Route path="*" element={<Navigate to={defaultRoute} replace />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>
@@ -111,11 +117,17 @@ function AppLayout() {
 }
 
 export default function App() {
-  const { accessToken, restore } = useAuthStore()
+  const { accessToken, archiveOnly, restore } = useAuthStore()
+  const setArchiveEnabled = useArchiveStore((s) => s.setEnabled)
 
   useEffect(() => { restore() }, [])
 
-  if (!accessToken) {
+  // Archive-only mode: auto-enable archive feature
+  useEffect(() => {
+    if (archiveOnly) setArchiveEnabled(true)
+  }, [archiveOnly, setArchiveEnabled])
+
+  if (!accessToken && !archiveOnly) {
     return (
       <BrowserRouter>
         <Connect />

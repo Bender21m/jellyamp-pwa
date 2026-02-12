@@ -190,8 +190,9 @@ export default function Sidebar() {
 
   // Prepare nav items for keyboard navigation
   const archiveEnabled = useArchiveStore((s) => s.enabled)
+  const archiveOnly = useAuthStore((s) => s.archiveOnly)
   const allNavItems = [
-    ...libraryNav,
+    ...(archiveOnly ? [] : libraryNav),
     ...(archiveEnabled ? [{ to: '/archive', label: 'Live Archive', icon: '' }] : []),
     ...bottomNav,
   ]
@@ -299,14 +300,23 @@ export default function Sidebar() {
       {/* Separator */}
       <div className="mx-3 h-px bg-gradient-to-r from-transparent via-neon-cyan/20 to-transparent" />
 
-      {/* Library section */}
+      {/* Navigation */}
       <div className="px-2 lg:px-3 pt-4">
-        <p className="hidden lg:block text-[11px] font-mono uppercase tracking-widest text-text-muted/60 px-4 mb-2">Library</p>
-        <nav role="navigation" className="space-y-1">
-          {libraryNav.map((item) => (
-            <NavItem key={item.to} item={item} collapsed={false} />
-          ))}
-          {archiveEnabled && (
+        {!archiveOnly && (
+          <>
+            <p className="hidden lg:block text-[11px] font-mono uppercase tracking-widest text-text-muted/60 px-4 mb-2">Library</p>
+            <nav role="navigation" className="space-y-1">
+              {libraryNav.map((item) => (
+                <NavItem key={item.to} item={item} collapsed={false} />
+              ))}
+            </nav>
+          </>
+        )}
+        {archiveEnabled && (
+          <nav role="navigation" className={archiveOnly ? 'space-y-1' : 'space-y-1 mt-1'}>
+            {archiveOnly && (
+              <p className="hidden lg:block text-[11px] font-mono uppercase tracking-widest text-text-muted/60 px-4 mb-2">Browse</p>
+            )}
             <NavItem
               item={{
                 to: '/archive',
@@ -315,14 +325,14 @@ export default function Sidebar() {
               }}
               collapsed={false}
             />
-          )}
-        </nav>
+          </nav>
+        )}
       </div>
 
       {/* Scrollable middle section for playlists + favorites */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
-        {/* Playlists section */}
-        <div className="hidden lg:block px-3 pt-5">
+        {/* Playlists section — hidden in archive-only mode */}
+        {!archiveOnly && <div className="hidden lg:block px-3 pt-5">
           <div className="mx-1 mb-2 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
           <div className="flex items-center justify-between px-4 mb-2">
             <p className="text-[11px] font-mono uppercase tracking-widest text-text-muted/60">Playlists</p>
@@ -383,10 +393,10 @@ export default function Sidebar() {
               Show all ({playlists.length})
             </Link>
           )}
-        </div>
+        </div>}
 
         {/* Favorite Artists section */}
-        {displayArtists.length > 0 && (
+        {!archiveOnly && displayArtists.length > 0 && (
           <div className="hidden lg:block px-3 pt-5">
             <div className="mx-1 mb-2 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
             <p className="text-[11px] font-mono uppercase tracking-widest text-text-muted/60 px-4 mb-2">Favorites</p>

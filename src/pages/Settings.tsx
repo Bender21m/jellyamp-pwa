@@ -30,7 +30,7 @@ const SPEED_OPTIONS: { value: number; label: string }[] = [
 ]
 
 export default function Settings() {
-  const { serverUrl, serverName, username, logout } = useAuthStore()
+  const { serverUrl, serverName, username, archiveOnly, logout } = useAuthStore()
   const { enabled: archiveEnabled, setEnabled: setArchiveEnabled } = useArchiveStore()
   const { audioQuality, setAudioQuality, crossfadeMode, setCrossfadeMode, crossfadeDuration, setCrossfadeDuration, playbackSpeed, setPlaybackSpeed, scrobbleSettings, updateScrobbleSettings, volumeNormalization, setVolumeNormalization } = useUIStore()
   
@@ -138,24 +138,26 @@ export default function Settings() {
       </div>
 
       <div className="px-4 md:px-8 space-y-6 max-w-2xl">
-        {/* Server Info */}
-        <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
-          <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted mb-4">Server</h2>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center min-h-[44px]">
-              <span className="text-text-secondary text-sm">Server Name</span>
-              <span className="text-sm font-mono">{serverName ?? '—'}</span>
+        {/* Server Info — hidden in archive-only mode */}
+        {!archiveOnly && (
+          <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
+            <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted mb-4">Server</h2>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center min-h-[44px]">
+                <span className="text-text-secondary text-sm">Server Name</span>
+                <span className="text-sm font-mono">{serverName ?? '—'}</span>
+              </div>
+              <div className="flex justify-between items-center min-h-[44px]">
+                <span className="text-text-secondary text-sm">URL</span>
+                <span className="text-sm font-mono text-text-muted truncate max-w-[200px]">{serverUrl}</span>
+              </div>
+              <div className="flex justify-between items-center min-h-[44px]">
+                <span className="text-text-secondary text-sm">User</span>
+                <span className="text-sm font-mono">{username}</span>
+              </div>
             </div>
-            <div className="flex justify-between items-center min-h-[44px]">
-              <span className="text-text-secondary text-sm">URL</span>
-              <span className="text-sm font-mono text-text-muted truncate max-w-[200px]">{serverUrl}</span>
-            </div>
-            <div className="flex justify-between items-center min-h-[44px]">
-              <span className="text-text-secondary text-sm">User</span>
-              <span className="text-sm font-mono">{username}</span>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Audio Quality */}
         <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
@@ -413,38 +415,40 @@ export default function Settings() {
           </p>
         </section>
 
-        {/* Live Archive */}
-        <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted">Live Archive</h2>
-            <button
-              onClick={() => setArchiveEnabled(!archiveEnabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                archiveEnabled ? 'bg-neon-cyan' : 'bg-white/20'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  archiveEnabled ? 'translate-x-6' : 'translate-x-1'
+        {/* Live Archive — hide toggle in archive-only mode (always on) */}
+        {!archiveOnly && (
+          <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted">Live Archive</h2>
+              <button
+                onClick={() => setArchiveEnabled(!archiveEnabled)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  archiveEnabled ? 'bg-neon-cyan' : 'bg-white/20'
                 }`}
-              />
-            </button>
-          </div>
-          <p className="text-xs text-text-muted/60 px-1">
-            Stream live concert recordings from the Internet Archive. Completely separate from your Jellyfin library.
-          </p>
-          {archiveEnabled && (
-            <Link
-              to="/archive"
-              className="mt-3 inline-flex items-center gap-1.5 text-sm text-neon-cyan hover:underline px-1"
-            >
-              Open Live Archive
-              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
-                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
-              </svg>
-            </Link>
-          )}
-        </section>
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    archiveEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+            <p className="text-xs text-text-muted/60 px-1">
+              Stream live concert recordings from the Internet Archive. Completely separate from your Jellyfin library.
+            </p>
+            {archiveEnabled && (
+              <Link
+                to="/archive"
+                className="mt-3 inline-flex items-center gap-1.5 text-sm text-neon-cyan hover:underline px-1"
+              >
+                Open Live Archive
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+                  <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+                </svg>
+              </Link>
+            )}
+          </section>
+        )}
 
         {/* About */}
         <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
@@ -461,14 +465,14 @@ export default function Settings() {
           </div>
         </section>
 
-        {/* Sign Out */}
+        {/* Sign Out / Connect Server */}
         <div className="p-px rounded-xl bg-gradient-primary hover:shadow-[0_0_20px_rgba(0,255,221,0.15)] transition-shadow">
           <button
             onClick={logout}
             className="w-full py-3.5 rounded-[11px] font-semibold text-sm transition-colors min-h-[48px]"
             style={{ backgroundColor: '#050508', color: '#f0f0f5' }}
           >
-            Sign Out
+            {archiveOnly ? 'Connect a Server' : 'Sign Out'}
           </button>
         </div>
       </div>
