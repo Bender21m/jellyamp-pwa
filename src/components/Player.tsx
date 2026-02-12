@@ -63,9 +63,9 @@ export default function Player() {
     onSetCurrentTime: setCurrentTime,
     onSetDuration: setDuration,
     onNext: next,
-    onTimeUpdate: (ct, dur, audioEl) => {
+    onTimeUpdate: (ct, dur) => {
       if (!seekingRef.current) {
-        scrobbleTimeUpdate(ct, dur, audioEl)
+        scrobbleTimeUpdate(ct, dur)
       }
     },
   })

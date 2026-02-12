@@ -75,7 +75,7 @@ export default function Playlists() {
       setConfirmDelete(null)
       await loadPlaylists()
     } catch (e: unknown) {
-      const status = e?.response?.status
+      const status = (e as { response?: { status?: number } })?.response?.status
       if (status === 401 || status === 403) {
         setDeleteError('Your account doesn\'t have permission to delete playlists on this server.')
       } else {

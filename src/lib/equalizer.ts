@@ -62,7 +62,7 @@ export class AudioEqualizer {
     try {
       // Create AudioContext if needed
       if (!this.audioContext) {
-        this.audioContext = new (window.AudioContext || (window as Window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+        this.audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
       }
 
       // Resume context if suspended (required by browsers)

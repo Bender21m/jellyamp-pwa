@@ -241,7 +241,7 @@ export default function Sidebar() {
       setConfirmDelete(null)
       await loadPlaylists()
     } catch (e: unknown) {
-      const status = e?.response?.status
+      const status = (e as { response?: { status?: number } })?.response?.status
       if (status === 401 || status === 403) {
         setDeleteError('Your account doesn\'t have permission to delete playlists on this server.')
       } else {
@@ -261,10 +261,10 @@ export default function Sidebar() {
         trackIds = data.trackIds
       } else if (data.type === 'album' && data.albumId) {
         const res = await fetchTracks(api, userId, data.albumId)
-        trackIds = (res.Items ?? []).map((t: BaseItemDto) => t.Id).filter(Boolean)
+        trackIds = (res.Items ?? []).map((t: BaseItemDto) => t.Id).filter((id): id is string => !!id)
       } else if (data.type === 'artist' && data.artistId) {
         const res = await fetchArtistTracks(api, userId, data.artistId)
-        trackIds = (res.Items ?? []).map((t: BaseItemDto) => t.Id).filter(Boolean)
+        trackIds = (res.Items ?? []).map((t: BaseItemDto) => t.Id).filter((id): id is string => !!id)
       }
 
       if (trackIds.length === 0) return

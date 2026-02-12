@@ -176,7 +176,7 @@ export default function ArchiveHome() {
     )
 
     // Store observer for cleanup
-    ;(window as Window & { __artistImageObserver: IntersectionObserver }).__artistImageObserver = observer
+    ;(window as unknown as { __artistImageObserver: IntersectionObserver }).__artistImageObserver = observer
     
     return () => { 
       cancelled = true
@@ -523,8 +523,8 @@ export default function ArchiveHome() {
                       onClick={() => handleSelectArtist(name)}
                       data-artist={name}
                       ref={(el) => {
-                        if (el && (window as Window & { __artistImageObserver?: IntersectionObserver }).__artistImageObserver) {
-                          (window as Window & { __artistImageObserver: IntersectionObserver }).__artistImageObserver.observe(el)
+                        if (el && (window as unknown as { __artistImageObserver?: IntersectionObserver }).__artistImageObserver) {
+                          (window as unknown as { __artistImageObserver: IntersectionObserver }).__artistImageObserver.observe(el)
                         }
                       }}
                       className="shrink-0 w-[120px] text-center bg-white/[0.02] hover:bg-white/[0.05] rounded-2xl p-3.5 transition-all duration-300 group border border-white/[0.04] hover:border-white/[0.08]"

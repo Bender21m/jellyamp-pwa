@@ -85,7 +85,7 @@ export function useAlbumColors(imageUrl?: string): {
       })
       .catch((err: unknown) => {
         if (currentImageRef.current === url) {
-          setError(err?.message || 'Failed to extract colors')
+          setError(err instanceof Error ? err.message : 'Failed to extract colors')
           setIsLoading(false)
           // Fallback colors
           const fallback: AlbumColors = {
