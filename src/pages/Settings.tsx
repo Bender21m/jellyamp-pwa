@@ -159,8 +159,9 @@ export default function Settings() {
           </section>
         )}
 
-        {/* Audio Quality */}
-        <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
+        {/* Audio Quality — hidden in archive-only mode */}
+        {!archiveOnly && (
+          <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
           <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted mb-4">Streaming Quality</h2>
           <div className="space-y-1.5">
             {QUALITY_OPTIONS.map((opt) => (
@@ -191,6 +192,7 @@ export default function Settings() {
             Original streams the file as-is (FLAC, WAV, etc). Lower quality saves bandwidth but transcodes on the server.
           </p>
         </section>
+        )}
 
         {/* Playback Transition */}
         <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
@@ -284,8 +286,9 @@ export default function Settings() {
           </p>
         </section>
 
-        {/* Scrobbling */}
-        <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
+        {/* Scrobbling — hidden in archive-only mode */}
+        {!archiveOnly && (
+          <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted">Scrobbling</h2>
             <button
@@ -393,9 +396,11 @@ export default function Settings() {
             Scrobbling tracks your listening habits to Last.fm and/or ListenBrainz. Tracks are scrobbled after 30 seconds or 50% played (whichever comes first).
           </p>
         </section>
+        )}
 
-        {/* Offline Cache */}
-        <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
+        {/* Offline Cache — hidden in archive-only mode */}
+        {!archiveOnly && (
+          <section className="bg-card rounded-xl p-5 ring-1 ring-white/5">
           <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted mb-4">Offline Cache</h2>
           <div className="space-y-4">
             <div className="flex justify-between items-center min-h-[44px]">
@@ -414,6 +419,7 @@ export default function Settings() {
             Albums downloaded for offline playback are cached locally. Use "Available Offline" on album pages to download tracks.
           </p>
         </section>
+        )}
 
         {/* Live Archive — hide toggle in archive-only mode (always on) */}
         {!archiveOnly && (
