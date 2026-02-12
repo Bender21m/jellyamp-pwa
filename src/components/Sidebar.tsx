@@ -203,19 +203,21 @@ export default function Sidebar() {
     isCollapsed: false,
   })
 
-  async function loadPlaylists() {
+  const loadPlaylists = useCallback(async () => {
     if (!api || !userId) return
     try {
       const res = await fetchPlaylists(api, userId)
       setPlaylists(res.Items ?? [])
     } catch { /* ignore */ }
-  }
+  }, [api, userId])
 
   useEffect(() => {
     if (!api || !userId) return
+    // This is a standard async data loading pattern
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPlaylists()
     fetchFavorites(api, userId, [BaseItemKind.MusicArtist]).then(res => setFavoriteArtists(res.Items ?? [])).catch(() => {})
-  }, [api, userId])
+  }, [api, userId, loadPlaylists])
 
   async function handleCreatePlaylist() {
     if (!api || !userId || !newPlaylistName.trim()) return
@@ -237,7 +239,7 @@ export default function Sidebar() {
       await deletePlaylist(api, confirmDelete.id)
       setConfirmDelete(null)
       await loadPlaylists()
-    } catch (e: any) {
+    } catch (e: unknown) {
       const status = e?.response?.status
       if (status === 401 || status === 403) {
         setDeleteError('Your account doesn\'t have permission to delete playlists on this server.')
@@ -258,10 +260,10 @@ export default function Sidebar() {
         trackIds = data.trackIds
       } else if (data.type === 'album' && data.albumId) {
         const res = await fetchTracks(api, userId, data.albumId)
-        trackIds = (res.Items ?? []).map((t: any) => t.Id).filter(Boolean)
+        trackIds = (res.Items ?? []).map((t: BaseItemDto) => t.Id).filter(Boolean)
       } else if (data.type === 'artist' && data.artistId) {
         const res = await fetchArtistTracks(api, userId, data.artistId)
-        trackIds = (res.Items ?? []).map((t: any) => t.Id).filter(Boolean)
+        trackIds = (res.Items ?? []).map((t: BaseItemDto) => t.Id).filter(Boolean)
       }
 
       if (trackIds.length === 0) return

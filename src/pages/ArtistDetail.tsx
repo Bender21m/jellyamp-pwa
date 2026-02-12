@@ -58,11 +58,6 @@ export default function ArtistDetail() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   useScrollRestore(scrollContainerRef)
 
-  useEffect(() => {
-    if (!api || !userId || !id) return
-    loadArtist()
-  }, [id, api, userId])
-
   async function loadArtist() {
     if (!api || !userId || !id || !serverUrl) return
     setLoading(true)
@@ -88,21 +83,28 @@ export default function ArtistDetail() {
     setLoading(false)
   }
 
+  useEffect(() => {
+    if (!api || !userId || !id) return
+    loadArtist()
+  }, [id, api, userId, loadArtist])
+
   const hasMore = albums.length < totalAlbumCount
 
-  // Use ref to avoid stale closure in intersection observer callback
+  // Ref keeps latest load-more fn to avoid stale closures in intersection observer
   const loadMoreFnRef = useRef<() => void>(() => {})
-  loadMoreFnRef.current = async () => {
-    if (!api || !userId || !id || loadingMore || !hasMore) return
-    setLoadingMore(true)
-    try {
-      const res = await fetchAlbums(api, userId, { artistIds: [id], limit: 20, startIndex: albums.length })
-      setAlbums(prev => [...prev, ...(res.Items ?? [])])
-    } catch (e) {
-      console.error('Failed to load more albums', e)
+  useEffect(() => {
+    loadMoreFnRef.current = async () => {
+      if (!api || !userId || !id || loadingMore || !hasMore) return
+      setLoadingMore(true)
+      try {
+        const res = await fetchAlbums(api, userId, { artistIds: [id], limit: 20, startIndex: albums.length })
+        setAlbums(prev => [...prev, ...(res.Items ?? [])])
+      } catch (e) {
+        console.error('Failed to load more albums', e)
+      }
+      setLoadingMore(false)
     }
-    setLoadingMore(false)
-  }
+  }) // intentionally no deps — updates ref on every render
 
   // Intersection observer for infinite scroll
   const loadMoreRef = useRef<HTMLDivElement>(null)

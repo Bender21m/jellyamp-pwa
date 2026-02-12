@@ -27,10 +27,10 @@ export function useScrobbling(options: UseScrobblingOptions) {
     if (scrobbleSettings.enabled) {
       updateNowPlaying(track, scrobbleSettings).catch(() => {})
     }
-  }, [track?.id, scrobbleSettings.enabled])
+  }, [track, scrobbleSettings])
 
   // Called from audio engine's timeupdate
-  function handleTimeUpdate(currentTime: number, duration: number, _audioElement: HTMLAudioElement) {
+  function handleTimeUpdate(currentTime: number, duration: number) {
     if (trackStartTimeRef.current && isPlaying) {
       const now = Date.now()
       const timeSinceStart = (now - trackStartTimeRef.current) / 1000

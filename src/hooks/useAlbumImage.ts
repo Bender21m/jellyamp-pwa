@@ -97,6 +97,8 @@ export function useAlbumImage(albumName: string, artistName: string, hasJellyfin
 
     const cached = getCached(cacheKey)
     if (cached) {
+      // Setting cached result is legitimate data loading pattern
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCoverUrl(cached.url)
       return
     }

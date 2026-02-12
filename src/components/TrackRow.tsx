@@ -51,7 +51,7 @@ const TrackRow = React.memo(function TrackRow({ track, index, allTracks, showInd
   }
 
   // Swipe actions
-  const { touchHandlers, getDeltaX: _getDeltaX, isTracking: _isTracking } = useSwipeAction({
+  const { touchHandlers } = useSwipeAction({
     onSwipeLeft: () => {
       // Swipe left = add to queue
       addToQueue([track])

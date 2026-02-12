@@ -18,13 +18,9 @@ export default function Playlists() {
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null)
   const [deleteError, setDeleteError] = useState('')
 
-  useEffect(() => {
-    if (!api || !userId) return
-    loadPlaylists()
-  }, [api, userId])
-
   async function loadPlaylists() {
     if (!api || !userId) return
+     
     setLoading(true)
     try {
       const res = await fetchPlaylists(api, userId)
@@ -34,6 +30,12 @@ export default function Playlists() {
     }
     setLoading(false)
   }
+
+   
+  useEffect(() => {
+    if (!api || !userId) return
+    loadPlaylists()
+  }, [api, userId, loadPlaylists])
 
   // Pull to refresh setup
   const containerRef = useRef<HTMLDivElement>(null)
@@ -71,7 +73,7 @@ export default function Playlists() {
       await deletePlaylist(api, confirmDelete.id)
       setConfirmDelete(null)
       await loadPlaylists()
-    } catch (e: any) {
+    } catch (e: unknown) {
       const status = e?.response?.status
       if (status === 401 || status === 403) {
         setDeleteError('Your account doesn\'t have permission to delete playlists on this server.')

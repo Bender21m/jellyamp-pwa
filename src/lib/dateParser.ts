@@ -10,7 +10,7 @@ export function parseShowDate(albumName: string): Date | null {
     // ISO format: 2024-03-15, 2024.03.15
     /(\d{4})[-.](\d{1,2})[-.](\d{1,2})/,
     // US format: 03/15/2024, 3/15/2024, 03-15-2024
-    /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/,
+    /(\d{1,2})[/-](\d{1,2})[/-](\d{4})/,
     // Short year: 3-15-24, 03-15-24
     /(\d{1,2})[-](\d{1,2})[-](\d{2})/,
     // Month name formats: March 15, 2024; Mar 15, 2024

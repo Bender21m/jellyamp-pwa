@@ -88,6 +88,8 @@ export function useArtistImage(name: string, hasJellyfinImage: boolean): string 
 
     const cached = getCached(name)
     if (cached) {
+      // Setting cached result is legitimate data loading pattern
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setWikiImage(cached.url)
       return
     }

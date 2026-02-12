@@ -101,7 +101,10 @@ export default function Search() {
 
   useEffect(() => {
     if (!query.trim() || !api || !userId) {
+      // Clearing search results when query is empty is legitimate
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResults([])
+       
       setError(null)
       return
     }

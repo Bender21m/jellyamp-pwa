@@ -52,9 +52,11 @@ export default function InstallPrompt() {
 
     // Check if app is already installed (running in standalone mode)
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-    const isIOSStandalone = 'standalone' in window.navigator && (window.navigator as any).standalone
+    const isIOSStandalone = 'standalone' in window.navigator && (window.navigator as Record<string, unknown>).standalone
     
+    // This is legitimate - setting initial state based on environment check
     if (isStandalone || isIOSStandalone) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowPrompt(false)
     }
 

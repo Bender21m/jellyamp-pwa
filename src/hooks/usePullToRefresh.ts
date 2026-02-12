@@ -89,7 +89,7 @@ export function usePullToRefresh({ threshold = DEFAULT_THRESHOLD, onRefresh, dis
     }
   }, [disabled, isAtTop])
 
-  const handleTouchEnd = useCallback(async (_e: React.TouchEvent) => {
+  const handleTouchEnd = useCallback(async () => {
     if (!pullState.current.isPulling) return
 
     const distance = pullState.current.pullDistance

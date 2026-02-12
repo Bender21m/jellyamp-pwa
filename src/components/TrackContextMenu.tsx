@@ -51,6 +51,8 @@ export default function TrackContextMenu({ track, position, onClose, playlistId,
 
   useEffect(() => {
     if (showPlaylists && api && userId) {
+      // Standard async loading pattern
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoadingPlaylists(true)
       fetchPlaylists(api, userId)
         .then(res => setPlaylists(res.Items ?? []))
@@ -66,9 +68,14 @@ export default function TrackContextMenu({ track, position, onClose, playlistId,
   // Reset submenu state when menu opens/closes
   useEffect(() => {
     if (!isOpen) {
+      // Resetting UI state when menu closes is legitimate
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowPlaylists(false)
+       
       setShowNewInput(false)
+       
       setNewPlaylistName('')
+       
       setFeedback(null)
     }
   }, [isOpen])

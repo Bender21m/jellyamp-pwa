@@ -35,5 +35,5 @@ export function useMediaSession(options: UseMediaSessionOptions) {
         onSeek(details.seekTime)
       }
     })
-  }, [track?.id])
+  }, [track?.id, audioRef, onPlay, onPause, onNext, onPrevious, onSeek])
 }

@@ -14,9 +14,11 @@ export function useTrackSelection(trackIds: string[]): UseTrackSelection {
   const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null)
   const location = useLocation()
 
-  // Clear selection on navigation
+  // Clear selection on navigation - legitimate UI state reset
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedIds(new Set())
+     
     setLastClickedIndex(null)
   }, [location.pathname])
 

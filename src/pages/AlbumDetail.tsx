@@ -60,13 +60,9 @@ export default function AlbumDetail() {
   })
   const selectedTracks = tracks.filter(t => selection.isSelected(t.id))
 
-  useEffect(() => {
-    if (!api || !userId || !id) return
-    loadAlbum()
-  }, [id, api, userId])
-
   async function loadAlbum() {
     if (!api || !userId || !id || !serverUrl) return
+     
     setLoading(true)
     setError(null)
     try {
@@ -100,6 +96,12 @@ export default function AlbumDetail() {
     }
     setLoading(false)
   }
+
+   
+  useEffect(() => {
+    if (!api || !userId || !id) return
+    loadAlbum()
+  }, [id, api, userId, loadAlbum])
 
   async function handleFavorite() {
     if (!api || !userId || !id) return

@@ -77,6 +77,8 @@ export default function ArchiveArtist() {
   // Load all years on mount
   useEffect(() => {
     if (!artistName) return
+    // Standard async loading pattern
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setYearsLoading(true)
     getArtistYears(artistName).then((y) => {
       setYears(y)
@@ -104,6 +106,8 @@ export default function ArchiveArtist() {
   }, [artistName])
 
   useEffect(() => {
+    // Reset page when filters change - legitimate UI state reset
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPage(1)
     loadShows(1, yearFilter, sort, false)
   }, [artistName, yearFilter, sort, loadShows])

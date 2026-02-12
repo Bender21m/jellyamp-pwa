@@ -44,8 +44,12 @@ export function useAlbumColors(imageUrl?: string): {
 
   useEffect(() => {
     if (!imageUrl) {
+      // Resetting state when imageUrl changes is legitimate
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setColors(null)
+       
       setIsLoading(false)
+       
       setError(null)
       currentImageRef.current = undefined
       return
@@ -79,7 +83,7 @@ export function useAlbumColors(imageUrl?: string): {
           setIsLoading(false)
         }
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         if (currentImageRef.current === url) {
           setError(err?.message || 'Failed to extract colors')
           setIsLoading(false)

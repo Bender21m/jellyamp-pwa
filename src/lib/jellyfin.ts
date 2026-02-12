@@ -244,7 +244,7 @@ export async function fetchLyrics(api: Api, trackId: string): Promise<LyricsResp
   try {
     const { data } = await api.axiosInstance.get(`${api.basePath}/Audio/${trackId}/Lyrics`)
     return data as LyricsResponse
-  } catch (error) {
+  } catch {
     // Lyrics not available or error
     return null
   }

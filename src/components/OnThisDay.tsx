@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
@@ -19,13 +19,9 @@ export default function OnThisDay() {
   const [matches, setMatches] = useState<OnThisDayAlbum[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const loadOnThisDay = useCallback(async () => {
     if (!api || !userId || !serverUrl) return
-    loadOnThisDay()
-  }, [api, userId, serverUrl])
-
-  async function loadOnThisDay() {
-    if (!api || !userId || !serverUrl) return
+     
     setLoading(true)
     try {
       const today = new Date()
@@ -67,7 +63,14 @@ export default function OnThisDay() {
       console.error('On This Day failed:', e)
     }
     setLoading(false)
-  }
+  }, [api, userId, serverUrl])
+
+   
+   
+  useEffect(() => {
+    if (!api || !userId || !serverUrl) return
+    loadOnThisDay()
+  }, [api, userId, serverUrl, loadOnThisDay])
 
   // Don't render anything if no matches or loading
   if (loading || matches.length === 0) return null

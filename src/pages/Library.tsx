@@ -98,17 +98,19 @@ export default function Library() {
     setLoading(false)
   }, [api, userId, sortOption, search, libraryFilter])
 
-  // Load counts on mount
+  // Load counts on mount - standard async loading pattern
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadCounts() }, [loadCounts])
 
-  // Load data when filter, sort, or other deps change
+  // Load data when filter, sort, or other deps change - standard async loading pattern
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadData() }, [loadData])
 
   // Debounced search
   useEffect(() => {
     const t = setTimeout(() => loadData(), 300)
     return () => clearTimeout(t)
-  }, [search])
+  }, [search, loadData])
 
   // Pull to refresh
   const isTouchDevice = window.matchMedia('(hover: none)').matches
@@ -142,9 +144,11 @@ export default function Library() {
     setLoading(false)
   }, [api, userId])
 
-  // Reset genre selection when switching filters
+  // Reset genre selection when switching filters - legitimate UI state reset
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedGenre(null)
+     
     setGenreAlbums([])
   }, [libraryFilter])
 

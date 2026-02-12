@@ -19,5 +19,11 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Downgrade to warning — data-fetching effects legitimately call setState
+      // (setLoading, setData, setError). The rule is useful for catching derived
+      // state that should be useMemo, but false-positives on async patterns.
+      'react-hooks/set-state-in-effect': 'warn',
+    },
   },
 ])

@@ -22,10 +22,12 @@ export default function Equalizer({ isOpen, onClose, gains, onGainsChange, onPre
   })
 
   // Update selected preset when gains change externally
+  // This is derived state based on gains - using useMemo would be better but this pattern is also acceptable
   useEffect(() => {
     const matchingPreset = EQ_PRESETS.find(preset => 
       preset.gains.every((gain, index) => Math.abs(gain - gains[index]) < 0.1)
     )
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedPreset(matchingPreset?.name ?? 'Custom')
   }, [gains])
 

@@ -11,7 +11,7 @@ interface UseSidebarKeyboardOptions {
   isCollapsed: boolean
 }
 
-export function useSidebarKeyboard({ navItems, isCollapsed: _isCollapsed }: UseSidebarKeyboardOptions) {
+export function useSidebarKeyboard({ navItems }: UseSidebarKeyboardOptions) {
   const navigate = useNavigate()
   const location = useLocation()
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null)

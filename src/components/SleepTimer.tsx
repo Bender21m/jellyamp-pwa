@@ -53,9 +53,10 @@ export default function SleepTimer({ isOpen, onClose }: SleepTimerProps) {
     return () => clearInterval(interval)
   }, [sleepTimer.active, sleepTimer.mode, getSleepTimerRemaining, clearSleepTimer])
 
-  // Initial remaining time calculation
+  // Initial remaining time calculation - derived state from sleepTimer
   useEffect(() => {
     if (sleepTimer.active && sleepTimer.mode === 'time') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRemainingTime(getSleepTimerRemaining())
     }
   }, [sleepTimer.active, sleepTimer.mode, getSleepTimerRemaining])

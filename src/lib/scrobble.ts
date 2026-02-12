@@ -97,7 +97,7 @@ function md5(str: string): string {
     return WordToHexValue
   }
 
-  let x = ConvertToWordArray(str)
+  const x = ConvertToWordArray(str)
   let a = 0x67452301
   let b = 0xEFCDAB89
   let c = 0x98BADCFE

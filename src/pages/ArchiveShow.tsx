@@ -56,12 +56,8 @@ export default function ArchiveShow() {
 
   const isFav = isFavoriteShow(identifier)
 
-  useEffect(() => {
-    if (!identifier) return
-    loadShow()
-  }, [identifier])
-
   async function loadShow() {
+     
     setLoading(true)
     setError(null)
     try {
@@ -87,6 +83,12 @@ export default function ArchiveShow() {
     }
     setLoading(false)
   }
+
+   
+  useEffect(() => {
+    if (!identifier) return
+    loadShow()
+  }, [identifier, loadShow])
 
   function playAll() {
     if (tracks.length === 0) return

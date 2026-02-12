@@ -127,14 +127,14 @@ export default function Player() {
         audioRef.current.currentTime = newTime
         seek(newTime)
       }
-    }, [currentTime, duration, seek]),
+    }, [audioRef, currentTime, duration, seek]),
     onSeekForward: useCallback(() => {
       if (audioRef.current && duration > 0) {
         const newTime = Math.min(duration, currentTime + 10)
         audioRef.current.currentTime = newTime
         seek(newTime)
       }
-    }, [currentTime, duration, seek]),
+    }, [audioRef, currentTime, duration, seek]),
     onToggleFullscreen: useCallback(() => {
       setShowNowPlaying(!showNowPlaying)
     }, [showNowPlaying, setShowNowPlaying]),
@@ -321,7 +321,10 @@ export default function Player() {
                   seek(time)
                 }
               }}
+              // Ref modifications during callbacks are legitimate - refs are mutable
+              // eslint-disable-next-line react-hooks/immutability
               onSeekStart={() => { seekingRef.current = true }}
+              // eslint-disable-next-line react-hooks/immutability  
               onSeekEnd={() => { seekingRef.current = false }}
               trackId={currentTrack?.id}
               className="h-full"

@@ -17,6 +17,8 @@ import { getImageUrl } from '../../lib/jellyfin'
  * Returns inline style + className for responsive grid based on density.
  * Uses CSS minmax auto-fill so Tailwind purging can't strip the classes.
  */
+// Grid utility used only within this library context
+// eslint-disable-next-line react-refresh/only-export-components
 export function getGridProps(density: GridDensity = 'normal'): { style: React.CSSProperties } {
   const config = {
     normal: { minWidth: '155px', gap: '1.25rem' },   // 2 per row on mobile

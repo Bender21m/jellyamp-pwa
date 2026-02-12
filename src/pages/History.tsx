@@ -40,7 +40,7 @@ export default function History() {
   useEffect(() => {
     if (!api || !userId || !serverUrl) return
     loadHistory()
-  }, [api, userId, serverUrl])
+  }, [api, userId, serverUrl, loadHistory])
 
   async function loadHistory() {
     if (!api || !userId || !serverUrl) return

@@ -50,7 +50,8 @@ export default function Onboarding({ isVisible, onDismiss }: OnboardingProps) {
   )
 }
 
-// Hook to manage onboarding state
+// Hook to manage onboarding state - closely related to the component
+// eslint-disable-next-line react-refresh/only-export-components
 export function useOnboarding() {
   const [showOnboarding, setShowOnboarding] = useState(false)
 

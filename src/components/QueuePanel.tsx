@@ -230,7 +230,7 @@ function VirtualQueue({ upcoming, queueIndex, dragIdx, overIdx, setDragIdx, setO
       ref.currentOverIndex = realIndex
       setTouchDragFrom(realIndex)
       setTouchDragOver(realIndex)
-      try { navigator.vibrate?.(10) } catch {}
+      try { navigator.vibrate?.(10) } catch { /* Ignore vibration errors */ }
     }, 300)
   }, [])
 
@@ -293,9 +293,10 @@ function VirtualQueue({ upcoming, queueIndex, dragIdx, overIdx, setDragIdx, setO
 
   // Cleanup long press timer on unmount
   useEffect(() => {
+    const ref = touchDragRef.current
     return () => {
-      if (touchDragRef.current.longPressTimer) {
-        clearTimeout(touchDragRef.current.longPressTimer)
+      if (ref.longPressTimer) {
+        clearTimeout(ref.longPressTimer)
       }
     }
   }, [])

@@ -20,15 +20,6 @@ const POPULAR_ARTISTS = [
   'Bob Weir', 'Pigeons Playing Ping Pong', 'Assembly of Dust',
 ]
 
-// Fallback images for popular artists to avoid initial API calls
-// @ts-ignore - Used in useEffect below
-const ARTIST_FALLBACK_IMAGES: Record<string, string> = {
-  'Grateful Dead': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Grateful_Dead_-_American_Beauty.jpg/300px-Grateful_Dead_-_American_Beauty.jpg',
-  'Disco Biscuits': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/The_Disco_Biscuits_2017.jpg/300px-The_Disco_Biscuits_2017.jpg',
-  'String Cheese Incident': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/String_cheese_incident_red_rocks_2005.jpg/300px-String_cheese_incident_red_rocks_2005.jpg',
-  'Widespread Panic': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Widespread_Panic_2016.jpg/300px-Widespread_Panic_2016.jpg',
-}
-
 // Generate a consistent color from artist name for avatar gradients
 function artistColor(name: string): [string, string] {
   let hash = 0
@@ -185,7 +176,7 @@ export default function ArchiveHome() {
     )
 
     // Store observer for cleanup
-    ;(window as any).__artistImageObserver = observer
+    ;(window as Window & { __artistImageObserver: IntersectionObserver }).__artistImageObserver = observer
     
     return () => { 
       cancelled = true
@@ -532,8 +523,8 @@ export default function ArchiveHome() {
                       onClick={() => handleSelectArtist(name)}
                       data-artist={name}
                       ref={(el) => {
-                        if (el && (window as any).__artistImageObserver) {
-                          (window as any).__artistImageObserver.observe(el)
+                        if (el && (window as Window & { __artistImageObserver?: IntersectionObserver }).__artistImageObserver) {
+                          (window as Window & { __artistImageObserver: IntersectionObserver }).__artistImageObserver.observe(el)
                         }
                       }}
                       className="shrink-0 w-[120px] text-center bg-white/[0.02] hover:bg-white/[0.05] rounded-2xl p-3.5 transition-all duration-300 group border border-white/[0.04] hover:border-white/[0.08]"

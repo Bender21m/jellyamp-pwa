@@ -103,7 +103,7 @@ export function useSleepTimer(options: UseSleepTimerOptions) {
     return () => {
       audio.removeEventListener('ended', handleTrackEnd)
     }
-  }, [sleepTimer.active, sleepTimer.mode, onPause, onClearTimer])
+  }, [audioRef, sleepTimer.active, sleepTimer.mode, onPause, onClearTimer])
 
   // Handle sleep timer "end of track" mode on track change
   useEffect(() => {

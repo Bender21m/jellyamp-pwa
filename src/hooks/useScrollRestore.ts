@@ -38,5 +38,5 @@ export function useScrollRestore(containerRef: React.RefObject<HTMLElement | nul
 
     // Return cleanup function to save scroll position when location changes
     return saveScrollPosition
-  }, [location.pathname ?? '/', containerRef])
+  }, [location.pathname, containerRef])
 }

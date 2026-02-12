@@ -44,13 +44,9 @@ export default function PlaylistDetail() {
   })
   const selectedTracks = tracks.filter(t => selection.isSelected(t.id))
 
-  useEffect(() => {
-    if (!api || !userId || !id) return
-    loadPlaylist()
-  }, [id, api, userId])
-
   async function loadPlaylist() {
     if (!api || !userId || !id || !serverUrl) return
+     
     setLoading(true)
     try {
       const { data: plData } = await api.axiosInstance.get(`${api.basePath}/Users/${userId}/Items/${id}`)
@@ -76,6 +72,12 @@ export default function PlaylistDetail() {
     }
     setLoading(false)
   }
+
+   
+  useEffect(() => {
+    if (!api || !userId || !id) return
+    loadPlaylist()
+  }, [id, api, userId, loadPlaylist])
 
   function playAll(startIndex = 0) {
     if (tracks.length > 0) setTrack(tracks[startIndex], tracks, startIndex)

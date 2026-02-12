@@ -33,6 +33,8 @@ function StarRating({ rating }: { rating: number }) {
   )
 }
 
+// These utility components/functions are only used in this specific context
+// eslint-disable-next-line react-refresh/only-export-components
 export { StarRating, formatDate }
 
 const ArchiveShowCard = React.memo(function ArchiveShowCard({ show, recordingCount, hideArtist, onClick }: ArchiveShowCardProps) {

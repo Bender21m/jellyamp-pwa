@@ -73,13 +73,9 @@ export default function Favorites() {
   const [favoritesFilter, setFavoritesFilter] = useState('All')
   const [contextMenu, setContextMenu] = useState<{ track: Track; position: { x: number; y: number } } | null>(null)
 
-  useEffect(() => {
-    if (!api || !userId) return
-    loadFavorites()
-  }, [api, userId])
-
   async function loadFavorites() {
     if (!api || !userId) return
+     
     setLoading(true)
     setError(null)
     try {
@@ -92,6 +88,12 @@ export default function Favorites() {
     }
     setLoading(false)
   }
+
+   
+  useEffect(() => {
+    if (!api || !userId) return
+    loadFavorites()
+  }, [api, userId, loadFavorites])
 
   // Pull to refresh
   const containerRef = useRef<HTMLDivElement>(null)

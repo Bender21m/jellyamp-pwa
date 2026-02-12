@@ -101,7 +101,7 @@ export default function Settings() {
       const authUrl = await startLastFmAuth(scrobbleSettings.lastfm.apiKey)
       window.open(authUrl, '_blank')
       setLastfmStatus('Complete authorization in the popup window')
-    } catch (error) {
+    } catch {
       setLastfmStatus('Error: Invalid API key')
     } finally {
       setIsConnectingLastfm(false)
@@ -121,7 +121,7 @@ export default function Settings() {
         }
       })
       setListenbrainzStatus(`Connected as ${username}`)
-    } catch (error) {
+    } catch {
       setListenbrainzStatus('Error: Invalid token')
     }
   }

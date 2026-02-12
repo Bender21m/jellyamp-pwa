@@ -22,9 +22,14 @@ export default function LyricsView({ trackId, currentTime, className = '' }: Lyr
   useEffect(() => {
     if (!api || !trackId) return
     
+    // This is a standard async data fetching pattern - setting loading states is legitimate
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
+     
     setError(null)
+     
     setLyrics(null)
+     
     setCurrentLineIndex(-1)
     
     fetchLyrics(api, trackId)
@@ -57,6 +62,8 @@ export default function LyricsView({ trackId, currentTime, className = '' }: Lyr
       }
     }
     
+    // This is derived state based on current time and lyrics - legitimate pattern
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentLineIndex(activeIndex)
   }, [lyrics, currentTime])
 

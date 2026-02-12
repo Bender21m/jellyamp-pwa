@@ -74,7 +74,7 @@ export function useSwipeAction(callbacks: SwipeCallbacks) {
     callbacks.onSwipeMove?.(deltaX, deltaY)
   }, [callbacks])
 
-  const handleTouchEnd = useCallback((_e: React.TouchEvent) => {
+  const handleTouchEnd = useCallback(() => {
     if (!swipeState.current.isTracking) return
 
     const deltaX = swipeState.current.currentX - swipeState.current.startX

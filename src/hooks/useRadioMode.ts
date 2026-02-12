@@ -85,5 +85,5 @@ export function useRadioMode() {
       .finally(() => { 
         fetchingRef.current = false 
       })
-  }, [radioMode, queueIndex, queueLength, currentTrack?.id, serverUrl, accessToken, userId, addToQueue])
+  }, [radioMode, queueIndex, queueLength, currentTrack, serverUrl, accessToken, userId, addToQueue])
 }

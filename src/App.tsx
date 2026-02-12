@@ -120,6 +120,8 @@ export default function App() {
   const { accessToken, archiveOnly, restore } = useAuthStore()
   const setArchiveEnabled = useArchiveStore((s) => s.setEnabled)
 
+  // Restore auth state on app mount - intentionally called once
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { restore() }, [])
 
   // Archive-only mode: auto-enable archive feature
