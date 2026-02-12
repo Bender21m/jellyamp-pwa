@@ -235,7 +235,8 @@ export default function Settings() {
                 step={1}
                 value={crossfadeDuration}
                 onChange={(e) => setCrossfadeDuration(Number(e.target.value))}
-                className="w-full accent-neon-cyan"
+                aria-label={`Crossfade duration: ${crossfadeDuration} seconds`}
+                className="w-full accent-neon-cyan focus-visible:ring-2 focus-visible:ring-neon-cyan/50"
               />
             </div>
           )}
@@ -270,7 +271,10 @@ export default function Settings() {
             <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted">Volume Normalization</h2>
             <button
               onClick={() => setVolumeNormalization(!volumeNormalization)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              aria-label={`Volume normalization: ${volumeNormalization ? 'enabled' : 'disabled'}`}
+              role="switch"
+              aria-checked={volumeNormalization}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors min-h-[44px] min-w-[44px] justify-center focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card ${
                 volumeNormalization ? 'bg-neon-cyan' : 'bg-white/20'
               }`}
             >
@@ -293,7 +297,10 @@ export default function Settings() {
             <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted">Scrobbling</h2>
             <button
               onClick={toggleScrobbling}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              aria-label={`Scrobbling: ${scrobbleSettings.enabled ? 'enabled' : 'disabled'}`}
+              role="switch"
+              aria-checked={scrobbleSettings.enabled}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors min-h-[44px] min-w-[44px] justify-center focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card ${
                 scrobbleSettings.enabled ? 'bg-neon-cyan' : 'bg-white/20'
               }`}
             >
@@ -428,7 +435,10 @@ export default function Settings() {
               <h2 className="text-[11px] font-mono font-bold uppercase tracking-widest text-text-muted">Live Archive</h2>
               <button
                 onClick={() => setArchiveEnabled(!archiveEnabled)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                aria-label={`Live Archive: ${archiveEnabled ? 'enabled' : 'disabled'}`}
+                role="switch"
+                aria-checked={archiveEnabled}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors min-h-[44px] min-w-[44px] justify-center focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card ${
                   archiveEnabled ? 'bg-neon-cyan' : 'bg-white/20'
                 }`}
               >

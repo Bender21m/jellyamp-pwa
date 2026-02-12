@@ -120,7 +120,7 @@ export default function InstallPrompt() {
             </div>
             <button
               onClick={handleDismiss}
-              className="text-text-muted hover:text-text-secondary transition-colors p-1 -m-1"
+              className="text-text-muted hover:text-text-secondary transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
               aria-label="Dismiss install prompt"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,13 +132,15 @@ export default function InstallPrompt() {
           <div className="flex gap-2 mt-4">
             <button
               onClick={handleInstallClick}
-              className="flex-1 bg-gradient-primary text-deep-black text-xs font-medium py-2 px-4 rounded-lg hover:opacity-90 transition-opacity"
+              aria-label="Install JellyAmp as an app"
+              className="flex-1 bg-gradient-primary text-deep-black text-xs font-medium py-2 px-4 rounded-lg hover:opacity-90 transition-opacity min-h-[44px] focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
             >
               Install
             </button>
             <button
               onClick={handleDismiss}
-              className="px-4 py-2 text-text-secondary text-xs hover:text-text-primary transition-colors"
+              aria-label="Dismiss install prompt"
+              className="px-4 py-2 text-text-secondary text-xs hover:text-text-primary transition-colors min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
             >
               Not now
             </button>

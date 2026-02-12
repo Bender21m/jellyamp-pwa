@@ -50,7 +50,7 @@ export default function MobileNav() {
             key={tab.to}
             to={tab.to}
             className={({ isActive }) =>
-              `flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-colors relative ${
+              `flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] min-w-[44px] transition-colors relative focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${
                 isActive ? 'text-neon-cyan' : 'text-white/40'
               }`
             }

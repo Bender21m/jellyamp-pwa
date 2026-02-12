@@ -14,7 +14,7 @@ export default function MobileSettingsButton() {
     <Link
       to="/settings"
       aria-label="Settings"
-      className={`md:hidden fixed top-3 right-3 z-50 p-2 rounded-full backdrop-blur-md transition-colors ${
+      className={`md:hidden fixed top-3 right-3 z-50 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full backdrop-blur-md transition-colors focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${
         isSettings
           ? 'text-neon-cyan bg-white/10'
           : 'text-text-muted bg-card/80 hover:text-text-primary hover:bg-white/10'

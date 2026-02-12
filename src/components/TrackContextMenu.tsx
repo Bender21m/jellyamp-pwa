@@ -223,7 +223,8 @@ export default function TrackContextMenu({ track, position, onClose, playlistId,
             <div className="py-1.5">
               <button
                 onClick={() => setShowPlaylists(false)}
-                className="w-full flex items-center gap-2 px-4 py-2 text-xs text-text-muted hover:text-text-primary transition-colors"
+                aria-label="Back to main menu"
+                className="w-full flex items-center gap-2 px-4 py-2 text-xs text-text-muted hover:text-text-primary transition-colors min-h-[44px] focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
               >
                 <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor">
                   <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
@@ -239,7 +240,8 @@ export default function TrackContextMenu({ track, position, onClose, playlistId,
                     <button
                       key={p.Id}
                       onClick={() => handleAddToPlaylist(p.Id!)}
-                      className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 truncate transition-colors"
+                      aria-label={`Add to playlist: ${p.Name}`}
+                      className="w-full text-left px-4 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 truncate transition-colors min-h-[44px] focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
                     >
                       {p.Name}
                     </button>
@@ -263,7 +265,8 @@ export default function TrackContextMenu({ track, position, onClose, playlistId,
                   <button
                     type="submit"
                     disabled={!newPlaylistName.trim()}
-                    className="shrink-0 text-neon-cyan text-sm font-semibold disabled:opacity-30"
+                    aria-label="Create playlist and add track"
+                    className="shrink-0 text-neon-cyan text-sm font-semibold disabled:opacity-30 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
                   >
                     Add
                   </button>
@@ -271,7 +274,8 @@ export default function TrackContextMenu({ track, position, onClose, playlistId,
               ) : (
                 <button
                   onClick={() => setShowNewInput(true)}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-neon-cyan hover:bg-white/5 transition-colors"
+                  aria-label="Create new playlist"
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-neon-cyan hover:bg-white/5 transition-colors min-h-[44px] focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
                 >
                   <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
                     <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
@@ -294,8 +298,9 @@ function MenuItem({ icon, label, onClick, hasSubmenu, danger }: {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-        danger ? 'text-red-400 hover:bg-red-500/10' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+      aria-label={label}
+      className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors min-h-[44px] focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${
+        danger ? 'text-red-400 hover:bg-red-500/10 focus-visible:ring-red-400/50' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
       }`}
     >
       <svg viewBox="0 0 24 24" className={`w-4 h-4 shrink-0 ${danger ? 'text-red-400' : 'text-text-muted'}`} fill="currentColor">

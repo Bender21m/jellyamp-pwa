@@ -127,7 +127,8 @@ export default function SleepTimer({ isOpen, onClose }: SleepTimerProps) {
               <button
                 key={minutes}
                 onClick={() => handleTimerSelect(minutes)}
-                className="w-full text-left px-3 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors"
+                aria-label={`Set sleep timer for ${label}`}
+                className="w-full text-left px-3 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors min-h-[44px] focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
               >
                 {label}
               </button>
@@ -135,14 +136,16 @@ export default function SleepTimer({ isOpen, onClose }: SleepTimerProps) {
             
             <button
               onClick={handleEndOfTrack}
-              className="w-full text-left px-3 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors"
+              aria-label="Set sleep timer to end of current track"
+              className="w-full text-left px-3 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors min-h-[44px] focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
             >
               End of track
             </button>
             
             <button
               onClick={handleOff}
-              className="w-full text-left px-3 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors border-t border-white/5"
+              aria-label="Turn off sleep timer"
+              className="w-full text-left px-3 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors border-t border-white/5 min-h-[44px] focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
             >
               Off
             </button>

@@ -138,7 +138,8 @@ export default function NowPlaying() {
       </div>
       <button
         onClick={handleFavorite}
-        className={`p-2 shrink-0 mt-0.5 transition-colors ${trackIsFav ? 'text-neon-pink' : 'text-white/30 hover:text-neon-pink/70'}`}
+        aria-label={trackIsFav ? `Remove ${currentTrack.name} from favorites` : `Add ${currentTrack.name} to favorites`}
+        className={`min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0 mt-0.5 transition-colors focus-visible:ring-2 focus-visible:ring-neon-pink/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black ${trackIsFav ? 'text-neon-pink' : 'text-white/30 hover:text-neon-pink/70'}`}
       >
         <svg viewBox="0 0 24 24" className="w-6 h-6" fill={trackIsFav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={trackIsFav ? 0 : 2}>
           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
@@ -174,19 +175,25 @@ export default function NowPlaying() {
     <div className="flex items-center justify-center gap-4 md:gap-5 w-full max-w-xs md:max-w-none">
       <button
         onClick={toggleShuffle}
-        className={`p-3 transition-colors ${shuffle ? 'text-neon-cyan' : 'text-white/40 hover:text-white/70'}`}
+        aria-label={shuffle ? "Disable shuffle" : "Enable shuffle"}
+        className={`min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black ${shuffle ? 'text-neon-cyan' : 'text-white/40 hover:text-white/70'}`}
       >
         <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
           <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" />
         </svg>
       </button>
-      <button onClick={previous} className="p-2 text-white/80 hover:text-white transition-colors active:scale-90">
+      <button 
+        onClick={previous} 
+        aria-label="Previous track" 
+        className="min-h-[44px] min-w-[44px] flex items-center justify-center text-white/80 hover:text-white transition-colors active:scale-90 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black"
+      >
         <svg viewBox="0 0 24 24" className="w-9 h-9" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg>
       </button>
       <motion.button
         onClick={toggle}
         whileTap={{ scale: 0.88 }}
-        className="w-[68px] h-[68px] rounded-full bg-white flex items-center justify-center text-deep-black shadow-[0_0_40px_rgba(255,255,255,0.15)] hover:shadow-[0_0_50px_rgba(255,255,255,0.2)] transition-shadow"
+        aria-label={isPlaying ? "Pause" : "Play"}
+        className="w-[68px] h-[68px] rounded-full bg-white flex items-center justify-center text-deep-black shadow-[0_0_40px_rgba(255,255,255,0.15)] hover:shadow-[0_0_50px_rgba(255,255,255,0.2)] transition-shadow focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black"
       >
         {isPlaying ? (
           <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
@@ -194,12 +201,17 @@ export default function NowPlaying() {
           <svg viewBox="0 0 24 24" className="w-8 h-8 ml-1" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
         )}
       </motion.button>
-      <button onClick={next} className="p-2 text-white/80 hover:text-white transition-colors active:scale-90">
+      <button 
+        onClick={next} 
+        aria-label="Next track" 
+        className="min-h-[44px] min-w-[44px] flex items-center justify-center text-white/80 hover:text-white transition-colors active:scale-90 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black"
+      >
         <svg viewBox="0 0 24 24" className="w-9 h-9" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" /></svg>
       </button>
       <button
         onClick={cycleRepeat}
-        className={`p-3 transition-colors ${repeat !== 'off' ? 'text-neon-cyan' : 'text-white/40 hover:text-white/70'}`}
+        aria-label={repeat === 'off' ? 'Enable repeat' : repeat === 'one' ? 'Repeat one track' : 'Repeat all tracks'}
+        className={`min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black ${repeat !== 'off' ? 'text-neon-cyan' : 'text-white/40 hover:text-white/70'}`}
       >
         <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
           {repeat === 'one'
@@ -219,7 +231,8 @@ export default function NowPlaying() {
           const nextIndex = (currentIndex + 1) % rates.length
           setPlaybackRate(rates[nextIndex])
         }}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all text-white/40 hover:text-white/60 border border-transparent hover:border-white/20"
+        aria-label={`Playback speed: ${playbackRate}x. Click to change`}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all text-white/40 hover:text-white/60 border border-transparent hover:border-white/20 min-h-[44px] focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black"
       >
         <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
           <path d="M13,8V16L18,12M4,6H6V18H4V6M8,6H10V18H8V6Z" />
@@ -233,12 +246,12 @@ export default function NowPlaying() {
     <div className="flex items-center justify-center mt-2">
       <button
         onClick={handleRadioToggle}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+        aria-label={radioMode ? 'Disable radio mode' : 'Enable radio mode'}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all min-h-[44px] focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black ${
           radioMode
             ? 'bg-neon-cyan/15 text-neon-cyan border border-neon-cyan/30'
             : 'text-white/40 hover:text-white/60 border border-transparent'
         }`}
-        title={radioMode ? 'Radio mode: Auto-mix similar tracks' : 'Enable radio mode'}
       >
         <span className={`text-base leading-none ${radioMode ? 'animate-pulse' : ''}`}>∞</span>
         <span>Radio</span>
@@ -257,7 +270,8 @@ export default function NowPlaying() {
         <div className="flex bg-white/10 rounded-full p-1">
           <button
             onClick={() => setShowLyrics(false)}
-            className={`px-4 py-2 rounded-full text-xs font-medium transition-all ${
+            aria-label="Show up next tracks"
+            className={`px-4 py-2 rounded-full text-xs font-medium transition-all min-h-[44px] focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black ${
               !showLyrics ? 'bg-neon-cyan text-deep-black shadow-[0_0_12px_rgba(0,255,221,0.3)]' : 'text-white/60 hover:text-white/80'
             }`}
           >
@@ -265,7 +279,8 @@ export default function NowPlaying() {
           </button>
           <button
             onClick={() => setShowLyrics(true)}
-            className={`px-4 py-2 rounded-full text-xs font-medium transition-all ${
+            aria-label="Show lyrics"
+            className={`px-4 py-2 rounded-full text-xs font-medium transition-all min-h-[44px] focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black ${
               showLyrics ? 'bg-neon-cyan text-deep-black shadow-[0_0_12px_rgba(0,255,221,0.3)]' : 'text-white/60 hover:text-white/80'
             }`}
           >
@@ -285,7 +300,8 @@ export default function NowPlaying() {
                 <p className="text-[11px] uppercase tracking-[0.12em] text-white/30 font-mono mb-3">Up Next</p>
                 <button
                   onClick={next}
-                  className="w-full flex items-center gap-3 p-2.5 -mx-2.5 rounded-xl hover:bg-white/5 transition-colors group text-left"
+                  aria-label={`Play next: ${nextTrack.name} by ${nextTrack.artistName}`}
+                  className="w-full flex items-center gap-3 p-2.5 -mx-2.5 rounded-xl hover:bg-white/5 transition-colors group text-left min-h-[44px] focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black"
                 >
                   {nextTrack.imageUrl && (
                     <img src={nextTrack.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover ring-1 ring-white/10" />
@@ -357,13 +373,21 @@ export default function NowPlaying() {
             dragElastic={0.3}
             onDragEnd={handlePanEnd}
           >
-            <button onClick={() => setShowNowPlaying(false)} className="p-2 -ml-2 text-white/60 hover:text-white transition-colors">
+            <button 
+              onClick={() => setShowNowPlaying(false)} 
+              aria-label="Close now playing" 
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2 text-white/60 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black"
+            >
               <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z" /></svg>
             </button>
             <div className="text-center">
               <p className="text-[11px] uppercase tracking-[0.15em] text-white/40 font-mono">Now Playing</p>
             </div>
-            <button onClick={() => setShowQueueFromNowPlaying(true)} className="p-2 -mr-2 text-white/60 hover:text-white transition-colors">
+            <button 
+              onClick={() => setShowQueueFromNowPlaying(true)} 
+              aria-label="Show queue" 
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center -mr-2 text-white/60 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black"
+            >
               <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" /></svg>
             </button>
           </motion.div>

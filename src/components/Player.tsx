@@ -293,7 +293,7 @@ export default function Player() {
                     <p className="text-[14px] font-semibold truncate">{currentTrack.name}</p>
                     <button
                       onClick={handleArtistClick}
-                      className="text-[13px] text-text-secondary hover:text-neon-cyan transition-colors cursor-pointer truncate block"
+                      className="text-[13px] text-text-secondary hover:text-neon-cyan transition-colors cursor-pointer truncate block focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded"
                       title={`Go to ${currentTrack.artistName}`}
                     >
                       {currentTrack.artistName}
@@ -301,7 +301,8 @@ export default function Player() {
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); toggle() }}
-                    className="w-11 h-11 rounded-full bg-gradient-primary flex items-center justify-center text-deep-black shrink-0"
+                    aria-label={isPlaying ? "Pause" : "Play"}
+                    className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-gradient-primary flex items-center justify-center text-deep-black shrink-0 focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
                   >
                     {isPlaying ? <PauseIcon /> : <PlayIcon />}
                   </button>
@@ -358,7 +359,7 @@ export default function Player() {
                     <>
                       <button
                         onClick={handleArtistClick}
-                        className="text-text-secondary hover:text-neon-cyan transition-colors cursor-pointer truncate"
+                        className="text-text-secondary hover:text-neon-cyan transition-colors cursor-pointer truncate focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded"
                         title={`Go to ${currentTrack.artistName}`}
                       >
                         {currentTrack.artistName}
@@ -369,7 +370,7 @@ export default function Player() {
                   {currentTrack.albumName && (
                     <button
                       onClick={handleAlbumClick}
-                      className="text-text-secondary hover:text-neon-cyan transition-colors cursor-pointer truncate"
+                      className="text-text-secondary hover:text-neon-cyan transition-colors cursor-pointer truncate focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded"
                       title={`Go to ${currentTrack.albumName}`}
                     >
                       {currentTrack.albumName}
@@ -390,7 +391,8 @@ export default function Player() {
               <motion.button
                 onClick={toggle}
                 whileTap={{ scale: 0.9 }}
-                className="w-11 h-11 rounded-full bg-gradient-primary flex items-center justify-center text-deep-black mx-1 hover:shadow-[0_0_20px_rgba(0,255,221,0.3)] transition-shadow"
+                aria-label={isPlaying ? "Pause" : "Play"}
+                className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-gradient-primary flex items-center justify-center text-deep-black mx-1 hover:shadow-[0_0_20px_rgba(0,255,221,0.3)] transition-shadow focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
               >
                 {isPlaying ? <PauseIcon /> : <PlayIcon />}
               </motion.button>
@@ -408,7 +410,11 @@ export default function Player() {
                 {formatTime(currentTime)} / {formatTime(duration)}
               </span>
               <div className="flex items-center gap-2">
-                <button onClick={toggleMute} className="text-text-muted hover:text-text-primary transition-colors">
+                <button 
+                  onClick={toggleMute} 
+                  aria-label={muted || volume === 0 ? "Unmute" : "Mute"}
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center text-text-muted hover:text-text-primary transition-colors focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black"
+                >
                   <VolumeIcon muted={muted || volume === 0} />
                 </button>
                 <input
@@ -416,14 +422,15 @@ export default function Player() {
                   min="0" max="1" step="0.01"
                   value={muted ? 0 : volume}
                   onChange={(e) => setVolume(parseFloat(e.target.value))}
-                  className="w-24 accent-neon-cyan h-1"
+                  aria-label="Volume"
+                  className="w-24 accent-neon-cyan h-1 focus-visible:ring-2 focus-visible:ring-neon-cyan/50"
                 />
               </div>
               <div className="relative">
                 <button
                   onClick={() => setShowSleepTimer(!showSleepTimer)}
-                  className={`p-2 rounded transition-colors relative ${sleepTimer.active ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
-                  title="Sleep Timer"
+                  aria-label="Sleep Timer"
+                  className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded transition-colors relative focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black ${sleepTimer.active ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
                 >
                   <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
                     <path d="M6 6.9L3.87 4.78l1.41-1.41L7.05 5.14C8.23 4.43 9.57 4 11 4c4.97 0 9 4.03 9 9s-4.03 9-9 9-9-4.03-9-9c0-1.43.43-2.77 1.14-3.95L1.37 7.28l1.41-1.41L6 8.74V6.9zM12 6c-3.87 0-7 3.13-7 7s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm1 3h-2v6h6v-2h-4V9z" />
@@ -446,8 +453,8 @@ export default function Player() {
               </div>
               <button
                 onClick={toggleEqualizerEnabled}
-                className={`p-2 rounded transition-colors ${eqEnabled ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
-                title="Equalizer"
+                aria-label={eqEnabled ? "Disable equalizer" : "Enable equalizer"}
+                className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded transition-colors focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black ${eqEnabled ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
               >
                 <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
                   <path d="M7 20h4v-9H7v9zm6-16h-4v7h4V4zm6 0h-4v3h4V4zm0 5h-4v11h4V9z" />
@@ -455,8 +462,8 @@ export default function Player() {
               </button>
               <button
                 onClick={() => setShowEqualizer(!showEqualizer)}
-                className={`p-2 rounded transition-colors ${showEqualizer ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
-                title="EQ Settings"
+                aria-label="Equalizer settings"
+                className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded transition-colors focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black ${showEqualizer ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
               >
                 <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
                   <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z" />
@@ -464,8 +471,8 @@ export default function Player() {
               </button>
               <button
                 onClick={() => setShowQueue(!showQueue)}
-                className={`p-2 rounded transition-colors ${showQueue ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
-                title="Queue"
+                aria-label="Show queue"
+                className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded transition-colors focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black ${showQueue ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
               >
                 <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
                   <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
@@ -516,8 +523,8 @@ function ControlButton({ onClick, active, title, children }: {
   return (
     <button
       onClick={onClick}
-      title={title}
-      className={`p-2.5 rounded-full transition-colors ${active ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
+      aria-label={title}
+      className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black ${active ? 'text-neon-cyan' : 'text-text-muted hover:text-text-primary'}`}
     >
       {children}
     </button>

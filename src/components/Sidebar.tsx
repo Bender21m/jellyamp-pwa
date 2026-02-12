@@ -32,7 +32,7 @@ function NavItem({ item, collapsed }: { item: typeof libraryNav[0]; collapsed: b
       to={item.to}
       title={collapsed ? item.label : undefined}
       className={({ isActive }) =>
-        `relative flex items-center gap-3 rounded-lg text-[14px] font-semibold transition-all duration-200 group
+        `relative flex items-center gap-3 rounded-lg text-[14px] font-semibold transition-all duration-200 group min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card
         ${collapsed ? 'justify-center px-2 py-3' : 'px-4 py-3'}
         ${isActive
           ? 'bg-neon-cyan/8 text-neon-cyan'
@@ -136,7 +136,8 @@ function SidebarPlaylistItem({ playlist, onDelete, onDrop }: {
         >
           <button
             onClick={() => { setShowCtx(false); onDelete(playlist.Id!, playlist.Name ?? 'Untitled') }}
-            className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"
+            aria-label={`Delete playlist ${playlist.Name ?? 'Untitled'}`}
+            className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2 min-h-[44px] focus-visible:ring-2 focus-visible:ring-red-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
           >
             <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
               <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
@@ -340,8 +341,8 @@ export default function Sidebar() {
             <p className="text-[11px] font-mono uppercase tracking-widest text-text-muted/60">Playlists</p>
             <button
               onClick={() => setShowCreatePlaylist(!showCreatePlaylist)}
-              className="text-text-muted/50 hover:text-neon-cyan transition-colors p-0.5"
-              title="New Playlist"
+              aria-label="Create new playlist"
+              className="text-text-muted/50 hover:text-neon-cyan transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
             >
               <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
                 <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
@@ -428,7 +429,8 @@ export default function Sidebar() {
           <div className="mx-1 mb-2 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
           <button
             onClick={() => setShowNowPlaying(true)}
-            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors group"
+            aria-label={`Now playing: ${currentTrack.name} by ${currentTrack.artistName}`}
+            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors group min-h-[44px] focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
           >
             {currentTrack.imageUrl && (
               <img src={currentTrack.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover ring-1 ring-white/10" />

@@ -27,7 +27,8 @@ export default function Onboarding({ isVisible, onDismiss }: OnboardingProps) {
               <h3 className="text-sm font-semibold text-text-primary">Welcome to JellyAmp 🎵</h3>
               <button
                 onClick={handleDismiss}
-                className="text-text-muted hover:text-text-secondary transition-colors shrink-0 -mt-0.5"
+                aria-label="Close welcome message"
+                className="text-text-muted hover:text-text-secondary transition-colors shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
               >
                 <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
                   <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
@@ -39,7 +40,8 @@ export default function Onboarding({ isVisible, onDismiss }: OnboardingProps) {
             </p>
             <button
               onClick={handleDismiss}
-              className="text-xs text-text-muted hover:text-neon-cyan transition-colors"
+              aria-label="Got it, dismiss welcome message"
+              className="text-xs text-text-muted hover:text-neon-cyan transition-colors min-h-[44px] focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
             >
               Got it
             </button>

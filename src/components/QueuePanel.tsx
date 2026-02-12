@@ -124,13 +124,15 @@ export default function QueuePanel() {
           <div className="flex items-center gap-2">
             <button
               onClick={clearQueue}
-              className="text-xs text-text-muted hover:text-neon-pink transition-colors font-mono uppercase px-2 py-1 min-h-[44px] flex items-center"
+              aria-label="Clear queue"
+              className="text-xs text-text-muted hover:text-neon-pink transition-colors font-mono uppercase px-2 py-1 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-neon-pink/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
             >
               Clear
             </button>
             <button
               onClick={() => setShowQueue(false)}
-              className="text-text-muted hover:text-text-primary transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
+              aria-label="Close queue"
+              className="text-text-muted hover:text-text-primary transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
             >
               <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
                 <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
@@ -380,7 +382,8 @@ function VirtualQueue({ upcoming, queueIndex, dragIdx, overIdx, setDragIdx, setO
                 <span className="text-xs text-text-muted font-mono shrink-0">{formatDuration(track.duration)}</span>
                 <button
                   onClick={(e) => { e.stopPropagation(); removeFromQueue(realIndex) }}
-                  className={`text-text-muted hover:text-neon-pink transition-all p-1 min-w-[32px] min-h-[32px] flex items-center justify-center ${
+                  aria-label={`Remove ${track.name} from queue`}
+                  className={`text-text-muted hover:text-neon-pink transition-all p-1 min-w-[44px] min-h-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-neon-pink/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card ${
                     isMobile ? 'opacity-0 pointer-events-none w-0 p-0 min-w-0' : 'opacity-0 group-hover:opacity-100'
                   }`}
                 >
@@ -402,7 +405,8 @@ function VirtualQueue({ upcoming, queueIndex, dragIdx, overIdx, setDragIdx, setO
                   }}
                   onDragEnd={() => { setDragIdx(null); setOverIdx(null) }}
                   onTouchStart={(e) => { e.stopPropagation(); handleTouchStart(e, realIndex) }}
-                  className={`shrink-0 text-text-muted cursor-grab active:cursor-grabbing touch-none select-none p-1 min-w-[32px] min-h-[32px] flex items-center justify-center ${
+                  aria-label="Drag to reorder"
+                  className={`shrink-0 text-text-muted cursor-grab active:cursor-grabbing touch-none select-none p-1 min-w-[44px] min-h-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-neon-cyan/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card ${
                     isMobile ? 'opacity-40' : 'opacity-0 group-hover:opacity-40 hover:!opacity-70'
                   }`}
                 >

@@ -83,7 +83,8 @@ export default function Equalizer({ isOpen, onClose, gains, onGainsChange, onPre
                   </div>
                   <button
                     onClick={onClose}
-                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                    aria-label="Close equalizer"
+                    className="min-w-[44px] min-h-[44px] rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black"
                   >
                     <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
                       <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
@@ -99,7 +100,8 @@ export default function Equalizer({ isOpen, onClose, gains, onGainsChange, onPre
                   <select
                     value={selectedPreset}
                     onChange={(e) => handlePresetChange(e.target.value)}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm focus:border-neon-cyan/50 focus:outline-none appearance-none"
+                    aria-label="EQ preset"
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm focus:border-neon-cyan/50 focus:outline-none appearance-none min-h-[44px] focus-visible:ring-2 focus-visible:ring-neon-cyan/50"
                   >
                     {EQ_PRESETS.map(preset => (
                       <option key={preset.name} value={preset.name} className="bg-deep-black">
@@ -140,7 +142,8 @@ export default function Equalizer({ isOpen, onClose, gains, onGainsChange, onPre
                             step="0.5"
                             value={gain}
                             onChange={(e) => handleSliderChange(index, parseFloat(e.target.value))}
-                            className="vertical-slider absolute inset-0 w-full h-full appearance-none bg-transparent cursor-pointer"
+                            aria-label={`${band.label} gain: ${gain > 0 ? '+' : ''}${gain.toFixed(1)}dB`}
+                            className="vertical-slider absolute inset-0 w-full h-full appearance-none bg-transparent cursor-pointer focus-visible:ring-2 focus-visible:ring-neon-cyan/50"
                             style={{ writingMode: 'vertical-rl' as const }}
                           />
                           
@@ -181,7 +184,8 @@ export default function Equalizer({ isOpen, onClose, gains, onGainsChange, onPre
                 <div className="flex justify-center mt-6">
                   <button
                     onClick={resetEQ}
-                    className="px-4 py-2 text-sm bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                    aria-label="Reset equalizer to flat"
+                    className="px-4 py-2 text-sm bg-white/10 hover:bg-white/20 rounded-lg transition-colors min-h-[44px] focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-deep-black"
                   >
                     Reset to Flat
                   </button>
