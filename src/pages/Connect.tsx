@@ -53,7 +53,7 @@ export default function Connect() {
           <h1 className="text-3xl font-bold tracking-tight font-[var(--font-display)]">
             <span className="text-gradient">JellyAmp</span>
           </h1>
-          <p className="text-text-muted mt-2 text-xs tracking-[0.2em] font-mono uppercase">
+          <p className="text-text-secondary mt-2 text-xs tracking-[0.2em] font-mono uppercase">
             Your music. Everywhere.
           </p>
         </motion.div>
@@ -71,10 +71,10 @@ export default function Connect() {
               className="space-y-5"
             >
               <div>
-                <p className="text-text-secondary text-sm text-center mb-6 leading-relaxed">
+                <p className="text-text-primary/70 text-sm text-center mb-6 leading-relaxed">
                   Connect to your Jellyfin server by entering the URL below.
                 </p>
-                <label className="block text-[10px] font-mono uppercase tracking-[0.15em] text-text-muted mb-2 ml-1">
+                <label className="block text-[10px] font-mono uppercase tracking-[0.15em] text-text-secondary mb-2 ml-1">
                   Server URL
                 </label>
                 <input
@@ -92,7 +92,7 @@ export default function Connect() {
               {/* Divider */}
               <div className="flex items-center gap-3 pt-2">
                 <div className="flex-1 h-px bg-white/[0.06]" />
-                <span className="text-text-muted text-[10px] font-mono uppercase tracking-widest">or</span>
+                <span className="text-text-secondary text-[10px] font-mono uppercase tracking-widest">or</span>
                 <div className="flex-1 h-px bg-white/[0.06]" />
               </div>
 
@@ -106,7 +106,7 @@ export default function Connect() {
                   <div className="text-sm font-medium text-text-primary group-hover:text-neon-cyan transition-colors">
                     Explore Live Music Archive
                   </div>
-                  <div className="text-xs text-text-muted mt-0.5">
+                  <div className="text-xs text-text-secondary mt-0.5">
                     200,000+ free live recordings — no server needed
                   </div>
                 </div>
@@ -122,11 +122,11 @@ export default function Connect() {
               transition={{ duration: 0.25 }}
               className="space-y-4"
             >
-              <p className="text-text-secondary text-sm text-center mb-6 leading-relaxed">
+              <p className="text-text-primary/70 text-sm text-center mb-6 leading-relaxed">
                 Sign in to your Jellyfin account to access your library.
               </p>
               <div>
-                <label className="block text-[10px] font-mono uppercase tracking-[0.15em] text-text-muted mb-2 ml-1">
+                <label className="block text-[10px] font-mono uppercase tracking-[0.15em] text-text-secondary mb-2 ml-1">
                   Username
                 </label>
                 <input
@@ -140,7 +140,7 @@ export default function Connect() {
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-mono uppercase tracking-[0.15em] text-text-muted mb-2 ml-1">
+                <label className="block text-[10px] font-mono uppercase tracking-[0.15em] text-text-secondary mb-2 ml-1">
                   Password
                 </label>
                 <input
