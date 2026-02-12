@@ -84,6 +84,28 @@ export default defineConfig({
               },
             },
           },
+          {
+            urlPattern: /upload\.wikimedia\.org\//,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'wikipedia-images',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 14, // 14 days
+              },
+            },
+          },
+          {
+            urlPattern: /coverartarchive\.org\//,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'coverart-images',
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
         ],
       },
     }),
