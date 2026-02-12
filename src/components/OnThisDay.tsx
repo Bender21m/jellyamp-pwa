@@ -69,6 +69,7 @@ export default function OnThisDay() {
    
   useEffect(() => {
     if (!api || !userId || !serverUrl) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadOnThisDay()
   }, [api, userId, serverUrl, loadOnThisDay])
 

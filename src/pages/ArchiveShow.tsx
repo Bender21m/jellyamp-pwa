@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { getShowMetadata, getShowTracks, searchShows, groupShowsByDate } from '../lib/archive'
@@ -56,7 +56,7 @@ export default function ArchiveShow() {
 
   const isFav = isFavoriteShow(identifier)
 
-  async function loadShow() {
+  const loadShow = useCallback(async () => {
      
     setLoading(true)
     setError(null)
@@ -82,11 +82,12 @@ export default function ArchiveShow() {
       setError('Failed to load show. Please try again.')
     }
     setLoading(false)
-  }
+  }, [identifier])
 
    
   useEffect(() => {
     if (!identifier) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadShow()
   }, [identifier, loadShow])
 

@@ -60,7 +60,7 @@ export default function AlbumDetail() {
   })
   const selectedTracks = tracks.filter(t => selection.isSelected(t.id))
 
-  async function loadAlbum() {
+  const loadAlbum = useCallback(async () => {
     if (!api || !userId || !id || !serverUrl) return
      
     setLoading(true)
@@ -95,11 +95,12 @@ export default function AlbumDetail() {
       setTracks([])
     }
     setLoading(false)
-  }
+  }, [api, userId, id, serverUrl])
 
    
   useEffect(() => {
     if (!api || !userId || !id) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadAlbum()
   }, [id, api, userId, loadAlbum])
 

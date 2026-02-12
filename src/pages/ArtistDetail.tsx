@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
@@ -58,7 +58,7 @@ export default function ArtistDetail() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   useScrollRestore(scrollContainerRef)
 
-  async function loadArtist() {
+  const loadArtist = useCallback(async () => {
     if (!api || !userId || !id || !serverUrl) return
     setLoading(true)
     setError(null)
@@ -81,10 +81,11 @@ export default function ArtistDetail() {
       setSimilarArtists([])
     }
     setLoading(false)
-  }
+  }, [api, userId, id, serverUrl])
 
   useEffect(() => {
     if (!api || !userId || !id) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadArtist()
   }, [id, api, userId, loadArtist])
 

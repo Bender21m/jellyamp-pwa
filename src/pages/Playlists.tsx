@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../stores/auth'
 import { fetchPlaylists, createPlaylist, deletePlaylist, getImageUrl } from '../lib/jellyfin'
@@ -18,7 +18,7 @@ export default function Playlists() {
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null)
   const [deleteError, setDeleteError] = useState('')
 
-  async function loadPlaylists() {
+  const loadPlaylists = useCallback(async () => {
     if (!api || !userId) return
      
     setLoading(true)
@@ -29,11 +29,12 @@ export default function Playlists() {
       console.error('Playlists fetch failed', e)
     }
     setLoading(false)
-  }
+  }, [api, userId])
 
    
   useEffect(() => {
     if (!api || !userId) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPlaylists()
   }, [api, userId, loadPlaylists])
 

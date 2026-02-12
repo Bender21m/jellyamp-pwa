@@ -44,7 +44,7 @@ export default function PlaylistDetail() {
   })
   const selectedTracks = tracks.filter(t => selection.isSelected(t.id))
 
-  async function loadPlaylist() {
+  const loadPlaylist = useCallback(async () => {
     if (!api || !userId || !id || !serverUrl) return
      
     setLoading(true)
@@ -71,11 +71,12 @@ export default function PlaylistDetail() {
       console.error('Failed to load playlist', e)
     }
     setLoading(false)
-  }
+  }, [api, userId, id, serverUrl])
 
    
   useEffect(() => {
     if (!api || !userId || !id) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPlaylist()
   }, [id, api, userId, loadPlaylist])
 

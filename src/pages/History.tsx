@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useAuthStore } from '../stores/auth'
@@ -42,7 +42,7 @@ export default function History() {
     loadHistory()
   }, [api, userId, serverUrl, loadHistory])
 
-  async function loadHistory() {
+  const loadHistory = useCallback(async () => {
     if (!api || !userId || !serverUrl) return
     setLoading(true)
     setError(null)
@@ -83,7 +83,7 @@ export default function History() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [api, userId, serverUrl])
 
   // Pull to refresh setup
   const containerRef = useRef<HTMLDivElement>(null)
@@ -259,6 +259,7 @@ function VirtualHistoryList({ tab, recentTracks, mostPlayedTracks, scrollRef, on
 }) {
   const tracks = tab === 'recent' ? recentTracks : mostPlayedTracks
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: tracks.length,
     getScrollElement: () => scrollRef.current,

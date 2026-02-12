@@ -84,7 +84,7 @@ export function useSleepTimer(options: UseSleepTimerOptions) {
         sleepFadeRef.current = null
       }
     }
-  }, [sleepTimer, volume, onPause, onClearTimer])
+  }, [sleepTimer, volume, onPause, onClearTimer, audioRef])
 
   // Handle track end for "end of track" sleep timer
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from 'react'
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth'
 import { useUIStore } from '../stores/ui'
@@ -73,7 +73,7 @@ export default function Favorites() {
   const [favoritesFilter, setFavoritesFilter] = useState('All')
   const [contextMenu, setContextMenu] = useState<{ track: Track; position: { x: number; y: number } } | null>(null)
 
-  async function loadFavorites() {
+  const loadFavorites = useCallback(async () => {
     if (!api || !userId) return
      
     setLoading(true)
@@ -87,11 +87,12 @@ export default function Favorites() {
       setItems([])
     }
     setLoading(false)
-  }
+  }, [api, userId])
 
    
   useEffect(() => {
     if (!api || !userId) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadFavorites()
   }, [api, userId, loadFavorites])
 

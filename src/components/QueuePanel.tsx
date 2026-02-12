@@ -214,6 +214,7 @@ function VirtualQueue({ upcoming, queueIndex, dragIdx, overIdx, setDragIdx, setO
   const [touchDragFrom, setTouchDragFrom] = useState<number | null>(null)
   const [touchDragOver, setTouchDragOver] = useState<number | null>(null)
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: upcoming.length,
     getScrollElement: () => queueScrollRef.current,
