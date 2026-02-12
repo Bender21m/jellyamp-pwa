@@ -13,7 +13,9 @@ export default defineConfig({
       manifest: {
         name: 'JellyAmp',
         short_name: 'JellyAmp',
-        description: 'A beautiful music player for Jellyfin',
+        description: 'A beautiful Jellyfin music client with 200,000+ live recordings from Internet Archive',
+        start_url: '/',
+        scope: '/',
         theme_color: '#050508',
         background_color: '#050508',
         display: 'standalone',
@@ -32,12 +34,32 @@ export default defineConfig({
             purpose: 'any maskable',
           },
         ],
+        shortcuts: [
+          {
+            name: 'Library',
+            short_name: 'Library',
+            url: '/library',
+            icons: [{ src: 'favicon-192.png', sizes: '192x192' }],
+          },
+          {
+            name: 'Live Archive',
+            short_name: 'Archive',
+            url: '/archive',
+            icons: [{ src: 'favicon-192.png', sizes: '192x192' }],
+          },
+          {
+            name: 'Search',
+            short_name: 'Search',
+            url: '/search',
+            icons: [{ src: 'favicon-192.png', sizes: '192x192' }],
+          },
+        ],
       },
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api/],
+        navigateFallbackDenylist: [/^\/api/, /archive\.org/],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
@@ -48,6 +70,17 @@ export default defineConfig({
               expiration: {
                 maxEntries: 500,
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+          {
+            urlPattern: /archive\.org\/services\/img\//,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'archive-images',
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
               },
             },
           },
