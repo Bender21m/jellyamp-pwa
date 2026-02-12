@@ -2,6 +2,7 @@
 // Completely independent — no imports from jellyfin.ts
 
 import type { Track } from '../stores/player'
+import { parseSetlist, mapTracksToSetlist, filenameHasSongName } from './setlistParser'
 
 // --- Types ---
 
@@ -162,24 +163,67 @@ export async function getShowTracks(identifier: string): Promise<ArchiveTrack[]>
       (f) => f.source === 'derivative' && f.format === 'VBR MP3'
     )
 
-    // Sort by track number
+    // Sort by track number or filename
     mp3Files.sort((a, b) => {
       const aNum = parseInt(a.track ?? '0', 10) || 0
       const bNum = parseInt(b.track ?? '0', 10) || 0
-      return aNum - bNum
+      if (aNum !== bNum) return aNum - bNum
+      return a.name.localeCompare(b.name)
     })
 
     const albumName = [metadata.date, metadata.venue].filter(Boolean).join(' — ')
 
-    return mp3Files.map((f) => ({
-      id: `${identifier}/${f.name}`,
-      name: f.title ?? f.name.replace(/\.mp3$/i, ''),
-      artistName: f.creator ?? metadata.creator,
-      albumName,
-      duration: parseDuration(f.length),
-      imageUrl: metadata.imageUrl,
-      streamUrl: getStreamUrl(identifier, f.name),
-    }))
+    // Check if filenames already have meaningful names
+    const needsMapping = mp3Files.some(
+      (f) => !f.title && !filenameHasSongName(f.name)
+    )
+
+    // Try to map setlist from description if filenames are garbled
+    let trackMapping: Map<string, { songName: string | null; segue: boolean }> | null = null
+
+    if (needsMapping && metadata.description) {
+      const setlist = parseSetlist(metadata.description)
+      if (setlist.confident && setlist.songs.length > 0) {
+        const filenames = mp3Files.map((f) => f.name)
+        const mapped = mapTracksToSetlist(filenames, setlist)
+        trackMapping = new Map(
+          mapped.map((m) => [m.filename, { songName: m.songName, segue: m.segue }])
+        )
+      }
+    }
+
+    return mp3Files.map((f) => {
+      // Priority: file metadata title > setlist mapping > cleaned filename
+      let trackName = f.title ?? null
+      let segue = false
+
+      if (!trackName && trackMapping) {
+        const mapping = trackMapping.get(f.name)
+        if (mapping?.songName) {
+          trackName = mapping.songName
+          segue = mapping.segue
+        }
+      }
+
+      if (!trackName) {
+        trackName = f.name.replace(/\.mp3$/i, '')
+      }
+
+      // Append segue indicator
+      if (segue) {
+        trackName = trackName + ' >'
+      }
+
+      return {
+        id: `${identifier}/${f.name}`,
+        name: trackName,
+        artistName: f.creator ?? metadata.creator,
+        albumName,
+        duration: parseDuration(f.length),
+        imageUrl: metadata.imageUrl,
+        streamUrl: getStreamUrl(identifier, f.name),
+      }
+    })
   } catch (err) {
     console.error('[Archive] getShowTracks error:', err)
     return []
