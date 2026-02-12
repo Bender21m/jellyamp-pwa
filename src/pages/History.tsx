@@ -37,11 +37,6 @@ export default function History() {
   const [error, setError] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{ track: Track; position: { x: number; y: number } } | null>(null)
 
-  useEffect(() => {
-    if (!api || !userId || !serverUrl) return
-    loadHistory()
-  }, [api, userId, serverUrl, loadHistory])
-
   const loadHistory = useCallback(async () => {
     if (!api || !userId || !serverUrl) return
     setLoading(true)
@@ -84,6 +79,11 @@ export default function History() {
       setLoading(false)
     }
   }, [api, userId, serverUrl])
+
+  useEffect(() => {
+    if (!api || !userId || !serverUrl) return
+    loadHistory()
+  }, [api, userId, serverUrl, loadHistory])
 
   // Pull to refresh setup
   const containerRef = useRef<HTMLDivElement>(null)
