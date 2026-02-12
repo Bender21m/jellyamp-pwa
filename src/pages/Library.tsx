@@ -99,11 +99,9 @@ export default function Library() {
   }, [api, userId, sortOption, search, libraryFilter])
 
   // Load counts on mount - standard async loading pattern
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadCounts() }, [loadCounts])
 
   // Load data when filter, sort, or other deps change - standard async loading pattern
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadData() }, [loadData])
 
   // Debounced search — only re-trigger on search text changes
@@ -147,7 +145,6 @@ export default function Library() {
 
   // Reset genre selection when switching filters - legitimate UI state reset
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedGenre(null)
      
     setGenreAlbums([])

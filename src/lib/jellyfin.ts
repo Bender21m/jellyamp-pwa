@@ -75,9 +75,7 @@ export async function getStreamUrlWithCache(serverUrl: string, itemId: string, t
       if (cachedUrl) {
         return cachedUrl
       }
-    } catch (error) {
-      console.debug('Cache check failed:', error)
-    }
+    } catch { /* cache unavailable, fall through */ }
   }
 
   // Fall back to regular streaming
@@ -293,9 +291,8 @@ export async function fetchSimilarArtists(api: Api, userId: string, artistId: st
       }
     })
     return data.Items ?? []
-  } catch (error) {
+  } catch {
     // Similar artists not available (many Jellyfin servers don't have this data)
-    console.debug('Similar artists not available:', error)
     return []
   }
 }

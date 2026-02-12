@@ -72,14 +72,8 @@ export default function InstallPrompt() {
     // Show the install prompt
     deferredPrompt.prompt()
 
-    // Wait for the user to respond to the prompt
-    const { outcome } = await deferredPrompt.userChoice
-
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt')
-    } else {
-      console.log('User dismissed the install prompt')
-    }
+    // Wait for user response then clear prompt
+    await deferredPrompt.userChoice
 
     // Clear the prompt
     setDeferredPrompt(null)
