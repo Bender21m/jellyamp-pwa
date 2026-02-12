@@ -106,11 +106,12 @@ export default function Library() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadData() }, [loadData])
 
-  // Debounced search
+  // Debounced search — only re-trigger on search text changes
   useEffect(() => {
     const t = setTimeout(() => loadData(), 300)
     return () => clearTimeout(t)
-  }, [search, loadData])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search])
 
   // Pull to refresh
   const isTouchDevice = window.matchMedia('(hover: none)').matches

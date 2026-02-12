@@ -84,7 +84,7 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
       const elapsed = currentTime - startTime
       const progress = Math.min(elapsed / fadeDuration, 1)
       
-      audioElement.volume = targetVolume * progress
+      audioElement.volume = Math.max(0, Math.min(1, targetVolume * progress))
       
       if (progress < 1) {
         fadeInRef.current = requestAnimationFrame(fade)
@@ -249,8 +249,8 @@ export function useAudioEngine(options: UseAudioEngineOptions) {
         const timeLeft = audio.duration - audio.currentTime
         if (timeLeft <= crossfadeDurationRef.current && timeLeft > 0 && nextAudioRef.current) {
           const progress = 1 - (timeLeft / crossfadeDurationRef.current)
-          audio.volume = (mutedRef.current ? 0 : volumeRef.current) * (1 - progress)
-          nextAudioRef.current.volume = (mutedRef.current ? 0 : volumeRef.current) * progress
+          audio.volume = Math.max(0, Math.min(1, (mutedRef.current ? 0 : volumeRef.current) * (1 - progress)))
+          nextAudioRef.current.volume = Math.max(0, Math.min(1, (mutedRef.current ? 0 : volumeRef.current) * progress))
           if (nextAudioRef.current.paused) {
             nextAudioRef.current.play().catch(() => {})
           }
