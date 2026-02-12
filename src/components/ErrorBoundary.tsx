@@ -29,6 +29,26 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('[JellyAmp] Error boundary caught:', error, errorInfo)
+
+    // Auto-reload on stale chunk errors (happens after new deployments)
+    if (
+      error.message.includes('dynamically imported module') ||
+      error.message.includes('Failed to fetch dynamically imported module') ||
+      error.message.includes('Loading chunk') ||
+      error.message.includes('Loading CSS chunk')
+    ) {
+      const reloadKey = 'jellyamp-chunk-reload'
+      const lastReload = sessionStorage.getItem(reloadKey)
+      const now = Date.now()
+
+      // Only auto-reload once per 60 seconds to prevent infinite loops
+      if (!lastReload || now - parseInt(lastReload, 10) > 60_000) {
+        console.info('[JellyAmp] Stale chunk detected, auto-reloading...')
+        sessionStorage.setItem(reloadKey, String(now))
+        window.location.reload()
+        return
+      }
+    }
   }
 
   handleRetry = () => {
