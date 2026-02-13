@@ -50,14 +50,6 @@ function stripHtml(html: string): string {
 
 // --- Set marker detection ---
 
-const SET_PATTERNS = [
-  /^set\s*(?:one|1|i)$/i,
-  /^set\s*(?:two|2|ii)$/i,
-  /^set\s*(?:three|3|iii)$/i,
-  /^encore$/i,
-  /^e(?:nc)?:?$/i,
-]
-
 function detectSetMarker(line: string): { isSet: true; setNum: number } | { isSet: false } {
   const trimmed = line.trim()
 
@@ -316,8 +308,6 @@ export function mapTracksToSetlist(
       // extra setlist sets (encore) might be appended to the last file set
       // e.g., files have s1+s2, setlist has set1+set2+set3(encore)
       if (id.set === maxFileSet) {
-        // Count tracks in this file set
-        const tracksInFileSet = trackIds.filter((t) => t.id?.set === id.set).length
         // Count songs in matching setlist set
         const songsInSet = flatSongs.filter((s) => s.set === id.set).length
         // If track number exceeds songs in this set, overflow into next set(s)
